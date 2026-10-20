@@ -30,9 +30,11 @@ jobs:
       - name: Install locked dependencies
         run: uv sync --frozen
       - name: Lint
-        run: uv run ruff check server
-      - name: Unit tests
+        run: uv run ruff check server experiments
+      - name: Unit tests (server)
         run: uv run python -m unittest discover -s server/tests -t . -v
+      - name: Unit tests (bad-data simulators)
+        run: uv run python -m unittest discover -s experiments/tests -t . -v
 
   docker:
     name: Build and smoke-test image

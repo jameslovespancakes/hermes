@@ -34,7 +34,9 @@ def _event_rows(s, idx, a, d, d_known_sorted, lat, lng, aoi, usual_ca, usual_end
     pace = since_first / (n_today - 1) if n_today >= 2 else np.nan
     clock_s = (s - day) / MINUTE
     plat, plng = lat[pend], lng[pend]
+    feed_age = (s - last) / MINUTE if last is not None else np.nan   # minutes since the last visible delivery
     q = {"row": pend, "s": np.full(n, s), "cur_row": np.full(n, done_now[0] if len(done_now) else -1),
+         "feed_age_min": np.full(n, feed_age),
          "elapsed_min": (s - a[pending_mask]) / MINUTE, "clock_s": np.full(n, clock_s),
          "n_pending": np.full(n, n, float), "n_done_today": np.full(n, n_today, float),
          "n_done_last_hour": np.full(n, k1 - np.searchsorted(d_known_sorted, s - 60 * MINUTE, "right"), float),
@@ -93,9 +95,9 @@ def build_live_queries(packages: pd.DataFrame, events: pd.DataFrame | None = Non
             if rows is not None:
                 chunks.append(rows)
     if not chunks:
-        return pd.DataFrame(columns=["row", "s", "cur_row", *LIVE_COLS, "remaining_min"])
+        return pd.DataFrame(columns=["row", "s", "cur_row", "feed_age_min", *LIVE_COLS, "remaining_min"])
     live = pd.concat(chunks, ignore_index=True)
-    for column in LIVE_COLS + ["remaining_min"]:
+    for column in LIVE_COLS + ["feed_age_min", "remaining_min"]:
         live[column] = live[column].astype("float32")
     return live
 

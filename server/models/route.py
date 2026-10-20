@@ -33,16 +33,24 @@ def trainable_events(live: pd.DataFrame, cutoff: pd.Timestamp) -> np.ndarray:
     return ((live["s"] < cutoff) & (event_last_delivery < cutoff) & (live["n_pending"] >= 2)).to_numpy()
 
 
-def fit_route_out_of_fold(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarray, lgb.LGBMRegressor]:
-    """Route scores for every row (out-of-fold where trainable) and the full model for later events."""
+def fit_route_folds(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarray, lgb.LGBMRegressor, list]:
+    """Out-of-fold route scores, the full model, and the per-fold models (fold k never saw fold k's courier-days)."""
     trainable = trainable_events(live, cutoff)
     fold = courier_day_folds(live)
     scores = np.full(len(live), np.nan)
+    fold_models = []
     for k in range(ROUTE_FOLDS):
         held = trainable & (fold == k)
-        scores[held] = _fit(live.loc[trainable & (fold != k)]).predict(live.loc[held, ROUTE_INPUT_COLS])
+        fold_models.append(_fit(live.loc[trainable & (fold != k)]))
+        scores[held] = fold_models[k].predict(live.loc[held, ROUTE_INPUT_COLS])
     full = _fit(live.loc[trainable])
     scores[~trainable] = full.predict(live.loc[~trainable, ROUTE_INPUT_COLS])
+    return scores, full, fold_models
+
+
+def fit_route_out_of_fold(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarray, lgb.LGBMRegressor]:
+    """Route scores for every row (out-of-fold where trainable) and the full model for later events."""
+    scores, full, _ = fit_route_folds(live, cutoff)
     return scores, full
 
 

@@ -94,15 +94,51 @@ minutes remaining. Trained on May-August, early-stopped on September 1-15, teste
 | Due within 30 min / 30-60 min / 1-3 h / 3-24 h | 33.0 / 33.5 / 35.6 / 106.8 min |
 | Next 3 stops predicted correctly | 69% |
 
-## 7. Honest limits
+## 7. Honest limits (baseline)
 - One city (Yantai), one test window, one random seed. September was inspected during development, so it is not
   an untouched final test. October is untouched.
 - "Delivered" means the courier recorded it, not that the customer confirmed it.
 - Coordinates are privacy-perturbed; distances are straight-line, not roads.
 - The 5-minute timestamp floor and multi-day holds limit any model's accuracy.
 
-## 8. Next steps
-1. The case-a-thon question: degrade the data (stale feeds, low-quality records), measure the damage, test a fix.
+## 8. Bad data: how much it hurts, and what fixes it
+Full report: `experiments/degradation/results/REPORT.md` (simulated progression on real Yantai data; always scored
+against true delivery times, on the same real packages and moments for every condition).
+
+**What we broke** (the case's two failure types):
+- **Low-quality feed** ("a fast, low-quality feed adds more data"): a cheap scanner app on 0% -> 60% of couriers from
+  Jul 1 to Sep 30. It bulk-syncs delivery times to the hour, jitters GPS by ~1 km, and re-sends half its records, so
+  it contributes *more* records than the good feed. Hits training (monthly retraining) and live predictions.
+- **Stale feed** ("some records stop updating"): device uploads arrive 60 min late for 0% -> 60% of couriers over the
+  Sep 16-30 test window. Hits live predictions.
+
+**The fix** (`server/quality/`): remove re-sent duplicates, repair GPS far from its area, quarantine bulk-synced
+courier-days from training, flag doubtful predictions for a dispatcher, and switch to a staleness-aware model when a
+courier's feed looks stale.
+
+| Condition (Sep 16-30, average error) | No fix | With fix | Damage recovered |
+|---|---:|---:|---:|
+| Clean reference | 58.7 | 58.5 | (no cost on clean data) |
+| Stale only | 63.6 | 62.2 | 27% |
+| Low quality only | 80.0 | 65.1 | **70%** |
+| Both | 83.9 | 66.6 | **69%** |
+
+- **More data made it worse:** as the low-quality feed grew, monthly retraining degraded steadily: extra error
+  +8.6 min (July) -> +12.2 (August) -> +21.3 (September). The guard cut that to +3.6 -> +6.0 -> +11.1 (guard alone).
+- **Mechanism:** bad records inflated the packages a courier appears to hold (+8 per prediction) and scrambled the
+  predicted route order (79% of positions changed); delayed or bulk-synced deliveries make the courier look stuck.
+- **Guard accuracy:** 100% of injected duplicates removed with 0 real packages lost; 97% of bad-feed records
+  quarantined vs 0.03% of good ones; only 32% of bad GPS repaired (the threshold is deliberately conservative).
+- **Oversight:** flagged predictions really are worse (e.g. 73 vs 61 min under stale data), so routing them to a
+  dispatcher protects customers; 7-31% of predictions get flagged depending on the condition.
+- **Limits:** (1) an unanticipated degradation (random +/-30 min timestamp errors) is only partly handled (69.7 -> 63.4
+  vs 58.7 clean); (2) the stale fix is weak because a steady upload delay still delivers fresh-looking events every
+  few minutes ("time since last event" stayed under 20 min half the time). Always using the staleness-aware model did
+  better on stale data (60.3). **Next iteration:** detect staleness from upload lag (device scan time vs server receive
+  time), which real systems usually log.
+
+## 9. Next steps
+1. Iterate the stale-data fix with an upload-lag signal; repeat runs with other seeds to measure stability.
 2. Live area conditions (how long deliveries in this area are taking right now), the most promising missing signal.
 3. Confirm on Shanghai and October; add an uncertainty range for customer-facing promises.
 
