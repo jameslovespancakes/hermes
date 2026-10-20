@@ -37,6 +37,9 @@ server/
 │   └── evaluate.py      error by time remaining; route-order quality
 ├── serving/
 │   └── predictor.py     LiveETAPredictor.predict(records, courier, at): hides everything after `at`
+├── api/
+│   ├── app.py           FastAPI app: /health, /model, /couriers, /predict
+│   └── schemas.py       request/response models
 ├── tests/               unit tests, one file per module (synthetic data, a few seconds)
 └── model_store/<city>/  model.pkl, metrics.json, manifest.json
 ```
@@ -50,7 +53,29 @@ uv run python -m unittest discover -s server/tests -t .
 uv run python -m server.cli train --city yt                 # ~7 min on 16 CPU threads
 uv run python -m server.cli predict --city yt --courier 2136 --at "09-20 10:30:00"
 ```
-Add a dependency with `uv add <package>==<version>` (updates `pyproject.toml` and `uv.lock`).
+Add a dependency with `uv add <package>==<version>` (updates `pyproject.toml` and `uv.lock`); lint with
+`uv run ruff check server`.
+
+## HTTP API and Docker
+```powershell
+uv run uvicorn server.api.app:app --port 8000          # local; city from $ETA_CITY (default yt)
+docker build -t hermes-eta .                            # image downloads the pinned, checksum-verified data
+docker run --rm -p 8000:8000 hermes-eta                 # then open http://localhost:8000/docs
+```
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | status, city, model cutoff, records loaded |
+| `GET /model` | stored test metrics (overall, by time remaining, route quality) |
+| `GET /couriers?at=09-20 10:30:00` | couriers holding packages at that moment, busiest first |
+| `POST /predict` `{"courier_id": "2136", "at": "09-20 10:30:00"}` | ETA for each package the courier holds, in predicted route order |
+
+The first request for a new moment takes a few seconds (it rebuilds what was known then); repeat requests for
+that moment are cached.
+
+## CI/CD (`.github/workflows/ci-cd.yml`)
+1. **test**: `uv sync --frozen`, ruff lint, all unit tests (no Git LFS download needed).
+2. **docker**: build the image, start it, smoke-test `/health`, `/model`, `/predict`, and input validation.
+3. **publish** (pushes to `main` only): push the image to `ghcr.io/<owner>/<repo>` tagged `latest` and the commit SHA.
 In Python:
 ```python
 import pandas as pd

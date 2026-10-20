@@ -53,6 +53,8 @@ class Split:
         return ts(self.test_end)
 
 
+DEFAULT_SPLIT = Split()
+
 SEED = 42
 FIT_SAMPLE = 800_000
 HABIT_WINDOW_DAYS = 28

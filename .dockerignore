@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+**/__pycache__
+**/*.py[cod]
+data/raw
+evidence
+mockup
+server/tests
+*.md
+!server/README.md
+*.zip
+Dockerfile
+.dockerignore

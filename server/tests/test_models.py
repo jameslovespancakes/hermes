@@ -24,7 +24,8 @@ class EncodingTests(unittest.TestCase):
 class RouteTests(unittest.TestCase):
     def live(self):
         return pd.DataFrame({"courier_s": ["yt:1"] * 4 + ["yt:2"] * 2, "day": ["05-01", "05-01", "05-02", "05-02", "05-01", "05-01"],
-                             "event": [0, 0, 1, 1, 2, 2], "s": pd.to_datetime(["2000-05-01 09:00"] * 2 + ["2000-05-02 09:00"] * 2 + ["2000-05-01 10:00"] * 2),
+                             "event": [0, 0, 1, 1, 2, 2],
+                             "s": pd.to_datetime(["2000-05-01 09:00"] * 2 + ["2000-05-02 09:00"] * 2 + ["2000-05-01 10:00"] * 2),
                              "_delivered_at": pd.to_datetime(["2000-05-01 10:00", "2000-05-01 11:00", "2000-05-03 10:00", "2000-05-02 11:00",
                                                               "2000-05-01 11:00", "2000-05-01 12:00"]),
                              "n_pending": [2.0] * 6, "pace_today_min": [10.0] * 6,

@@ -66,7 +66,7 @@ def habit_features(packages: pd.DataFrame) -> pd.DataFrame:
              .agg(last=("clock", "max"), first=("clock", "min"), count=("clock", "size")).reset_index())
     shift["key"] = pd.factorize(shift["courier"])[0]
     shift["days"] = 1.0
-    lookup = dict(zip(shift["courier"], shift["key"]))
+    lookup = dict(zip(shift["courier"], shift["key"], strict=True))
     queries = pd.DataFrame({"key": base["courier"].map(lookup).fillna(-1).astype(int).to_numpy(), "day": acc_day.to_numpy(), "row": rows})
     last, first, count, days = _window_sums(shift[["key", "day", "last", "first", "count", "days"]], queries,
                                             ["last", "first", "count", "days"]).T

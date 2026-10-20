@@ -7,8 +7,20 @@ from datetime import datetime, timezone
 
 import numpy as np
 
-from server.config import (DATA_DIR, ETA_PARAMS, FIT_SAMPLE, LIVE_COLS, MODEL_STORE, PACKAGE_COLS, ROUTE_OUTPUT_COLS,
-                           ROUTE_PARAMS, SEED, TRANSITION_COLS, Split)
+from server.config import (
+    DATA_DIR,
+    DEFAULT_SPLIT,
+    ETA_PARAMS,
+    FIT_SAMPLE,
+    LIVE_COLS,
+    MODEL_STORE,
+    PACKAGE_COLS,
+    ROUTE_OUTPUT_COLS,
+    ROUTE_PARAMS,
+    SEED,
+    TRANSITION_COLS,
+    Split,
+)
 from server.data.download import sha256_file
 from server.data.loading import load_city
 from server.data.splits import fit_rows, stop_rows, test_rows
@@ -23,7 +35,7 @@ def eta_columns(habit_cols: list[str]) -> list[str]:
     return PACKAGE_COLS + habit_cols + LIVE_COLS + TRANSITION_COLS + ROUTE_OUTPUT_COLS
 
 
-def train_city(city: str, split: Split = Split(), log=print) -> dict:
+def train_city(city: str, split: Split = DEFAULT_SPLIT, log=print) -> dict:
     """End-to-end: load -> features -> route model (out-of-fold) -> ETA model -> evaluate -> save. Returns metrics."""
     started = time.perf_counter()
     records, exclusions = load_city(city, accepted_before=split.data_cutoff)

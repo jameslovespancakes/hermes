@@ -2,16 +2,30 @@
 name = "case-athon-eta"
 version = "0.1.0"
 description = "Live delivery ETA on LaDe-D for the W&M AI Case-a-thon (see server/ and research.md)."
-readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "fastapi==0.136.1",
     "lightgbm==4.6.0",
     "numpy==2.2.6",
     "pandas==2.3.3",
     "requests==2.32.5",
     "scikit-learn==1.7.2",
     "threadpoolctl==3.7.0",
+    "uvicorn==0.44.0",
 ]
 
 [tool.uv]
 package = false   # run from the repository root: uv run python -m server.cli ...
+
+[dependency-groups]
+dev = [
+    "httpx==0.28.1",
+    "ruff==0.17.1",
+]
+
+[tool.ruff]
+line-length = 150
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
