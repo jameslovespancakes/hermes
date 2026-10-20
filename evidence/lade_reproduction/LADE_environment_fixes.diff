@@ -1,0 +1,158 @@
+diff --git a/time_prediction/algorithm/m2g4rtp_delivery/m2g4rtp.py b/time_prediction/algorithm/m2g4rtp_delivery/m2g4rtp.py
+index 8c5c76f..f6c1f66 100644
+--- a/time_prediction/algorithm/m2g4rtp_delivery/m2g4rtp.py
++++ b/time_prediction/algorithm/m2g4rtp_delivery/m2g4rtp.py
+@@ -7,8 +7,8 @@ import torch.nn as nn
+ from torch.autograd import Variable
+ import warnings
+ warnings.filterwarnings("ignore")
+-import algorithm.m2g4rtp_pickup.gat_encoder as gat_encoder
+-import algorithm.m2g4rtp_pickup.pointer_decoder as pointer_decoder
++import algorithm.m2g4rtp_delivery.gat_encoder as gat_encoder
++import algorithm.m2g4rtp_delivery.pointer_decoder as pointer_decoder
+ 
+ 
+ class Decoder(nn.Module):
+diff --git a/time_prediction/algorithm/m2g4rtp_delivery/train.py b/time_prediction/algorithm/m2g4rtp_delivery/train.py
+index bb68afe..7d2a8ad 100644
+--- a/time_prediction/algorithm/m2g4rtp_delivery/train.py
++++ b/time_prediction/algorithm/m2g4rtp_delivery/train.py
+@@ -5,7 +5,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3'
+ from tqdm import  tqdm
+ import torch
+ from utils.util import to_device, dict_merge
+-from algorithm.m2g4rtp_pickup.Dataset import M2GDataset
++from algorithm.m2g4rtp_delivery.Dataset import M2GDataset
+ import torch.nn as nn
+ 
+ class uncertainty_loss(nn.Module):
+@@ -63,7 +63,7 @@ def test_model(model, test_dataloader, device, pad_value, params, save2file, mod
+             V, V_reach_mask, label, label_len, V_at, start_fea, cou_fea, \
+             aoi_feature_steps, aoi_start_steps, aoi_pos_steps, aoi_len_steps, aoi_idx_steps, aoi_index_steps, E_static_fea, E_mask = batch
+             B, T, N, _ = E_mask.shape
+-            E = torch.zeros([B, T, N, N, 4]).to(V.device)
++            E = torch.zeros([B, T, N, N, E_static_fea.shape[-1]]).to(V.device)  # patched: was hard-coded 4; data has 3 edge features
+ 
+             for t in range(T):
+                 E[:, t, :, :, :] = E_static_fea * E_mask[:, t, :, :].unsqueeze(-1).expand(E_static_fea.shape)
+diff --git a/time_prediction/algorithm/rankepta/time_predictor.py b/time_prediction/algorithm/rankepta/time_predictor.py
+index f30c256..22c1c64 100644
+--- a/time_prediction/algorithm/rankepta/time_predictor.py
++++ b/time_prediction/algorithm/rankepta/time_predictor.py
+@@ -2,7 +2,7 @@
+ import numpy as np
+ import torch
+ import torch.nn as nn
+-from algorithm.ranketpa.transformer import TransformerEncoder
++from algorithm.rankepta.transformer import TransformerEncoder
+ 
+ 
+ class MLP(torch.nn.Module):
+diff --git a/time_prediction/algorithm/rankepta/train.py b/time_prediction/algorithm/rankepta/train.py
+index 74642db..6588fcc 100644
+--- a/time_prediction/algorithm/rankepta/train.py
++++ b/time_prediction/algorithm/rankepta/train.py
+@@ -8,10 +8,10 @@ import torch.nn as nn
+ import torch.nn.functional as F
+ 
+ from utils.util import *
+-from algorithm.ranketpa.dataset import RankEptaDataset, ModelDataset
++from algorithm.rankepta.dataset import RankEptaDataset, ModelDataset
+ 
+-from algorithm.ranketpa.time_predictor import RankEPTA
+-from algorithm.ranketpa.train_route import main as route_main
++from algorithm.rankepta.time_predictor import RankEPTA
++from algorithm.rankepta.train_route import main as route_main
+ def eta_mae_loss_calc(V_at, label_len, eta, label_route):
+     N = V_at.shape[2]
+     B = V_at.shape[0]
+@@ -266,7 +266,7 @@ def main(params):
+ 
+     model = RankEPTA(params)
+     model.to(device)
+-    from algorithm.ranketpa.time_predictor import save2file
++    from algorithm.rankepta.time_predictor import save2file
+ 
+     result_dict = train_val_test(train_loader, val_loader, test_loader, model, device, process_batch_eta, test_model_eta, params, save2file)
+     params = dict_merge([params, result_dict])
+diff --git a/time_prediction/algorithm/rankepta/train_route.py b/time_prediction/algorithm/rankepta/train_route.py
+index 0896ea2..e241f4c 100644
+--- a/time_prediction/algorithm/rankepta/train_route.py
++++ b/time_prediction/algorithm/rankepta/train_route.py
+@@ -2,7 +2,7 @@
+ import torch.nn.functional as F
+ from tqdm import  tqdm
+ import torch
+-from algorithm.ranketpa.dataset import RankEptaDataset
++from algorithm.rankepta.dataset import RankEptaDataset
+ from utils.util import  to_device, run, dict_merge
+ 
+ 
+diff --git a/time_prediction/run.py b/time_prediction/run.py
+index 35fd5ce..377dc1e 100644
+--- a/time_prediction/run.py
++++ b/time_prediction/run.py
+@@ -18,10 +18,10 @@ def run(params):
+         from algorithm.mlp.train import main
+         main(params)
+     if model == 'ranketpa_route':
+-        from algorithm.ranketpa.train_route import main
++        from algorithm.rankepta.train_route import main
+         main(params)
+     if model == 'ranketpa_time':
+-        from algorithm.ranketpa.train import main
++        from algorithm.rankepta.train import main
+         main(params)
+     if model == 'fdnet':
+         from algorithm.fdnet.train import main
+diff --git a/time_prediction/utils/util.py b/time_prediction/utils/util.py
+index 6f83e8d..65d5738 100644
+--- a/time_prediction/utils/util.py
++++ b/time_prediction/utils/util.py
+@@ -4,7 +4,7 @@ import pandas as pd
+ import os
+ from tqdm import  tqdm
+ 
+-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
++os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")  # patched: original hard-coded GPU 4
+ def get_workspace():
+     """
+     get the workspace path
+@@ -175,7 +175,18 @@ def to_device(batch, device):
+     batch = [x.to(device) for x in batch]
+     return batch
+ 
+-import nni, time
++import time
++try:
++    import nni
++except ImportError:  # patched: NNI (hyper-parameter tuning service) is optional for plain runs
++    class _NNIStub:
++        @staticmethod
++        def report_final_result(*args, **kwargs): pass
++        @staticmethod
++        def report_intermediate_result(*args, **kwargs): pass
++        @staticmethod
++        def get_next_parameter(): return {}
++    nni = _NNIStub()
+ def train_val_test(train_loader, val_loader, test_loader, model, device, process_batch, test_model, params, save2file):
+     model_path = params.get('model_path', None)
+     if model_path != None:
+@@ -210,6 +221,8 @@ def train_val_test(train_loader, val_loader, test_loader, model, device, process
+             model.train()
+             for i, batch in enumerate(t):
+                 loss = process_batch(batch, model, device, params)
++                if isinstance(loss, tuple):  # patched: some models (M2G4RTP) return (predictions, loss)
++                    loss = loss[-1]
+ 
+                 if ave_loss is None:
+                     ave_loss = loss.item()
+@@ -259,7 +272,7 @@ def train_val_test(train_loader, val_loader, test_loader, model, device, process
+ 
+ def get_model_function(model):
+     model_dict = {}
+-    import algorithm.ranketpa.route_predictor as ranketpa_route
++    import algorithm.rankepta.route_predictor as ranketpa_route
+     model_dict['ranketpa_route'] = (ranketpa_route.PointNet, ranketpa_route.save2file)
+     model_dict['ranketpa_time'] = (ranketpa_route.PointNet, ranketpa_route.save2file)
+     import algorithm.mlp.mlp as mlp

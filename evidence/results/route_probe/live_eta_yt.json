@@ -1,0 +1,157 @@
+{
+  "city": "yt",
+  "queries": {
+    "train": 800000,
+    "stop": 181388,
+    "test": 155296
+  },
+  "test_packages": 14234,
+  "live_rounds": 198,
+  "overall": {
+    "static_acceptance_model": {
+      "mae": 73.28082067426793,
+      "median_ae": 40.31554688436062,
+      "within_30_pct": 39.939856789614666,
+      "n": 155296
+    },
+    "stops_x_pace_rule": {
+      "mae": 115.1395492553711,
+      "median_ae": 53.0,
+      "within_30_pct": 35.46453224809396,
+      "n": 155296
+    },
+    "live_model": {
+      "mae": 59.78371355611017,
+      "median_ae": 29.898190062313148,
+      "within_30_pct": 50.12556665979806,
+      "n": 155296
+    }
+  },
+  "by_time_remaining": {
+    "under_30_min": {
+      "static_acceptance_model": {
+        "mae": 37.373210913585716,
+        "median_ae": 22.0,
+        "within_30_pct": 63.89594428512905,
+        "n": 24410
+      },
+      "stops_x_pace_rule": {
+        "mae": 46.91952133178711,
+        "median_ae": 15.527864456176758,
+        "within_30_pct": 66.2720196640721,
+        "n": 24410
+      },
+      "live_model": {
+        "mae": 34.39392053580713,
+        "median_ae": 20.179669671415958,
+        "within_30_pct": 62.449815649324044,
+        "n": 24410
+      }
+    },
+    "30_to_60_min": {
+      "static_acceptance_model": {
+        "mae": 41.587989316189415,
+        "median_ae": 34.27363324700394,
+        "within_30_pct": 42.07071140478847,
+        "n": 23306
+      },
+      "stops_x_pace_rule": {
+        "mae": 63.13497543334961,
+        "median_ae": 25.571428298950195,
+        "within_30_pct": 55.75817386080838,
+        "n": 23306
+      },
+      "live_model": {
+        "mae": 34.293484411907905,
+        "median_ae": 20.81146715411942,
+        "within_30_pct": 62.58045138590921,
+        "n": 23306
+      }
+    },
+    "1_to_3_hours": {
+      "static_acceptance_model": {
+        "mae": 50.21031999984604,
+        "median_ae": 39.10923377895115,
+        "within_30_pct": 40.54176291007769,
+        "n": 61909
+      },
+      "stops_x_pace_rule": {
+        "mae": 89.74928283691406,
+        "median_ae": 50.0,
+        "within_30_pct": 32.99520263612722,
+        "n": 61909
+      },
+      "live_model": {
+        "mae": 36.69557615042999,
+        "median_ae": 26.516299857399304,
+        "within_30_pct": 54.846629730733824,
+        "n": 61909
+      }
+    },
+    "3_to_24_hours": {
+      "static_acceptance_model": {
+        "mae": 131.23360679892275,
+        "median_ae": 74.56926693093168,
+        "within_30_pct": 25.296625065916682,
+        "n": 45512
+      },
+      "stops_x_pace_rule": {
+        "mae": 201.9845733642578,
+        "median_ae": 136.5,
+        "within_30_pct": 12.03199156266479,
+        "n": 45512
+      },
+      "live_model": {
+        "mae": 108.72696372345594,
+        "median_ae": 58.58416150589983,
+        "within_30_pct": 30.875373527860784,
+        "n": 45512
+      }
+    },
+    "over_24_hours": {
+      "static_acceptance_model": {
+        "mae": 2625.8739404046046,
+        "median_ae": 1006.2519585693101,
+        "within_30_pct": 6.918238993710692,
+        "n": 159
+      },
+      "stops_x_pace_rule": {
+        "mae": 3238.823974609375,
+        "median_ae": 1495.0357666015625,
+        "within_30_pct": 0.0,
+        "n": 159
+      },
+      "live_model": {
+        "mae": 2674.2392172818377,
+        "median_ae": 992.6273200430398,
+        "within_30_pct": 4.40251572327044,
+        "n": 159
+      }
+    }
+  },
+  "benchmark_like_subset_selected_by_outcome": {
+    "static_acceptance_model": {
+      "mae": 42.062588371130005,
+      "median_ae": 31.765511270062376,
+      "within_30_pct": 47.95793140760877,
+      "n": 75781
+    },
+    "stops_x_pace_rule": {
+      "mae": 62.01485824584961,
+      "median_ae": 27.5,
+      "within_30_pct": 52.74145234293557,
+      "n": 75781
+    },
+    "live_model": {
+      "mae": 32.871652110868176,
+      "median_ae": 21.769129650950315,
+      "within_30_pct": 61.59327535925891,
+      "n": 75781
+    }
+  },
+  "live_update_jump_minutes": {
+    "median": 7.96882034355,
+    "p90": 32.89342273689001
+  },
+  "seconds": 505.3667145000072
+}

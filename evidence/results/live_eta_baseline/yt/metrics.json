@@ -1,0 +1,61 @@
+{
+  "city": "yt",
+  "target": "minutes until delivery, re-predicted after every courier delivery",
+  "split": {
+    "fit": "events < 09-01 with outcomes < 09-01 (sampled to 800,000 rows)",
+    "early_stopping": "events 09-01..09-15 with outcomes < 09-16",
+    "test": "events 09-16..09-30, all outcomes",
+    "october": "not loaded"
+  },
+  "rows": {
+    "fit": 800000,
+    "early_stopping": 181388,
+    "test": 155296,
+    "test_packages": 14234
+  },
+  "eta_rounds": 150,
+  "overall": {
+    "mae": 58.43367316534652,
+    "median_ae": 29.048014305575713,
+    "within_30_pct": 51.11400164846487,
+    "n": 155296
+  },
+  "by_time_remaining": {
+    "under_30_min": {
+      "mae": 32.98506729693933,
+      "median_ae": 18.756383942660264,
+      "within_30_pct": 64.25645227365834,
+      "n": 24410
+    },
+    "30_to_60_min": {
+      "mae": 33.493935507312315,
+      "median_ae": 20.41130999811559,
+      "within_30_pct": 63.5458680168197,
+      "n": 23306
+    },
+    "1_to_3_hours": {
+      "mae": 35.648366439205034,
+      "median_ae": 26.005604414061196,
+      "within_30_pct": 55.73664572194673,
+      "n": 61909
+    },
+    "3_to_24_hours": {
+      "mae": 106.83375175899998,
+      "median_ae": 56.06764141108107,
+      "within_30_pct": 31.57628757250835,
+      "n": 45512
+    },
+    "over_24_hours": {
+      "mae": 2638.7932471295007,
+      "median_ae": 1006.0703227348662,
+      "within_30_pct": 3.7735849056603774,
+      "n": 159
+    }
+  },
+  "route_quality": {
+    "next_stop_pct": 45.01537465609322,
+    "next3_pct": 68.78944813076549,
+    "order_agreement_spearman": 0.5591767585332891
+  },
+  "seconds": 308.699500799994
+}

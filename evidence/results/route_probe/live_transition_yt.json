@@ -1,0 +1,57 @@
+{
+  "city": "yt",
+  "route_quality_sep16_30": {
+    "route_model": {
+      "next_stop_pct": 43.97151642660625,
+      "next3_pct": 67.69164373954793,
+      "order_agreement_spearman": 0.5427098110114834
+    },
+    "route_model_plus_transitions": {
+      "next_stop_pct": 45.01537465609322,
+      "next3_pct": 68.78944813076549,
+      "order_agreement_spearman": 0.5591767585332891
+    }
+  },
+  "eta_overall": {
+    "live_model": {
+      "mae": 59.78371355611017,
+      "median_ae": 29.898190062313148,
+      "within_30_pct": 50.12556665979806,
+      "n": 155296
+    },
+    "plus_route": {
+      "mae": 59.2460013475939,
+      "median_ae": 29.55790264778075,
+      "within_30_pct": 50.51578920255512,
+      "n": 155296
+    },
+    "plus_route_with_transitions": {
+      "mae": 58.6096476731082,
+      "median_ae": 29.20648577777821,
+      "within_30_pct": 50.94593550381208,
+      "n": 155296
+    }
+  },
+  "eta_by_time_remaining": {
+    "under_30_min": {
+      "live_model": 34.39392053580713,
+      "plus_route": 33.50466283324977,
+      "plus_route_with_transitions": 33.2504285448596
+    },
+    "30_to_60_min": {
+      "live_model": 34.293484411907905,
+      "plus_route": 33.66811636815783,
+      "plus_route_with_transitions": 33.42808075873797
+    },
+    "1_to_3_hours": {
+      "live_model": 36.69557615042999,
+      "plus_route": 36.0840018755691,
+      "plus_route_with_transitions": 35.40669074042092
+    },
+    "3_to_24_hours": {
+      "live_model": 108.72696372345594,
+      "plus_route": 108.4012018999067,
+      "plus_route_with_transitions": 107.57555981503354
+    }
+  }
+}
