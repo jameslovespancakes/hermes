@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7          # no LFS: unit tests use synthetic data
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.0   # this action publishes exact tags only
         with:
           version: "0.12.1"
           enable-cache: true
