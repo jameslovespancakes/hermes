@@ -1,0 +1,407 @@
+/* A single visual position, six native-scroll chapters.
+   Each figure stays in its original semantic section. Grid places the figures
+   on the same sticky rail; there are no clones or transformed scroll containers. */
+.journey-page {
+  --method-top: 104px;
+  background: var(--journey-background, var(--cream));
+}
+.method-opening,
+.unpack-section,
+.split-section {
+  --chapter-bg: var(--cream);
+}
+.stack-section {
+  --chapter-bg: var(--green);
+  --chapter-ink: var(--cream);
+  --chapter-accent: var(--peach);
+  --chapter-muted: var(--olive);
+}
+.guard-section {
+  --chapter-bg: var(--peach);
+}
+.outcome-section {
+  --chapter-bg: var(--cream);
+}
+.unpack-section {
+  display: none;
+}
+.journey-page:not(.method-sticky) .method-opening,
+.journey-page:not(.method-sticky) .method-section {
+  background: var(--chapter-bg);
+  box-shadow: 0 0 0 100vmax var(--chapter-bg);
+  clip-path: inset(0 -100vmax);
+}
+.method-journey {
+  width: calc(100% - 200px);
+  max-width: 1280px;
+  margin: auto;
+  padding-top: 112px;
+}
+.method-opening,
+.method-composition {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: 60px;
+  align-items: center;
+}
+.method-opening {
+  min-height: calc(100svh - 112px);
+  padding: 60px 0 100px;
+}
+.method-stage {
+  padding: 100px 0;
+}
+.method-heading,
+.opening-copy {
+  min-width: 0;
+  outline-offset: 10px;
+}
+.journey-page h1,
+.method-heading h2 {
+  font: 400 clamp(58px, 5.3vw, 80px)/0.99 var(--serif);
+  letter-spacing: -2.5px;
+  margin: 0;
+  color: var(--chapter-ink, var(--ink));
+}
+.journey-page h1 em,
+.method-heading h2 em {
+  font: italic 400 1em/0.99 var(--serif);
+  color: var(--chapter-accent, var(--green));
+  letter-spacing: -2px;
+}
+.method-heading h2 em {
+  display: block;
+}
+.method-heading h2 br {
+  display: none;
+}
+.method-context,
+.guard-intro {
+  font: 400 12px/1.65 var(--sans);
+  max-width: 285px;
+  margin: 25px 0 0;
+  color: var(--chapter-muted, #43554c);
+}
+.guard-intro {
+  font-size: 13px;
+}
+.guard-section .method-context {
+  font-size: 11px;
+  margin-top: 12px;
+}
+.method-figure {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  position: relative;
+  color: var(--green);
+}
+.visual-surface {
+  width: 100%;
+  position: relative;
+  transform-origin: 50% 50%;
+}
+.method-figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  fill: currentColor;
+  font-family: var(--sans);
+  font-weight: 400;
+}
+.method-figure text {
+  font-variant-numeric: tabular-nums;
+}
+.method-sticky .method-journey {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  grid-template-rows: repeat(6, var(--chapter-distance)) calc(var(--chapter-distance) * 0.45);
+  gap: 0 60px;
+  margin-top: var(--method-top);
+  padding-top: 0;
+}
+.method-sticky .method-opening,
+.method-sticky .method-section,
+.method-sticky .method-stage,
+.method-sticky .method-composition {
+  display: contents;
+}
+.method-sticky .opening-copy,
+.method-sticky .method-heading {
+  --chapter-ink: var(--journey-ink);
+  --chapter-accent: var(--journey-accent);
+  --chapter-muted: var(--journey-muted);
+  grid-column: 1;
+  align-self: center;
+  position: relative;
+  z-index: 3;
+  padding-right: 5px;
+}
+.method-sticky .method-figure {
+  grid-column: 2;
+  grid-row: 1/8;
+  align-self: start;
+  position: sticky;
+  top: var(--method-top);
+  height: var(--stage-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  isolation: isolate;
+  z-index: 1;
+}
+.method-sticky .visual-surface {
+  max-height: calc(var(--stage-height) - 72px);
+  transform: perspective(1500px) translate3d(0, var(--surface-rise, 0px), 0)
+    rotateX(var(--surface-pitch, 0deg)) rotateY(var(--surface-yaw, 0deg)) scale(var(--surface-scale, 1));
+}
+.method-sticky .visual-surface > svg {
+  max-height: calc(var(--stage-height) - 86px);
+}
+/* Quantitative results are never tilted, scaled or moved independently of scrolling. */
+.method-sticky .results-surface {
+  transform: none;
+}
+.method-sticky .results-surface svg {
+  max-height: calc(var(--stage-height) - 120px);
+}
+.result-name {
+  font-size: 20px;
+}
+.result-unit {
+  font-size: 18px;
+}
+.result-value {
+  font-size: 24px;
+  font-weight: 500;
+}
+.method-result-row {
+  color: var(--green);
+}
+.method-result-row:not(.hermes-result) {
+  color: #52675b;
+}
+.result-measure {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.hermes-result .result-name,
+.hermes-result .result-value {
+  font-weight: 600;
+}
+.result-ruler {
+  font-size: 16px;
+}
+.result-ruler path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+  opacity: 0.35;
+}
+.saved-results > .method-context {
+  max-width: none;
+  text-align: center;
+  font-size: 11px;
+  margin-top: 20px;
+}
+.method-notes {
+  max-width: 1080px;
+  padding-block: 72px 64px;
+  font-size: 14px;
+  line-height: 1.7;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 0 0 0 100vmax var(--cream);
+  clip-path: inset(0 -100vmax);
+}
+.method-notes details {
+  border-top: 1px solid #034f4638;
+}
+.method-notes details:last-of-type {
+  border-bottom: 1px solid #034f4638;
+}
+.method-notes summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 22px 0;
+}
+.method-notes summary::-webkit-details-marker {
+  display: none;
+}
+.method-notes summary > span {
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  transition: rotate 0.2s;
+}
+.method-notes details[open] summary > span {
+  rotate: 45deg;
+}
+.method-note-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 54px;
+  padding: 12px 0 26px;
+}
+.method-note-columns h3 {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0 0 15px;
+}
+.method-note-columns p {
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 0 0 20px;
+  color: #43554c;
+}
+.method-note-columns code {
+  font: 400 11px/1.6 monospace;
+  overflow-wrap: anywhere;
+}
+.method-notes .research-source {
+  display: inline-flex;
+  font-size: 13px;
+  line-height: 1.5;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 5px;
+}
+.method-notes .research-source:hover {
+  opacity: 0.65;
+}
+.method-notes .evidence-links,
+.method-links {
+  display: flex;
+  gap: 24px 36px;
+  flex-wrap: wrap;
+}
+.method-notes .rights-note {
+  font-size: 11px;
+  line-height: 1.8;
+  max-width: 780px;
+  margin: 25px 0 30px;
+  color: #43554c;
+}
+.method-links {
+  padding-top: 42px;
+}
+@media (max-width: 1200px) {
+  .method-journey {
+    width: calc(100% - 112px);
+  }
+  .method-opening,
+  .method-composition,
+  .method-sticky .method-journey {
+    column-gap: 36px;
+  }
+  .journey-page h1,
+  .method-heading h2 {
+    font-size: 62px;
+  }
+}
+@media (max-width: 959px) {
+  .journey-page {
+    --method-top: 100px;
+  }
+  .method-journey {
+    width: calc(100% - 64px);
+    max-width: 720px;
+    padding-top: 130px;
+  }
+  .method-opening,
+  .method-composition {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .method-opening {
+    min-height: 0;
+    padding: 35px 0 65px;
+  }
+  .method-stage {
+    padding: 65px 0;
+  }
+  .journey-page h1,
+  .method-heading h2 {
+    font-size: 62px;
+  }
+  .method-context {
+    margin-top: 20px;
+  }
+  .method-notes {
+    padding-top: 50px;
+  }
+}
+@media (max-width: 600px) {
+  .method-journey {
+    width: calc(100% - 40px);
+    padding-top: 136px;
+  }
+  .method-opening {
+    padding-top: 12px;
+    gap: 15px;
+  }
+  .method-stage {
+    padding: 52px 0;
+  }
+  .journey-page h1,
+  .method-heading h2 {
+    font-size: 51px;
+    letter-spacing: -1.5px;
+  }
+  .journey-page h1 em,
+  .method-heading h2 em {
+    letter-spacing: -1.2px;
+  }
+  .method-context {
+    font-size: 11px;
+  }
+  .result-name {
+    font-size: 24px;
+  }
+  .result-unit {
+    font-size: 23px;
+  }
+  .result-value {
+    font-size: 30px;
+  }
+  .result-ruler {
+    font-size: 22px;
+  }
+  .saved-results > .method-context {
+    font-size: 10px;
+  }
+  .method-note-columns {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .method-notes summary {
+    font-size: 13px;
+  }
+  .method-note-columns p {
+    font-size: 12px;
+  }
+  .method-links {
+    gap: 22px;
+  }
+}
+@media (max-width: 370px) {
+  .method-journey {
+    width: calc(100% - 32px);
+  }
+  .journey-page h1,
+  .method-heading h2 {
+    font-size: 46px;
+  }
+  .method-notes .research-source {
+    font-size: 12px;
+  }
+}

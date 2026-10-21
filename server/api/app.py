@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 
+from server.api.frontend import mount_frontend
 from server.api.schemas import (
     TIME_PATTERN,
     CourierLoad,
@@ -148,6 +149,7 @@ def create_app(predictor: LiveETAPredictor | None = None, records: pd.DataFrame 
             drift_levels=drift["levels"] if drift else None,
         )
 
+    mount_frontend(app)
     return app
 
 

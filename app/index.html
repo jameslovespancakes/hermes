@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffeb" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <title>Hermes</title>
+    <style>
+      /* Research pages stay hidden until their first scroll pose is drawn. */
+      html[data-boot] #main,
+      html[data-boot] #main *,
+      html[data-boot] .photo-flight {
+        visibility: hidden !important;
+      }
+      html[data-boot] .benchmark-page {
+        background: #034f46;
+      }
+    </style>
+    <script>
+      if (location.pathname !== '/') document.documentElement.dataset.boot = '';
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

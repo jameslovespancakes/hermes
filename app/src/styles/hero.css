@@ -1,0 +1,70 @@
+/* Full-bleed delivery video behind the headline. */
+.hero {
+  position: relative;
+  display: grid;
+  align-items: end;
+  height: max(640px, 100svh);
+  padding: 0;
+  text-align: left;
+  isolation: isolate;
+  margin-top: -92px;
+  background: var(--ink);
+  color: var(--cream);
+}
+.hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% 50%;
+}
+.hero-backdrop:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, var(--ink) 0%, #1a1a1ae6 12%, #1a1a1a66 45%, #1a1a1a1a 75%),
+    linear-gradient(90deg, #1a1a1a99, transparent 65%);
+}
+.hero .hero-copy {
+  width: min(1200px, calc(100% - 96px));
+  margin: 0 auto;
+  padding: 0 0 clamp(64px, 10vh, 120px);
+  text-align: left;
+}
+.hero h1 {
+  max-width: 12ch;
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(48px, 7vw, 104px);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  color: var(--cream);
+}
+.hero h1 em {
+  font: italic 400 1.08em/1 var(--serif);
+  letter-spacing: -0.02em;
+  color: var(--peach);
+}
+@media (max-width: 680px) {
+  .hero {
+    margin-top: -72px;
+  }
+  .hero .hero-copy {
+    width: calc(100% - 48px);
+  }
+  .hero h1 {
+    font-size: clamp(40px, 12vw, 56px);
+  }
+}
+/* The video fades into the dark city strip with no seam. */
+.dark-foundation {
+  border-radius: 0;
+}

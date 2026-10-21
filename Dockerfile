@@ -1,7 +1,14 @@
 # syntax=docker/dockerfile:1
-# Live delivery ETA API: serves the trained model in server/model_store/<city>/ with FastAPI.
-#   docker build -t hermes-eta .            (CITY build arg, default yt)
-#   docker run --rm -p 8000:8000 hermes-eta  ->  http://localhost:8000/docs
+# React presentation and ETA API, served together on port 8000.
+#   docker build -t hermes-eta .
+#   docker run --rm -p 8000:8000 hermes-eta
+FROM oven/bun:1.4.2 AS frontend
+WORKDIR /frontend
+COPY app/package.json app/bun.lock ./
+RUN bun install --frozen-lockfile
+COPY app/ ./
+RUN bun run build
+
 FROM python:3.10-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -25,6 +32,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY server ./server
+COPY --from=frontend /frontend/dist ./app/dist
 
 # Data: the pinned, checksum-verified city file from Hugging Face.
 ARG CITY=yt

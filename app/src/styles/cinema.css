@@ -1,0 +1,421 @@
+/* The larger, continuous scroll sequences. Native scroll, reversible scenes. */
+.cinema-ready .dark-foundation {
+  overflow: clip;
+}
+.cinema-ready .comparison {
+  overflow: visible;
+}
+.cinema-ready.pin-story .comparison-scroll {
+  height: calc(clamp(500px, 100svh - 190px, 760px) + 290svh);
+}
+.cinema-ready.pin-story .time-comparison {
+  height: clamp(500px, 100svh - 190px, 760px);
+  min-height: 0;
+}
+.cinema-ready.pin-story .time-card.expected {
+  height: 100%;
+}
+.cinema-ready.pin-story .time-card.actual {
+  bottom: auto;
+  min-height: 0;
+  transition: none;
+  will-change: width, height, left, top, border-radius;
+}
+.cinema-ready .time-card.actual {
+  perspective: 1000px;
+}
+.cinema-ready .time-card.actual > .city-image {
+  animation: none;
+  filter: blur(4px) saturate(0.8);
+  transition: none;
+  z-index: -3;
+}
+.cinema-backdrop {
+  position: absolute;
+  inset: -20px;
+  z-index: -2;
+  background-size: cover;
+  background-position: center;
+  filter: blur(2px) saturate(0.75);
+  opacity: 0;
+  transform: scale(1.1);
+}
+.cinema-backdrop.skyline {
+  background-image: url('/assets/images/city-skyline.jpg');
+}
+.cinema-backdrop.context {
+  background-image: url('/assets/images/city-context.jpg');
+}
+.cinema-chapters {
+  position: absolute;
+  left: 0;
+  top: 35%;
+  width: 25%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 3;
+}
+.cinema-chapters button {
+  background: none;
+  border: 0;
+  border-left: 3px solid #dfe1cd;
+  padding: 11px 16px;
+  text-align: left;
+  font: 22px/1.2 var(--serif);
+  color: #929784;
+}
+.cinema-chapters button[aria-pressed='true'] {
+  border-color: #ff986b;
+  color: var(--ink);
+}
+.cinema-side {
+  position: absolute;
+  right: 0;
+  top: 42%;
+  width: 25%;
+  text-align: left;
+  color: var(--ink);
+  z-index: 3;
+}
+.cinema-side .eyebrow {
+  font-size: 10px;
+  color: #7e856c;
+  margin-bottom: 17px;
+}
+.cinema-side h3 {
+  font: 48px/1.02 var(--serif);
+  letter-spacing: -1.5px;
+  margin: 0 0 22px;
+}
+.cinema-side p {
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 250px;
+  margin: 0;
+  color: #757c63;
+}
+.cinema-side .cinema-small {
+  font-size: 10px;
+  margin-top: 20px;
+  color: #989d88;
+}
+.cinema-editor {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: calc(100% - 70px);
+  max-width: 310px;
+  transform: translate(-50%, -50%);
+  background: #ffffebf5;
+  box-shadow: 0 13px 45px #182b2e30;
+  border-radius: 8px;
+  padding: 19px 20px;
+  text-align: left;
+  color: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+}
+.cinema-editor .editor-label {
+  font-size: 9px;
+  color: #92967d;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+.cinema-editor p {
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0;
+  min-height: 100px;
+}
+.dictated-word {
+  opacity: 0.12;
+  transition:
+    color 0.25s,
+    background 0.25s;
+  border-radius: 3px;
+}
+.dictated-word.mismatch {
+  background: #f5d6b6;
+  color: #89552b;
+}
+.editor-tools {
+  border-top: 1px solid #dbddc6;
+  padding-top: 13px;
+  margin-top: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #939a7c;
+  font-size: 12px;
+}
+.review-stamp {
+  position: absolute;
+  left: 50%;
+  top: calc(46% + 142px);
+  transform: translateX(-50%) rotate(-5deg);
+  border: 1px solid #241f1c;
+  border-radius: 40px;
+  padding: 9px 16px;
+  background: var(--lavender);
+  color: var(--ink);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  z-index: 3;
+}
+.cinema-ready .compare-trail {
+  pointer-events: none;
+}
+.cinema-ready .comparison-note {
+  color: inherit;
+  opacity: 0.65;
+}
+.cinema-chapters[hidden],
+.cinema-side[hidden] {
+  display: none;
+}
+/* A pinned editing sequence, followed by a wide, rising card parade. */
+.cinema-ready.pin-story .improve-scroll {
+  height: calc(470px + 140svh);
+}
+.cinema-ready.pin-story .improve-pin {
+  position: sticky;
+  top: 135px;
+}
+.cinema-ready.pin-story .clean-visual {
+  height: 430px;
+}
+.signal-chip {
+  position: absolute;
+  border: 1px solid #c5cbb0;
+  background: #ffffebd9;
+  border-radius: 7px;
+  padding: 9px 11px;
+  font-size: 10px;
+  color: #737d5c;
+  box-shadow: 0 4px 12px #404c1510;
+  z-index: 0;
+  pointer-events: none;
+}
+.signal-chip.top {
+  top: 33px;
+  left: 24px;
+  rotate: -6deg;
+}
+.signal-chip.bottom {
+  bottom: 60px;
+  right: 24px;
+  rotate: 5deg;
+}
+.cinema-ready .review-card {
+  z-index: 1;
+}
+.cinema-ready .review-floating {
+  z-index: 2;
+}
+.cinema-ready.pin-story .research {
+  overflow: clip;
+}
+.cinema-ready.pin-story .research-scroll {
+  height: calc(100svh + 1650px);
+}
+.cinema-ready.pin-story .research-stage {
+  position: sticky;
+  top: 110px;
+  height: calc(100svh - 140px);
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  overflow: clip;
+}
+.cinema-ready.pin-story .research-cards {
+  display: flex;
+  position: absolute;
+  left: calc(50vw - 200px);
+  top: 50%;
+  gap: 155px;
+  width: max-content;
+  max-width: none;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  will-change: transform;
+}
+.cinema-ready.pin-story .research-card {
+  width: 400px;
+  min-height: 430px;
+  height: 430px;
+  flex: 0 0 400px;
+  margin: 0;
+  padding: 35px;
+  border-radius: 29px;
+  transition: none;
+  will-change: transform;
+}
+.cinema-ready.pin-story .research-card:nth-child(2) {
+  min-height: 430px;
+}
+.cinema-ready.pin-story .research-card:nth-child(3) {
+  grid-column: auto;
+}
+.cinema-ready.pin-story .research-card .stat {
+  font-size: 68px;
+}
+.cinema-ready.pin-story .research-card .stat.small {
+  font-size: 57px;
+}
+.cinema-ready.pin-story .research-card p {
+  font-size: 15px;
+}
+.cinema-ready.pin-story .research-card .card-eyebrow {
+  margin-bottom: 35px;
+}
+.cinema-ready.pin-story .research-card .card-footer {
+  font-size: 11px;
+}
+.research-steps {
+  display: none;
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  gap: 8px;
+  white-space: nowrap;
+}
+.pin-story .research-steps {
+  display: flex;
+}
+.research-steps button {
+  border: 1px solid #545a46;
+  border-radius: 30px;
+  padding: 8px 15px;
+  font-size: 11px;
+  background: transparent;
+  color: #c0c4ad;
+}
+.research-steps button[aria-current='step'] {
+  color: var(--ink);
+  background: var(--cream);
+  border-color: var(--cream);
+}
+.cinema-ready .closing {
+  transform-origin: 50% 100%;
+}
+.cinema-mobile .comparison-scroll {
+  height: calc(420px + 150svh);
+}
+.cinema-mobile .time-comparison {
+  position: sticky;
+  top: 90px;
+  height: 420px;
+  min-height: 420px;
+}
+.cinema-mobile .time-card.expected {
+  height: 100%;
+}
+.cinema-mobile .time-card.actual {
+  position: absolute;
+  bottom: auto;
+  top: 0;
+  min-height: 0;
+  will-change: width, height, left, top;
+  transition: none;
+}
+@media (max-width: 1100px) {
+  .cinema-side h3 {
+    font-size: 40px;
+  }
+  .cinema-side p {
+    font-size: 13px;
+  }
+  .cinema-chapters button {
+    font-size: 20px;
+    padding-left: 12px;
+  }
+  .cinema-editor {
+    padding: 17px;
+    width: calc(100% - 42px);
+  }
+  .cinema-editor p {
+    font-size: 13px;
+  }
+  .cinema-editor .editor-label {
+    font-size: 8px;
+  }
+  .cinema-ready.pin-story .research-card {
+    width: 370px;
+    flex-basis: 370px;
+    padding: 30px;
+  }
+  .cinema-ready.pin-story .research-cards {
+    left: calc(50vw - 185px);
+  }
+}
+@media (max-width: 959px) {
+  .cinema-chapters,
+  .cinema-side {
+    display: none !important;
+  }
+  .cinema-editor p {
+    min-height: 85px;
+    font-size: 14px;
+  }
+  .cinema-editor .editor-label {
+    margin-bottom: 13px;
+  }
+  .cinema-mobile .cinema-editor {
+    max-width: 310px;
+  }
+  .cinema-mobile .review-stamp {
+    top: calc(46% + 130px);
+    font-size: 11px;
+  }
+  .cinema-mobile .time-card .bottom-copy {
+    bottom: 70px;
+  }
+  .signal-chip.top {
+    top: 22px;
+    left: 18px;
+    font-size: 9px;
+  }
+  .signal-chip.bottom {
+    bottom: 48px;
+    right: 15px;
+    font-size: 9px;
+  }
+}
+@media (max-width: 680px) {
+  .signal-chip.bottom {
+    display: none;
+  }
+  .signal-chip.top {
+    top: 14px;
+    font-size: 9px;
+  }
+  .cinema-editor {
+    width: calc(100% - 34px);
+    padding: 15px;
+  }
+  .cinema-editor p {
+    font-size: 13px;
+    min-height: 85px;
+  }
+  .editor-tools {
+    margin-top: 13px;
+    padding-top: 10px;
+  }
+  .cinema-mobile .review-stamp {
+    top: calc(46% + 106px);
+  }
+  .cinema-mobile .time-card .card-label {
+    font-size: 13px;
+  }
+  .cinema-mobile .time-card .time {
+    font-size: 40px;
+  }
+}

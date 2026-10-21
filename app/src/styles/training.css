@@ -1,0 +1,423 @@
+/* The photograph hands off to a quiet, publication-style training schematic. */
+.comparison {
+  background: var(--cream);
+  color: var(--ink);
+  padding-top: 40px;
+}
+.time-comparison {
+  display: block;
+  min-height: 620px;
+}
+.film-photo {
+  position: absolute;
+  left: 0;
+  top: 5%;
+  width: 100%;
+  height: 90%;
+  overflow: hidden;
+  border-radius: 28px;
+  background: #26483b;
+  z-index: 5;
+  box-shadow: 0 16px 42px #17332f12;
+  pointer-events: none;
+}
+.film-photo-image {
+  position: absolute;
+  inset: -20px;
+  background: url('/assets/images/delivery-training.jpg') 56% center/cover;
+  filter: blur(6px) saturate(0.82);
+  transform: scale(1.04);
+}
+.film-photo-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, #0a251ebf, #11382da6 58%, #0d291e99);
+}
+.film-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--cream);
+  pointer-events: none;
+}
+.comparison .film-intro h2 {
+  font: 500 clamp(40px, 5.3vw, 76px)/1.06 var(--sans);
+  letter-spacing: -2.7px;
+  margin: 0;
+  max-width: 100%;
+}
+.comparison .film-intro h2 em {
+  font-style: normal;
+  font-weight: 400;
+}
+.film-intro p {
+  font: 400 17px/1.5 var(--sans);
+  color: #f7f4ebe6;
+  max-width: 520px;
+  margin: 25px 0 0;
+  text-wrap: balance;
+}
+.cinema-ready.pin-story .comparison-scroll {
+  height: calc(100svh - var(--film-top) - 20px + max(900px, 130svh));
+}
+.model-section {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background: var(--cream);
+  color: var(--ink);
+}
+.model-pin {
+  display: none;
+}
+.model-fallback {
+  padding-block: 80px;
+  font: 400 17px/1.6 var(--sans);
+}
+.cinema-ready .model-fallback {
+  display: none;
+}
+.cinema-ready .model-runway {
+  height: calc(100svh - var(--film-top) - 20px + max(1500px, 180svh));
+}
+.cinema-ready .model-pin {
+  display: block;
+  position: sticky;
+  top: var(--film-top);
+  height: calc(100svh - var(--film-top) - 20px);
+  isolation: isolate;
+  text-align: center;
+}
+.cinema-ready .model-section.model-linked {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: transparent;
+  overflow: visible;
+  visibility: hidden;
+}
+.model-section.model-linked .model-runway {
+  height: 100%;
+}
+.cinema-ready .model-linked .model-pin.wrap {
+  position: relative;
+  top: auto;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+}
+.training-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  color: var(--ink);
+}
+.training-visual {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.training-figure-label {
+  flex: none;
+  text-align: left;
+  font: 500 10px/1.4 var(--sans);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #687660;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #cdd5c5;
+  opacity: var(--figure-detail-opacity, 0);
+}
+.training-drawing {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.training-drawing:before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(#173f3812 1px, transparent 1px), linear-gradient(90deg, #173f3812 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse at center, #000 35%, transparent 74%);
+  opacity: calc(var(--figure-detail-opacity, 0) * 0.65);
+}
+.training-sheet {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.training-notation {
+  flex: none;
+  min-height: 55px;
+  text-align: center;
+  opacity: var(--figure-detail-opacity, 0);
+}
+.training-equation {
+  font: 400 26px/1.2 var(--serif);
+  letter-spacing: 0.1px;
+  color: var(--ink);
+}
+.training-equation var {
+  font-style: italic;
+}
+.training-equation sub {
+  font-size: 0.65em;
+  line-height: 0;
+}
+.training-equation-note {
+  font: 400 12px/1.5 var(--sans);
+  color: #61705f;
+  margin-top: 5px;
+  text-wrap: balance;
+}
+.training-caption {
+  position: absolute;
+  text-align: left;
+}
+.training-method {
+  font: 500 10px/1.4 var(--sans);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #66755f;
+  margin-bottom: 20px;
+}
+.training-caption h3 {
+  font: 400 48px/1.04 var(--serif);
+  letter-spacing: -0.8px;
+  margin: 0;
+  min-height: 2.08em;
+  text-wrap: balance;
+}
+.training-caption p {
+  font: 400 16px/1.65 var(--sans);
+  letter-spacing: 0;
+  color: #526059;
+  margin: 16px 0 0;
+  min-height: 3.3em;
+  text-wrap: pretty;
+}
+.training-progress {
+  display: flex;
+  gap: 7px;
+  margin-top: 24px;
+}
+.training-progress i {
+  display: block;
+  width: 28px;
+  height: 2px;
+  background: #d0d8c9;
+}
+.training-progress i.complete {
+  background: #819382;
+}
+.training-progress i.current {
+  background: var(--signal);
+}
+.ml-board-shadow {
+  fill: #17332f;
+  opacity: 0.055;
+  filter: blur(6px);
+}
+.ml-board-edge {
+  fill: #b6c3ad;
+}
+.ml-board-face {
+  fill: url(#hermes-model-surface);
+  stroke: #9cad99;
+  stroke-width: 1;
+}
+.ml-records {
+  fill: #476452;
+}
+.ml-table-label {
+  font: 500 15px var(--sans);
+  fill: #50664b;
+}
+.ml-record-rule {
+  stroke: #82917b;
+  stroke-width: 1;
+  opacity: 0.24;
+}
+.ml-target {
+  fill: #b57549;
+}
+.ml-signals {
+  fill: #315341;
+  opacity: 0;
+}
+.ml-signal-row:nth-child(2) {
+  fill: #bd825a;
+}
+.ml-signal-row:nth-child(3) {
+  fill: #819875;
+}
+.ml-signal-track {
+  fill: #b0bdab;
+  opacity: 0.35;
+}
+.ml-tree {
+  opacity: 0;
+}
+.ml-branch,
+.ml-trace {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.ml-branch {
+  stroke: #71866f;
+  stroke-width: 2.6;
+}
+.ml-trace {
+  stroke: #ad683f;
+  stroke-width: 3.3;
+  opacity: 0;
+}
+.ml-node {
+  opacity: 0;
+}
+.ml-node-depth {
+  fill: #bbc7b1;
+}
+.ml-node-face {
+  fill: #f8f8ef;
+  stroke: #4d6c57;
+  stroke-width: 1.8;
+}
+.ml-node[data-level='0'] .ml-node-face {
+  fill: #f3c9a6;
+  stroke: #ba8059;
+}
+.ml-selected {
+  stroke: #b5774f;
+  stroke-width: 1.5;
+  opacity: 0;
+}
+@media (min-width: 960px) and (max-width: 1100px) {
+  .training-caption h3 {
+    font-size: 42px;
+  }
+  .training-caption p {
+    font-size: 15px;
+  }
+}
+@media (max-width: 959px) {
+  .cinema-mobile .comparison-scroll {
+    height: calc(100svh - var(--film-top) - 20px + 110svh);
+  }
+  .cinema-mobile .model-runway {
+    height: calc(100svh - var(--film-top) - 20px + 160svh);
+  }
+  .training-caption {
+    transform: translateX(-50%);
+    text-align: center;
+  }
+  .training-method {
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    margin-bottom: 16px;
+  }
+  .training-caption h3 {
+    font-size: 37px;
+    line-height: 1.05;
+    min-height: 2.1em;
+    letter-spacing: -0.4px;
+  }
+  .training-equation {
+    font-size: 23px;
+  }
+  .training-caption p {
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 3.2em;
+    margin-top: 12px;
+  }
+  .training-progress {
+    justify-content: center;
+    margin-top: 20px;
+  }
+}
+@media (max-width: 680px) {
+  .time-comparison {
+    min-height: 530px;
+  }
+  .comparison .film-intro h2 {
+    font-size: 36px;
+    letter-spacing: -1.6px;
+  }
+  .film-intro {
+    padding: 20px;
+  }
+  .film-intro p {
+    font-size: 15px;
+    max-width: 290px;
+    margin-top: 20px;
+  }
+}
+@media (max-width: 370px) {
+  .comparison .film-intro h2 {
+    font-size: 31px;
+  }
+  .training-caption h3 {
+    font-size: 32px;
+  }
+  .training-caption p {
+    font-size: 14px;
+  }
+  .training-equation {
+    font-size: 20px;
+  }
+}
+@media (max-height: 569px) {
+  .comparison .film-intro h2 {
+    font-size: 40px;
+    letter-spacing: -1.5px;
+  }
+  .film-intro p {
+    font-size: 14px;
+    margin-top: 16px;
+  }
+  .training-method {
+    font-size: 9px;
+    margin-bottom: 12px;
+  }
+  .training-caption h3 {
+    font-size: 34px;
+  }
+  .training-figure-label {
+    font-size: 9px;
+    padding-bottom: 6px;
+  }
+  .training-notation {
+    min-height: 44px;
+  }
+  .training-equation {
+    font-size: 20px;
+  }
+  .training-equation-note {
+    font-size: 11px;
+  }
+  .training-caption p {
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 3em;
+    margin-top: 12px;
+  }
+  .training-progress {
+    margin-top: 16px;
+  }
+}

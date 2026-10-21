@@ -1,0 +1,9 @@
+/* Native smooth anchors also work without JavaScript. Existing page-specific
+   scroll padding is preserved. JS easing writes native positions directly. */
+html {
+  scroll-behavior: smooth;
+}
+html.hermes-scroll-active,
+html[data-scroll-paused] {
+  scroll-behavior: auto !important;
+}

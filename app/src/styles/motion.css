@@ -1,0 +1,433 @@
+/* Original, dependency-free motion treatments for the Hermes concept. */
+.reveal-word {
+  display: inline-block;
+  transform-origin: 50% 100%;
+}
+.motion-ready .navbar {
+  transition:
+    box-shadow 0.35s,
+    translate 0.35s;
+}
+.motion-ready .nav-wrap.scrolled .navbar {
+  translate: 0 -7px;
+  box-shadow: 0 8px 30px #152e1810;
+}
+.motion-ready .button {
+  transition:
+    background 0.2s,
+    transform 0.25s,
+    translate 0.25s;
+}
+.motion-ready .cities {
+  display: block;
+  overflow: hidden;
+  max-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.city-track {
+  display: flex;
+  width: max-content;
+  animation: city-marquee 28s linear infinite;
+}
+.city-set {
+  display: flex;
+  align-items: center;
+  gap: 66px;
+  padding-right: 66px;
+  flex-shrink: 0;
+}
+.cities:hover .city-track {
+  animation-play-state: paused;
+}
+@keyframes city-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.token-particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  font: 500 13px/1 var(--sans);
+  color: #8e9574;
+  pointer-events: none;
+}
+.messenger-dust {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  left: 50%;
+  top: 50%;
+  border-radius: 2px;
+  background: var(--lavender);
+  pointer-events: none;
+}
+/* Pin only when both columns fit. The normal document remains the fallback. */
+.pin-story .dark-foundation {
+  overflow: clip;
+}
+.pin-story .comparison {
+  overflow: visible;
+}
+.pin-story .comparison-scroll {
+  height: calc(var(--compare-height) + 65vh);
+  position: relative;
+}
+.pin-story .time-comparison {
+  position: sticky;
+  top: 120px;
+  height: var(--compare-height);
+}
+.pin-story .time-card.expected {
+  width: 100%;
+}
+.pin-story .time-card.actual {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 28%;
+  width: 72%;
+  will-change: width, left;
+  transition:
+    left 0.3s ease-out,
+    width 0.3s ease-out,
+    border-radius 0.3s;
+}
+.pin-story .time-card.expected {
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+}
+.pin-story .journey-scroll {
+  position: relative;
+  height: calc(var(--journey-height) + 2450px);
+}
+.pin-story .journey-pin {
+  position: sticky;
+  top: 125px;
+}
+.pin-story .journey-visual {
+  height: var(--journey-height);
+}
+.pin-story .journey-caption {
+  max-width: 880px;
+}
+.scroll-cue {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #8a9076;
+  margin: 25px 0 0;
+}
+.pin-story .scroll-cue {
+  display: flex;
+}
+.scroll-cue span {
+  display: inline-block;
+  animation: scroll-cue 1.7s ease-in-out infinite;
+}
+@keyframes scroll-cue {
+  50% {
+    translate: 0 5px;
+  }
+}
+.paper-echo {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: calc(100% - 96px);
+  height: 260px;
+  background: #ffffeb95;
+  border: 1px solid #ffffeb77;
+  border-radius: 10px;
+  transform: translate(-50%, calc(-50% + 14px)) rotate(5deg);
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.paper-echo.back {
+  transform: translate(-50%, calc(-50% + 25px)) rotate(-7deg);
+  background: #ffffeb55;
+}
+.motion-ready .event-paper {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+}
+.motion-ready .event-state-pill {
+  z-index: 2;
+}
+.motion-ready .scene-dots {
+  z-index: 2;
+}
+.paper-demo {
+  height: 25px;
+  margin-top: 17px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: #6f795b;
+  letter-spacing: 0.2px;
+  overflow: hidden;
+}
+.paper-demo .demo-line {
+  height: 1px;
+  flex: 1;
+  max-width: 65px;
+  background: #b4bda2;
+  transform-origin: left;
+}
+.paper-demo .demo-node {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+.paper-demo .demo-chip {
+  border: 1px solid #d1d4ba;
+  border-radius: 4px;
+  padding: 4px 7px;
+  white-space: nowrap;
+  background: #f5f5df;
+}
+.paper-demo .demo-chip.warn {
+  background: #f0ddca;
+  border-color: #d8bfa2;
+  color: #916641;
+}
+.paper-demo .demo-chip.purple {
+  background: var(--lavender);
+  border-color: #d6badf;
+  color: #7a5584;
+}
+.paper-demo svg {
+  width: 100%;
+  height: 24px;
+  overflow: visible;
+}
+.paper-demo .route-draw {
+  stroke-dasharray: 180;
+  stroke-dashoffset: 0;
+}
+.story-progress {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 8px;
+  height: 2px;
+  background: #ffffeb20;
+  overflow: hidden;
+  border-radius: 2px;
+  z-index: 2;
+}
+.story-progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--cream);
+  transform: scaleX(0.125);
+  transform-origin: left;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.motion-ready .journey-visual > .city-image {
+  animation: none;
+  transition:
+    transform 1.5s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1.2s;
+  will-change: transform;
+}
+.motion-ready .issue {
+  transition:
+    color 0.3s,
+    border-color 0.3s;
+}
+.motion-ready .issue[aria-expanded='true'] {
+  border-bottom-color: #7a8c65;
+}
+.motion-ready .scene-dots button:after {
+  transition:
+    width 0.3s,
+    height 0.3s,
+    background 0.3s;
+}
+.motion-ready .old-input {
+  position: relative;
+  width: fit-content;
+  text-decoration: none;
+}
+.motion-ready .old-input:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 55%;
+  height: 1px;
+  background: currentColor;
+  transform-origin: left;
+  transform: scaleX(var(--strike, 1));
+}
+.motion-ready .new-input {
+  position: relative;
+}
+.typed-line {
+  display: inline-block;
+  max-width: 100%;
+}
+.review-writing .old-input:after {
+  animation: review-strike 0.55s 0.2s both;
+}
+@keyframes review-strike {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.motion-ready .review-card {
+  transform-origin: 50% 75%;
+}
+.motion-ready .clean-wave {
+  animation: clean-wave 7s ease-in-out infinite alternate;
+}
+@keyframes clean-wave {
+  to {
+    transform: translateX(-20px) scaleY(1.2);
+  }
+}
+.review-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: #00544955;
+  box-shadow: 0 0 12px 4px #0054490a;
+  pointer-events: none;
+  opacity: 0;
+}
+.preview-control {
+  position: absolute;
+  bottom: 15px;
+  right: 16px;
+  border: 0;
+  background: none;
+  padding: 6px;
+  color: #778064;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  z-index: 3;
+}
+.preview-control:hover {
+  color: var(--green);
+}
+.preview-control i {
+  width: 25px;
+  height: 2px;
+  background: #c3c7aa;
+  overflow: hidden;
+}
+.preview-control i > b {
+  height: 100%;
+  display: block;
+  background: var(--green);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.research-card {
+  transform-style: preserve-3d;
+  transition:
+    box-shadow 0.35s,
+    translate 0.45s ease-out,
+    rotate 0.45s ease-out;
+}
+.motion-ready .research-card:hover {
+  box-shadow: 0 24px 45px #0003;
+}
+body.motion-paused .story-progress i {
+  transition: none;
+}
+body.motion-paused .paper-echo,
+body.motion-paused .event-paper,
+body.motion-paused .journey-visual > .city-image,
+body.motion-paused .navbar,
+body.motion-paused .scene-dots button:after,
+body.motion-paused .time-card,
+body.motion-paused .research-card {
+  transition: none;
+}
+@media (max-width: 1100px) {
+  .city-set {
+    gap: 45px;
+    padding-right: 45px;
+  }
+  .paper-echo {
+    height: 260px;
+  }
+}
+@media (max-width: 900px) {
+  .paper-echo {
+    width: calc(100% - 49px);
+  }
+  .city-set {
+    gap: 35px;
+    padding-right: 35px;
+  }
+}
+@media (max-width: 680px) {
+  .city-set {
+    gap: 35px;
+    padding-right: 35px;
+  }
+  .paper-echo {
+    width: calc(100% - 70px);
+    max-width: 320px;
+    top: 40%;
+    height: 260px;
+  }
+  .motion-ready .event-paper {
+    top: 40%;
+  }
+  .motion-ready .event-state-pill {
+    bottom: 79px;
+  }
+  .motion-ready .scene-dots {
+    bottom: 39px;
+  }
+  .motion-ready .visual-bottom {
+    bottom: 15px;
+    font-size: 9px;
+  }
+  .motion-ready .story-progress {
+    bottom: 5px;
+    left: 20px;
+    right: 20px;
+  }
+  .paper-demo {
+    margin-top: 12px;
+    height: 22px;
+    font-size: 9px;
+  }
+  .preview-control {
+    bottom: 9px;
+    right: 12px;
+    font-size: 9px;
+  }
+  .motion-ready .nav-wrap.scrolled .navbar {
+    translate: 0 -3px;
+  }
+}
+@media (max-width: 370px) {
+  .paper-echo {
+    width: calc(100% - 48px);
+  }
+  .paper-demo .demo-chip {
+    padding: 4px 5px;
+  }
+}

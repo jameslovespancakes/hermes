@@ -17,3 +17,43 @@ jobs:
       - run: uv run ruff check server evidence
       - run: uv run python -m unittest discover -s server/tests -t .
       - run: uv run python -m unittest discover -s evidence -t .
+
+  frontend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run typecheck
+      - run: bun test tests
+      - run: bun run build
+
+  docker-smoke:
+    needs: [test, frontend]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t hermes-ci .
+      - name: Verify frontend and API boot in the same container
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name hermes-ci -p 127.0.0.1:8000:8000 hermes-ci
+          trap 'docker logs hermes-ci; docker rm -f hermes-ci' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/health > /dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8000/health
+          curl -fsS http://127.0.0.1:8000/ | grep -F 'Predict the route' > /dev/null
+          curl -fsS http://127.0.0.1:8000/benchmarks | grep -F 'The published' > /dev/null
+          curl -fsS http://127.0.0.1:8000/methodology | grep -F 'Clean Inputs' > /dev/null
+          curl -fsS http://127.0.0.1:8000/assets/favicon.svg > /dev/null
+

@@ -1,0 +1,280 @@
+/* Hermes: image-led delivery story and winged-messenger identity. */
+:root {
+  --cream: #f7f4eb;
+  --ink: #17332f;
+  --green: #173f38;
+  --lavender: #f3c9a6;
+  --olive: #e4e8dc;
+  --signal: #ca7048;
+  --delivery-photo: url('/assets/images/delivery-handoff.jpg');
+}
+.navbar {
+  max-width: 960px;
+  border-width: 1px;
+  background: #f7f4ebf5;
+  box-shadow: 0 3px 15px #17332f08;
+  padding-right: 22px;
+}
+.brand {
+  letter-spacing: -1px;
+}
+.brand svg {
+  color: var(--green);
+}
+.brand .hermes-logo {
+  width: 34px;
+  height: 34px;
+}
+.brand-definitions {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wall-mark .hermes-logo {
+  width: 39px;
+  height: 39px;
+}
+.button {
+  border-width: 1px;
+  border-radius: 9px;
+  background: var(--lavender);
+  box-shadow: 0 2px 0 #17332f0a;
+}
+.button:hover {
+  background: #efbc91;
+}
+.city-strip {
+  padding: 55px 0;
+}
+.center-head h2,
+.comparison h2,
+.closing h2 {
+  font-family: var(--sans);
+  font-weight: 500;
+  letter-spacing: -2.7px;
+  line-height: 1.08;
+}
+.center-head h2 {
+  font-size: clamp(42px, 5vw, 70px);
+}
+.center-head h2 em,
+.comparison h2 em,
+.closing h2 em {
+  font-style: normal;
+  font-weight: 400;
+}
+.cinema-ready .film-title h2 {
+  font-family: var(--sans);
+  font-size: clamp(44px, 5.3vw, 76px);
+  font-weight: 500;
+  letter-spacing: -3px;
+  line-height: 1.06;
+  margin: 0;
+}
+.cinema-ready .film-bridge {
+  font-family: var(--sans);
+  font-size: 62px;
+  font-weight: 500;
+  letter-spacing: -2.5px;
+}
+.film-bridge em {
+  font-style: normal;
+  font-weight: 400;
+  color: #6e8573;
+}
+.time-card.expected {
+  background: var(--green);
+  border: 1px solid #769382;
+}
+.time-card.actual > .city-image {
+  background-image: var(--delivery-photo);
+  background-position: 56% center;
+}
+.cinema-ready .time-card.actual > .city-image {
+  filter: saturate(0.9);
+}
+.cinema-ready .time-card.actual > .city-shade {
+  background: linear-gradient(180deg, #102d26bf, #102d2622 45%, #102d2673);
+}
+.time-card .time {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -2px;
+}
+.time-card .card-label {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+.film-signature {
+  position: absolute;
+  left: 50%;
+  bottom: 88px;
+  transform: translateX(-50%);
+  height: 28px;
+  color: #f7f4eb;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.85;
+}
+.film-signature svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+.perspectives .center-head h2 {
+  font-size: clamp(42px, 5vw, 70px);
+}
+.wall-card.landscape {
+  background: #ead5c1;
+}
+.wall-card.landscape.green {
+  background: #294c40;
+}
+.wall-photo-copy {
+  background: #dfae81;
+}
+.wall-card.landscape .wall-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.wall-card.landscape .wall-copy blockquote {
+  margin: 0;
+}
+.closing h2 {
+  font-size: clamp(48px, 6.6vw, 92px);
+  letter-spacing: -3.5px;
+  margin-bottom: 38px;
+}
+.replay-link {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid #b9c4ae;
+  border-radius: 50%;
+  font-size: 31px;
+  line-height: 1;
+}
+.replay-link:hover {
+  background: var(--lavender);
+}
+.footer-minimal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-minimal .text-button {
+  font-size: 13px;
+}
+.dialog .small {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 680px) {
+  .navbar {
+    width: calc(100% - 32px);
+    padding: 7px 14px;
+  }
+  .menu-button {
+    margin-left: auto;
+  }
+  .brand .hermes-logo {
+    width: 28px;
+    height: 28px;
+  }
+  .hero {
+    height: 420px;
+    padding-top: 49px;
+  }
+  .hero-backdrop:before {
+    background-position: 44% 54%;
+    filter: blur(5px) saturate(0.5);
+  }
+  .hero h1 {
+    font-size: 44px;
+    letter-spacing: -2.2px;
+    line-height: 1.09;
+  }
+  .hero-trail {
+    top: 120px;
+  }
+  .hero-trail text,
+  .hero-trail .ribbon-text {
+    font-size: 43px;
+  }
+  .hero .messenger-wrap {
+    top: 308.8px;
+  }
+  .messenger-seal {
+    height: 82px;
+    width: 82px;
+  }
+  .city-strip {
+    padding: 38px 0;
+  }
+  .center-head h2,
+  .perspectives .center-head h2 {
+    font-size: 39px;
+    letter-spacing: -1.8px;
+  }
+  .cinema-ready .film-title h2 {
+    font-size: 42px;
+    letter-spacing: -2px;
+  }
+  .cinema-ready .film-bridge {
+    font-size: 43px;
+    letter-spacing: -1.8px;
+  }
+  .time-card .card-label {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .time-card.expected .time {
+    font-size: 27px;
+    letter-spacing: -1px;
+  }
+  .film-signature {
+    height: 25px;
+    bottom: 64px;
+  }
+  .film-signature svg {
+    width: 25px;
+    height: 25px;
+  }
+  .closing h2 {
+    font-size: 44px;
+    letter-spacing: -2px;
+  }
+}
+@media (max-width: 370px) {
+  .brand .hermes-logo {
+    width: 25px;
+    height: 25px;
+  }
+  .hero {
+    height: 410px;
+  }
+  .hero-trail {
+    top: 110px;
+  }
+  .hero .messenger-wrap {
+    top: 298.8px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    letter-spacing: -1.8px;
+  }
+  .cinema-ready .film-title h2 {
+    font-size: 37px;
+  }
+  .time-card.expected .time {
+    font-size: 25px;
+  }
+}
+@media (max-height: 569px) {
+  .cinema-ready .film-title h2 {
+    font-size: clamp(32px, 4.6vw, 56px);
+  }
+}

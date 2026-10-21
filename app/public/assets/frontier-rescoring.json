@@ -1,0 +1,7 @@
+{
+  "description": "LaDe M2G4RTP checkpoints trained by us with the authors' code (Yantai), re-scored on their own test split by external/rescore_m2g4rtp.py. 'as_published' compares the k-th predicted ETA with the k-th actual delivery (their metric); 'per_package' compares each package's predicted ETA with that package's actual time.",
+  "as_published_pipeline": {"test_package_predictions": 131454, "as_published_mae": 12.47, "as_published_within_20_pct": 81.3, "per_package_mae": 22.19, "per_package_within_20_pct": 57.1},
+  "partly_cleaned_pipeline": {"note": "courier/area statistics from training dates only, area features without true future order, busy test days kept; windows and 0-120 min input filter unchanged", "test_package_predictions": 200534, "as_published_mae": 12.09, "as_published_within_20_pct": 82.1, "per_package_mae": 23.27, "per_package_within_20_pct": 55.5},
+  "their_results_file_test_mae_eval_1_25": 12.55,
+  "paper_reported_yantai_m2g4rtp_mae": 17.21
+}

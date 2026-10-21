@@ -1,0 +1,263 @@
+/* Benchmarks cover and closing notes. */
+.benchmark-page .nav-wrap {
+  padding: 16px 24px 0;
+}
+.research-page.benchmark-page .navbar {
+  max-width: 960px;
+  min-height: 68px;
+  padding: 12px 22px;
+  border: 1px solid var(--olive);
+  border-radius: 12px;
+  background: var(--cream);
+}
+.benchmark-page .brand {
+  font: 700 25px/1 var(--sans);
+  letter-spacing: -1px;
+  gap: 8px;
+}
+.benchmark-page .brand svg {
+  width: 31px;
+  height: 31px;
+}
+.benchmark-page .chapter-link {
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  padding: 12px 0;
+  background: none;
+  color: inherit;
+  gap: 42px;
+  font-size: 13px;
+}
+.benchmark-page .chapter-link:hover {
+  color: var(--signal);
+  background: none;
+}
+.benchmark-page .benchmark-intro {
+  padding: 0;
+  min-height: max(720px, 100svh);
+  background: var(--green);
+  color: var(--cream);
+}
+.benchmark-page .benchmark-intro .intro-layout {
+  display: block;
+  width: 100%;
+  max-width: none;
+  min-height: inherit;
+}
+.benchmark-page .benchmark-intro .intro-scene {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  border-radius: 0;
+  z-index: -1;
+}
+.benchmark-page .benchmark-intro .intro-photo {
+  inset: -7%;
+  background-position: center 52%;
+  filter: saturate(0.66) blur(calc(4px + var(--cover-progress) * 3px));
+  transform: translateY(calc(var(--cover-progress) * 55px)) scale(calc(1.035 + var(--cover-progress) * 0.08));
+}
+.benchmark-page .benchmark-intro .intro-veil {
+  background:
+    linear-gradient(90deg, #082e26a8, #082e2633 75%), linear-gradient(0deg, #082e26c9, transparent 75%);
+}
+.benchmark-page .benchmark-intro .intro-copy {
+  display: grid;
+  align-content: center;
+  width: calc(100% - 160px);
+  max-width: 1280px;
+  min-height: inherit;
+  margin: auto;
+  padding: 155px 0 75px;
+  transform: translateY(calc(var(--cover-progress) * -45px));
+  opacity: calc(1 - var(--cover-progress) * 0.65);
+}
+.benchmark-page .benchmark-intro h1 {
+  font: 400 clamp(92px, 10.7vw, 164px)/0.91 var(--serif);
+  letter-spacing: -5px;
+  max-width: none;
+  margin: 0;
+  text-wrap: initial;
+}
+.hero-line {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.08em;
+  margin-block: -0.04em;
+}
+.hero-line > span,
+.hero-line > em {
+  display: block;
+  transform-origin: left bottom;
+}
+.benchmark-page .benchmark-intro h1 em {
+  display: block;
+  font: italic 400 1.12em/0.95 var(--serif);
+  color: var(--cream);
+  letter-spacing: -4px;
+  margin-left: 18%;
+}
+.benchmark-page .research-width {
+  width: calc(100% - 160px);
+  max-width: 1160px;
+  margin-inline: auto;
+}
+.film-notes {
+  padding-block: 45px 85px;
+}
+.film-notes details {
+  margin-top: 0;
+  border-color: #034f4626;
+}
+.film-notes details + details {
+  border-top: 0;
+}
+.film-notes summary {
+  font-size: 13px;
+  font-weight: 500;
+  padding-block: 23px;
+}
+.film-notes summary > span {
+  font-size: 18px;
+}
+.film-notes .notes-columns p {
+  max-width: none;
+  overflow-wrap: anywhere;
+}
+.film-notes .notes-columns > div {
+  min-width: 0;
+}
+.film-notes .notes-columns h3:not(:first-child) {
+  margin-top: 30px;
+}
+.film-notes .evidence-links {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.notes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 12px/1.5 var(--sans);
+  margin-block: 25px;
+}
+.notes-table th,
+.notes-table td {
+  font-weight: 400;
+  text-align: right;
+  padding: 10px 4px;
+  border-bottom: 1px solid #034f4626;
+}
+.notes-table th:first-child {
+  text-align: left;
+}
+.notes-table td {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1100px) {
+  .benchmark-page .benchmark-intro .intro-copy,
+  .benchmark-page .research-width {
+    width: calc(100% - 96px);
+  }
+}
+@media (max-width: 767px) {
+  .benchmark-page .nav-wrap {
+    padding: 12px 16px 0;
+  }
+  .research-page.benchmark-page .navbar {
+    min-height: 56px;
+    padding: 10px 13px;
+    gap: 12px;
+    border-radius: 10px;
+  }
+  .benchmark-page .brand {
+    font-size: 23px;
+    gap: 6px;
+  }
+  .benchmark-page .brand svg {
+    width: 26px;
+    height: 26px;
+  }
+  .benchmark-page .benchmark-intro {
+    min-height: max(650px, 100svh);
+  }
+  .benchmark-page .benchmark-intro .intro-copy {
+    width: calc(100% - 40px);
+    padding: 125px 0 55px;
+  }
+  .benchmark-page .benchmark-intro h1 {
+    font-size: clamp(50px, 8.4vw, 76px);
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+  .benchmark-page .benchmark-intro h1 em {
+    font-size: 1.45em;
+    line-height: 1.02;
+    letter-spacing: -2px;
+    margin-left: 4%;
+  }
+  .benchmark-page .benchmark-intro .intro-photo {
+    background-position: 57% center;
+    inset: -9%;
+  }
+  .benchmark-page .research-width {
+    width: calc(100% - 40px);
+    max-width: 500px;
+  }
+  .film-notes {
+    padding-block: 15px 60px;
+  }
+  .film-notes summary {
+    font-size: 12px;
+  }
+}
+@media (max-width: 370px) {
+  .research-page.benchmark-page .navbar {
+    padding-inline: 10px;
+    gap: 9px;
+  }
+  .benchmark-page .brand {
+    font-size: 21px;
+    gap: 5px;
+  }
+  .benchmark-page .brand svg {
+    width: 23px;
+    height: 23px;
+  }
+  .benchmark-page .benchmark-intro .intro-copy,
+  .benchmark-page .research-width {
+    width: calc(100% - 32px);
+  }
+  .benchmark-page .benchmark-intro h1 {
+    font-size: 43px;
+    letter-spacing: -1.8px;
+  }
+  .benchmark-page .benchmark-intro h1 em {
+    font-size: 1.45em;
+    letter-spacing: -2px;
+    margin-left: 0;
+  }
+}
+@media (max-height: 700px) {
+  .benchmark-page .benchmark-intro {
+    min-height: max(560px, 100svh);
+  }
+  .benchmark-page .benchmark-intro .intro-copy {
+    padding-top: 116px;
+    padding-bottom: 38px;
+  }
+}
+@media (min-width: 768px) and (max-height: 700px) {
+  .benchmark-page .benchmark-intro {
+    min-height: max(520px, 100svh);
+  }
+  .benchmark-page .benchmark-intro .intro-copy {
+    padding: 135px 0 45px;
+  }
+  .benchmark-page .benchmark-intro h1 {
+    font-size: clamp(80px, 8vw, 120px);
+  }
+}

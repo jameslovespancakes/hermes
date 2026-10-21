@@ -1,0 +1,492 @@
+/* Research openings: a split editorial spread, then a full photographic canvas.
+   Pexels 313782 and 6169668 are illustrative, not study locations or participants.
+   Native scroll, opaque type treatments, no simulated product UI or metric counters. */
+.research-intro {
+  --cover-progress: 0;
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background: var(--cream);
+}
+.intro-layout {
+  position: relative;
+}
+.intro-copy {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  transform: translateY(calc(var(--cover-progress) * -18px));
+}
+.research-intro h1 {
+  font-size: clamp(60px, 6.1vw, 88px);
+  line-height: 1.03;
+  letter-spacing: -3.8px;
+  text-wrap: initial;
+}
+.research-intro h1 em {
+  font-size: 1.1em;
+  line-height: 1.02;
+  letter-spacing: -2.8px;
+  font-weight: 400;
+}
+.intro-copy > p {
+  font-size: 17px;
+  line-height: 1.6;
+  margin: 28px 0 26px;
+  text-wrap: pretty;
+}
+.research-intro .chapter-link {
+  gap: 38px;
+  padding: 10px 0;
+}
+.research-intro .chapter-link .hermes-icon {
+  transition: translate 0.25s ease;
+}
+.research-intro .chapter-link:hover .hermes-icon {
+  translate: 0 3px;
+}
+.intro-scene {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--green);
+}
+.intro-photo {
+  position: absolute;
+  inset: -24px;
+  background: var(--intro-image) var(--intro-crop, center) / cover no-repeat;
+  transform: translateY(calc(var(--cover-progress) * 36px)) scale(1.035);
+  filter: saturate(0.84);
+}
+.intro-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* A city given room to breathe. The photograph never sits behind the copy. */
+.benchmark-intro {
+  --intro-image: url('/assets/images/benchmark-cover.jpg');
+  padding: 142px 0 64px;
+}
+.benchmark-intro .intro-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.06fr;
+  gap: 64px;
+  align-items: center;
+  min-height: clamp(510px, calc(100svh - 206px), 760px);
+}
+.benchmark-intro h1 em {
+  display: block;
+  color: var(--green);
+}
+.benchmark-intro .intro-copy > p {
+  max-width: 340px;
+}
+.benchmark-intro .intro-scene {
+  align-self: stretch;
+  min-height: 510px;
+}
+.benchmark-intro .intro-veil {
+  background: linear-gradient(180deg, #034f4600 50%, #034f4640);
+}
+/* A different composition: the moment fills the frame, the words sit on a green overlay. */
+.method-intro {
+  --intro-image: url('/assets/images/method-cover.jpg');
+  --intro-crop: 50% 54%;
+  padding: 116px 24px 38px;
+}
+.method-intro .intro-layout {
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(570px, calc(100svh - 154px), 820px);
+  padding: 72px 32px;
+  color: var(--cream);
+  isolation: isolate;
+}
+.method-intro .intro-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.method-intro .intro-veil {
+  background:
+    linear-gradient(90deg, #034f46eb, #034f46a8 35%, #034f4626 70%, #034f4600),
+    linear-gradient(0deg, #034f46b3, transparent 70%);
+}
+.method-intro h1 {
+  font-size: clamp(58px, 5.5vw, 80px);
+  max-width: 830px;
+}
+.method-intro h1 em {
+  color: var(--peach);
+}
+.method-intro .intro-copy > p {
+  max-width: 420px;
+  color: var(--cream);
+}
+.method-intro .chapter-link:hover {
+  color: var(--peach);
+}
+/* Quiet entrances instead of blur, large lifts, or another reflected card. */
+.research-page.research-enhanced [data-arrival] {
+  opacity: var(--arrival, 1);
+  transform: translateY(calc((1 - var(--arrival, 1)) * 18px));
+}
+.research-page.motion-paused [data-arrival],
+.research-page.motion-paused .intro-copy {
+  opacity: 1;
+  transform: none;
+}
+.research-page .industry-chapter {
+  border-radius: 18px 18px 0 0;
+}
+.research-page .research-chapter,
+.research-page .industry-chapter {
+  padding-top: 88px;
+}
+.research-page .chapter-heading {
+  padding-bottom: 28px;
+}
+/* The trials: a photograph beside the thought, then three unboxed observations. */
+.research-page .negative-results {
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 44px 70px;
+  align-items: center;
+  padding-block: 100px;
+}
+.negative-results header {
+  grid-column: 1;
+  grid-row: 1;
+}
+.negative-results .interlude-photo {
+  grid-column: 2;
+  grid-row: 1;
+  height: 340px;
+  margin: 0;
+  transform: none;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.negative-results .interlude-photo:before {
+  border-radius: 0;
+  filter: saturate(0.8);
+}
+.negative-results .interlude-photo:after,
+.study-photo:after {
+  display: none;
+}
+.negative-results .interlude-photo > span {
+  background: var(--cream);
+  border-radius: 3px;
+}
+.negative-results .trial-list {
+  grid-column: 1/-1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+.negative-results .trial-list > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  border: 0;
+  border-top: 1px solid #034f4638;
+  padding: 22px 0 0;
+}
+.negative-results .trial-list dd {
+  font-size: 64px;
+  color: var(--green);
+}
+/* History: the timeline lives on the page, not in a floating paper panel. */
+.research-page .study-section {
+  padding-top: 55px;
+}
+.study-section > .wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 42px 70px;
+  align-items: center;
+}
+.study-section header {
+  grid-column: 1;
+  grid-row: 1;
+}
+.study-section .study-photo {
+  position: relative;
+  inset: auto;
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  height: 350px;
+  z-index: 0;
+  mask-image: none;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.study-photo:before {
+  border-radius: 0;
+  filter: saturate(0.75);
+}
+.study-photo > span {
+  top: auto;
+  bottom: 12px;
+  right: 16px;
+}
+.study-section .study-timeline {
+  grid-column: 1/-1;
+  grid-row: 2;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  gap: 40px;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.study-timeline li {
+  position: relative;
+  border-color: #034f4638;
+  padding-top: 24px;
+}
+.study-timeline li:before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.study-timeline li:nth-child(2):before {
+  background: var(--orange);
+}
+.study-section .research-notes {
+  grid-column: 1/-1;
+  grid-row: 3;
+  padding-top: 0;
+}
+@media (max-width: 1100px) {
+  .benchmark-intro .intro-layout {
+    gap: 36px;
+    grid-template-columns: 1fr 1fr;
+  }
+  .research-intro h1 {
+    font-size: clamp(54px, 6.7vw, 76px);
+    letter-spacing: -2.8px;
+  }
+  .research-intro h1 em {
+    letter-spacing: -2px;
+  }
+  .method-intro .intro-layout {
+    padding: 56px 12px;
+  }
+  .method-intro h1 {
+    font-size: clamp(54px, 6.4vw, 72px);
+  }
+  .research-page .negative-results,
+  .study-section > .wrap {
+    column-gap: 40px;
+  }
+}
+@media (max-width: 759px) {
+  .benchmark-intro {
+    padding: 116px 0 38px;
+  }
+  .benchmark-intro .intro-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    min-height: 0;
+  }
+  .research-intro h1 {
+    font-size: clamp(46px, 9vw, 64px);
+    letter-spacing: -2.2px;
+    line-height: 1.04;
+  }
+  .research-intro h1 em {
+    letter-spacing: -1.5px;
+  }
+  .benchmark-intro h1 br {
+    display: none;
+  }
+  .intro-copy > p {
+    font-size: 15px;
+    margin: 20px 0 14px;
+    max-width: 100%;
+  }
+  .research-intro .chapter-link {
+    font-size: 13px;
+    gap: 40px;
+    padding: 9px 0;
+  }
+  .benchmark-intro .intro-scene {
+    height: clamp(280px, 43svh, 440px);
+    min-height: 0;
+  }
+  .intro-photo {
+    inset: -16px;
+    transform: translateY(calc(var(--cover-progress) * 22px)) scale(1.025);
+  }
+  .method-intro {
+    padding: 90px 12px 28px;
+    --intro-crop: 86% center;
+  }
+  .method-intro .intro-layout {
+    min-height: clamp(600px, calc(100svh - 118px), 850px);
+    padding: 36px 12px;
+  }
+  .method-intro .intro-copy {
+    width: 100%;
+    max-width: 570px;
+  }
+  .method-intro h1 {
+    font-size: clamp(43px, 7.7vw, 60px);
+    line-height: 1.04;
+    letter-spacing: -2px;
+  }
+  .method-intro h1 em {
+    display: block;
+    margin-top: 5px;
+  }
+  .method-intro h1 br {
+    display: none;
+  }
+  .method-intro .intro-copy > p {
+    max-width: 280px;
+  }
+  .method-intro .intro-veil {
+    background: linear-gradient(0deg, #034f46f5, #034f46c9 32%, #034f464d 60%, #034f4600 84%);
+  }
+  .research-page .research-chapter,
+  .research-page .industry-chapter {
+    padding-top: 64px;
+  }
+  .research-page .negative-results {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding-block: 70px;
+  }
+  .negative-results .interlude-photo {
+    grid-column: 1;
+    grid-row: 2;
+    height: 240px;
+  }
+  .negative-results .trial-list {
+    grid-row: 3;
+    gap: 18px;
+  }
+  .negative-results .trial-list > div {
+    gap: 16px;
+    padding-top: 16px;
+  }
+  .negative-results .trial-list dt {
+    font-size: 12px;
+    min-height: 36px;
+    display: flex;
+    align-items: flex-start;
+  }
+  .negative-results .trial-list dd {
+    font-size: 39px;
+    letter-spacing: -1.5px;
+  }
+  .research-page .study-section {
+    padding-top: 30px;
+  }
+  .study-section > .wrap {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .study-section .study-photo {
+    grid-column: 1;
+    grid-row: 2;
+    height: 260px;
+  }
+  .study-section .study-timeline {
+    grid-row: 3;
+    gap: 18px;
+  }
+  .study-timeline li {
+    padding-top: 18px;
+  }
+  .study-timeline span {
+    font-size: 10px;
+  }
+  .study-timeline h3 {
+    font-size: 28px;
+    letter-spacing: -0.5px;
+  }
+  .study-section .research-notes {
+    grid-row: 4;
+  }
+}
+@media (max-width: 370px) {
+  .benchmark-intro {
+    padding-top: 106px;
+  }
+  .research-intro h1 {
+    font-size: 43px;
+  }
+  .benchmark-intro .intro-layout {
+    gap: 26px;
+  }
+  .benchmark-intro .intro-scene {
+    height: 270px;
+  }
+  .method-intro .intro-layout {
+    padding: 28px 8px;
+    min-height: 600px;
+  }
+  .method-intro h1 {
+    font-size: 41px;
+  }
+  .intro-copy > p {
+    font-size: 14px;
+  }
+  .negative-results .trial-list,
+  .study-section .study-timeline {
+    gap: 12px;
+  }
+  .negative-results .trial-list dt {
+    font-size: 11px;
+  }
+  .negative-results .trial-list dd {
+    font-size: 35px;
+  }
+  .study-timeline h3 {
+    font-size: 26px;
+  }
+}
+@media (max-width: 759px) and (max-height: 700px) {
+  .method-intro .intro-layout {
+    min-height: max(420px, calc(100svh - 118px));
+    padding-block: 28px;
+  }
+  .method-intro h1 {
+    font-size: 35px;
+  }
+}
+@media (min-width: 760px) and (max-height: 700px) {
+  .benchmark-intro {
+    padding: 120px 0 38px;
+  }
+  .benchmark-intro .intro-layout {
+    min-height: clamp(340px, calc(100svh - 158px), 500px);
+  }
+  .benchmark-intro .intro-scene {
+    min-height: 340px;
+  }
+  .research-intro h1 {
+    font-size: clamp(54px, 5.2vw, 72px);
+  }
+  .method-intro {
+    --intro-crop: 50% 36%;
+  }
+  .method-intro .intro-layout {
+    min-height: clamp(340px, calc(100svh - 154px), 550px);
+    padding-block: 32px;
+  }
+}

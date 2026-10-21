@@ -5,7 +5,9 @@
 **/*.py[cod]
 data/raw
 evidence
-mockup
+app/node_modules
+app/dist
+app/coverage
 server/tests
 *.md
 !server/README.md

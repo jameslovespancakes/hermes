@@ -1,0 +1,159 @@
+/* Shared Deliver / Research navigation. Native radio semantics, keyboard support
+   and CSS-only panels keep the switch working offline and without JavaScript.
+   Future product destinations belong in the deliver-links panel. */
+.navbar.has-nav-modes,
+.research-page .navbar.has-nav-modes {
+  gap: 22px;
+  justify-content: initial;
+}
+.has-nav-modes .nav-mode-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+  isolation: isolate;
+  padding: 3px;
+  margin: 0;
+  border: 0;
+  border-radius: 40px;
+  background: var(--olive);
+  min-width: 190px;
+  height: 40px;
+}
+.has-nav-modes .nav-mode-toggle:before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 3px;
+  top: 3px;
+  bottom: 3px;
+  width: calc(50% - 3px);
+  border-radius: 30px;
+  background: var(--cream);
+  box-shadow: 0 1px 3px #1a1a1a0d;
+  transform: translateX(0);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.has-nav-modes .nav-mode-toggle:has(input[value='research']:checked):before {
+  transform: translateX(100%);
+}
+.has-nav-modes .nav-mode-toggle label {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  height: 34px;
+  padding-inline: 15px;
+  border-radius: 30px;
+  font: 600 14px/1 var(--sans);
+  letter-spacing: 0;
+  color: #626958;
+  white-space: nowrap;
+}
+.has-nav-modes .nav-mode-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  clip-path: inset(50%);
+  margin: 0;
+}
+.has-nav-modes .nav-mode-toggle label:has(input:checked) {
+  color: var(--green);
+}
+.has-nav-modes .nav-mode-toggle label:has(input:focus-visible) {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+.has-nav-modes .nav-links {
+  display: flex;
+  margin-left: auto;
+  min-width: 0;
+  font-size: 15px;
+}
+.has-nav-modes .nav-panel {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.has-nav-modes:has(input[value='deliver']:checked) [data-nav-area='research'],
+.has-nav-modes:has(input[value='research']:checked) [data-nav-area='deliver'] {
+  display: none;
+}
+.has-nav-modes .nav-panel a {
+  font-weight: 600;
+}
+@media (max-width: 759px) {
+  .navbar.has-nav-modes,
+  .research-page .navbar.has-nav-modes {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 12px;
+    row-gap: 2px;
+    padding: 8px 13px;
+    min-height: 74px;
+  }
+  .has-nav-modes .nav-mode-toggle {
+    justify-self: end;
+    min-width: 166px;
+    height: 32px;
+    padding: 3px;
+  }
+  .has-nav-modes .nav-mode-toggle label {
+    height: 26px;
+    font-size: 12px;
+    padding-inline: 11px;
+  }
+  .has-nav-modes .nav-links {
+    grid-column: 1/-1;
+    justify-self: end;
+    margin: 0;
+    min-height: 24px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .has-nav-modes .nav-panel {
+    gap: 20px;
+  }
+  .has-nav-modes .nav-panel a {
+    padding: 4px 0;
+  }
+  .has-nav-modes .nav-panel a:after {
+    bottom: 1px;
+  }
+  .research-page.journey-page .chapter-runway {
+    --chapter-top: 96px;
+  }
+  html {
+    scroll-padding-top: 100px;
+  }
+}
+@media (max-width: 370px) {
+  .navbar.has-nav-modes,
+  .research-page .navbar.has-nav-modes {
+    padding-inline: 10px;
+    column-gap: 10px;
+  }
+  .has-nav-modes .nav-mode-toggle {
+    min-width: 148px;
+  }
+  .has-nav-modes .nav-mode-toggle label {
+    font-size: 11px;
+    padding-inline: 10px;
+  }
+}
+@media (max-width: 290px) {
+  .has-nav-modes .nav-mode-toggle {
+    min-width: 130px;
+  }
+  .has-nav-modes .nav-mode-toggle label {
+    font-size: 10px;
+    padding-inline: 6px;
+  }
+  .navbar.has-nav-modes,
+  .research-page .navbar.has-nav-modes {
+    column-gap: 6px;
+  }
+}
