@@ -20,7 +20,7 @@ class TransitionTests(unittest.TestCase):
         cutoff = pd.Timestamp("2000-05-03")
         one_day = self.packages.loc[self.packages["_accepted_at"] < pd.Timestamp("2000-05-02")]
         live_one = self.live.loc[self.live["s"] < pd.Timestamp("2000-05-02")]
-        with_own_day = add_transitions(live_one, one_day, cutoff)     # history = only that same day
+        with_own_day = add_transitions(live_one, one_day, cutoff)  # history = only that same day
         self.assertTrue(np.all(with_own_day["courier_transition_support"] == 0))
 
     def test_outcomes_after_cutoff_are_unused(self):

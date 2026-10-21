@@ -8,8 +8,7 @@ from server.config import HORIZONS
 
 def error_summary(actual: np.ndarray, predicted: np.ndarray) -> dict:
     err = np.abs(np.asarray(actual) - np.asarray(predicted))
-    return {"n": int(len(err)), "mae": float(err.mean()), "median_ae": float(np.median(err)),
-            "within_30_pct": float(np.mean(err <= 30) * 100)}
+    return {"n": int(len(err)), "mae": float(err.mean()), "median_ae": float(np.median(err)), "within_30_pct": float(np.mean(err <= 30) * 100)}
 
 
 def by_time_remaining(actual: np.ndarray, predicted: np.ndarray) -> dict:
@@ -38,13 +37,35 @@ def route_order_agreement(rows: pd.DataFrame, score_col: str = "route_score", mi
     frame = pd.DataFrame({"m": sub["event"].to_numpy(), "x": g["remaining_min"].rank().to_numpy(), "y": g[score_col].rank().to_numpy()})
     frame["x"] -= frame.groupby("m")["x"].transform("mean")
     frame["y"] -= frame.groupby("m")["y"].transform("mean")
-    sums = frame.assign(xy=frame.x * frame.y, xx=frame.x ** 2, yy=frame.y ** 2).groupby("m")[["xy", "xx", "yy"]].sum()
+    sums = frame.assign(xy=frame.x * frame.y, xx=frame.x**2, yy=frame.y**2).groupby("m")[["xy", "xx", "yy"]].sum()
     ok = (sums.xx > 0) & (sums.yy > 0)
     return float((sums.xy[ok] / np.sqrt(sums.xx[ok] * sums.yy[ok])).mean())
 
 
-def evaluate(test: pd.DataFrame, predicted: np.ndarray) -> dict:
-    actual = test["remaining_min"].to_numpy()
-    next_stop, next_three = route_hit_rates(test)
-    return {"overall": error_summary(actual, predicted), "by_time_remaining": by_time_remaining(actual, predicted),
-            "route": {"next_stop_pct": next_stop, "next3_pct": next_three, "order_agreement_spearman": route_order_agreement(test)}}
+def evaluate_predictions(rows: pd.DataFrame) -> dict:
+    """Metrics for predictor output with diagnostics (`LiveETAPredictor.predict_events(..., diagnostics=True)`) and an
+    `actual` column of true remaining minutes."""
+    actual, predicted = rows["actual"].to_numpy(), rows["minutes_remaining"].to_numpy()
+    ranked = pd.DataFrame(
+        {
+            "event": pd.factorize(rows["courier"].astype(str) + "|" + rows["s"].astype(str))[0],
+            "n_pending": rows["n_pending"].to_numpy(),
+            "remaining_min": actual,
+            "route_score": rows["route_ahead"].to_numpy(),
+        }
+    )
+    next_stop, next_three = route_hit_rates(ranked)
+    flagged = rows["needs_review"].to_numpy(dtype=bool)
+    err = np.abs(actual - predicted)
+    review = {
+        "flagged_pct": float(flagged.mean() * 100),
+        "staleness_model_pct": float((rows["model_used"] == "staleness").mean() * 100),
+        "mae_flagged": float(err[flagged].mean()) if flagged.any() else None,
+        "mae_not_flagged": float(err[~flagged].mean()) if (~flagged).any() else None,
+    }
+    return {
+        "overall": error_summary(actual, predicted),
+        "by_time_remaining": by_time_remaining(actual, predicted),
+        "route": {"next_stop_pct": next_stop, "next3_pct": next_three, "order_agreement_spearman": route_order_agreement(ranked)},
+        "review": review,
+    }

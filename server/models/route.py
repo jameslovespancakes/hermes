@@ -48,13 +48,7 @@ def fit_route_folds(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarra
     return scores, full, fold_models
 
 
-def fit_route_out_of_fold(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarray, lgb.LGBMRegressor]:
-    """Route scores for every row (out-of-fold where trainable) and the full model for later events."""
-    scores, full, _ = fit_route_folds(live, cutoff)
-    return scores, full
-
-
-def predict_route(model: lgb.LGBMRegressor, live: pd.DataFrame) -> np.ndarray:
+def predict_route(model, live: pd.DataFrame) -> np.ndarray:
     with threadpool_limits(limits=THREADS):
         return model.predict(live[ROUTE_INPUT_COLS])
 

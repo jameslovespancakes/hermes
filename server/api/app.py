@@ -3,6 +3,8 @@
 Run: uvicorn server.api.app:app --host 0.0.0.0 --port 8000   (city from $ETA_CITY, default 'yt')
 At startup it loads the trained bundle from server/model_store/<city>/ and that city's delivery log; every
 request replays the log as it was at the requested moment, so no answer can use later information.
+Records are cleaned by the bundle's DataGuard, stale couriers get the staleness-aware model, doubtful ETAs are
+flagged for review, and /data-health reports the data contract and input drift for the past day.
 """
 
 import json
@@ -14,19 +16,30 @@ from contextlib import asynccontextmanager
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 
-from server.api.schemas import TIME_PATTERN, CourierLoad, Health, PackageETA, PredictRequest, PredictResponse, format_moment, parse_moment
+from server.api.schemas import (
+    TIME_PATTERN,
+    CourierLoad,
+    DataHealth,
+    Health,
+    PackageETA,
+    PredictRequest,
+    PredictResponse,
+    format_moment,
+    parse_moment,
+)
 from server.config import MODEL_STORE
 from server.data.loading import load_city
 from server.serving.predictor import LiveETAPredictor, couriers_holding
 
-PREPARED_CACHE_SIZE = 4   # package tables kept for recently requested moments
+PREPARED_CACHE_SIZE = 4  # package tables kept for recently requested moments
 
 
 class _PreparedCache:
     """Small thread-safe LRU of package tables keyed by request moment (the expensive step)."""
 
     def __init__(self, size: int):
-        self.size, self.items, self.lock = size, OrderedDict(), threading.Lock()
+        self.size, self.lock = size, threading.Lock()
+        self.items: OrderedDict[pd.Timestamp, pd.DataFrame] = OrderedDict()
 
     def get(self, at: pd.Timestamp, build):
         with self.lock:
@@ -41,8 +54,7 @@ class _PreparedCache:
         return value
 
 
-def create_app(predictor: LiveETAPredictor | None = None, records: pd.DataFrame | None = None,
-               city: str | None = None) -> FastAPI:
+def create_app(predictor: LiveETAPredictor | None = None, records: pd.DataFrame | None = None, city: str | None = None) -> FastAPI:
     """App factory. Pass `predictor`/`records` to inject them (tests); otherwise loaded at startup."""
     city = city or os.environ.get("ETA_CITY", "yt")
     state: dict = {}
@@ -55,8 +67,12 @@ def create_app(predictor: LiveETAPredictor | None = None, records: pd.DataFrame 
         yield
         state.clear()
 
-    app = FastAPI(title="Live delivery ETA", version="1.0.0", lifespan=lifespan,
-                  description="Minutes until each pending package is delivered, from LaDe-D courier logs.")
+    app = FastAPI(
+        title="Live delivery ETA",
+        version="1.0.0",
+        lifespan=lifespan,
+        description="Minutes until each pending package is delivered, from LaDe-D courier logs.",
+    )
 
     @app.get("/health", response_model=Health)
     def health() -> Health:
@@ -68,9 +84,19 @@ def create_app(predictor: LiveETAPredictor | None = None, records: pd.DataFrame 
         bundle = state["predictor"].bundle
         metrics_path = MODEL_STORE / bundle.city / "metrics.json"
         metrics = json.loads(metrics_path.read_text(encoding="utf-8")) if metrics_path.exists() else bundle.info
-        return {"city": bundle.city, "trained_through": bundle.trained_through, "eta_features": len(bundle.eta_columns),
-                "test_overall": metrics.get("overall", metrics.get("metrics_overall")),
-                "test_by_time_remaining": metrics.get("by_time_remaining"), "route": metrics.get("route")}
+        return {
+            "city": bundle.city,
+            "trained_through": bundle.trained_through,
+            "eta_features": len(bundle.eta.columns),
+            "safeguards": {
+                "data_guard": bundle.guard is not None,
+                "staleness_model": bundle.staleness is not None,
+                "monitoring": bundle.monitor is not None,
+            },
+            "test_overall": metrics.get("overall", metrics.get("metrics_overall")),
+            "test_by_time_remaining": metrics.get("by_time_remaining"),
+            "route": metrics.get("route"),
+        }
 
     @app.get("/couriers", response_model=list[CourierLoad])
     def couriers(at: str = Query(pattern=TIME_PATTERN, examples=["09-20 10:30:00"]), limit: int = Query(20, ge=1, le=500)):
@@ -84,11 +110,43 @@ def create_app(predictor: LiveETAPredictor | None = None, records: pd.DataFrame 
         predictor_ = state["predictor"]
         packages = state["cache"].get(at, lambda: predictor_.prepare(state["records"], at))
         result = predictor_.predict_prepared(packages, request.courier_id, at)
-        rows = [PackageETA(order_id=int(r.order_id), minutes_remaining=float(r.minutes_remaining),
-                           predicted_delivery_at=format_moment(r.predicted_delivery_at), predicted_position=int(r.predicted_position),
-                           packages_held=int(r.packages_held), minutes_since_accepted=float(r.minutes_since_accepted))
-                for r in result.itertuples(index=False)]
+        rows = [
+            PackageETA(
+                order_id=int(r.order_id),
+                minutes_remaining=round(float(r.minutes_remaining), 1),
+                predicted_delivery_at=format_moment(r.predicted_delivery_at),
+                predicted_position=int(r.predicted_position),
+                packages_held=int(r.packages_held),
+                minutes_since_accepted=float(r.minutes_since_accepted),
+                feed_age_min=float(r.feed_age_min),
+                upload_lag_min=float(r.upload_lag_min),
+                model_used=str(r.model_used),
+                needs_review=bool(r.needs_review),
+                review_reasons=list(r.review_reasons),
+            )
+            for r in result.itertuples(index=False)
+        ]
         return PredictResponse(city=predictor_.city, courier_id=request.courier_id, at=request.at, packages=rows)
+
+    @app.get("/data-health", response_model=DataHealth)
+    def data_health(at: str = Query(pattern=TIME_PATTERN, examples=["09-20 10:30:00"])) -> DataHealth:
+        """Data contract on records delivered in the 24 h before `at`, and drift of current live inputs vs training."""
+        moment = _moment(at)
+        predictor_ = state["predictor"]
+        if predictor_.bundle.monitor is None:
+            raise HTTPException(status_code=409, detail="this model bundle has no monitoring baseline; retrain it")
+        packages = state["cache"].get(moment, lambda: predictor_.prepare(state["records"], moment))
+        report = predictor_.data_health(state["records"], packages, moment)
+        drift = report["drift"]
+        return DataHealth(
+            at=at,
+            status=report["status"],
+            records_checked=report["records_checked"],
+            contract_passed=report["contract_passed"],
+            contract=report["contract"],
+            drift_psi=drift["psi"] if drift else None,
+            drift_levels=drift["levels"] if drift else None,
+        )
 
     return app
 

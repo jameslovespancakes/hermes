@@ -43,6 +43,18 @@ class LiveQueryTests(unittest.TestCase):
         self.assertEqual(sorted(live["row"]), [1, 2, 3])
         self.assertTrue(live["remaining_min"].isna().all())
 
+    def test_event_time_mode_uses_receive_time_for_visibility(self):
+        recs = records(days=1, couriers=(1,), per_day=4)
+        lagged = recs.assign(received_at=recs["delivered_at"] + pd.Timedelta(minutes=60))
+        s = recs["delivered_at"].iloc[1] + pd.Timedelta(minutes=5)
+        live = live_for(lagged, pd.DataFrame({"courier_id": ["yt:1"], "s": [s]}))
+        self.assertEqual(sorted(live["row"]), [0, 1, 2, 3])  # nothing received yet
+        later = s + pd.Timedelta(minutes=60)
+        live = live_for(lagged, pd.DataFrame({"courier_id": ["yt:1"], "s": [later]}))
+        self.assertNotIn(0, set(live["row"]))  # received now
+        self.assertAlmostEqual(float(live["upload_lag_min"].iloc[0]), 60.0)
+        self.assertGreaterEqual(float(live["feed_age_min"].iloc[0]), 60.0)  # timed by event, not arrival
+
     def test_courier_location_is_last_delivery(self):
         recs = records(days=1, couriers=(1,), per_day=4)
         s = recs["delivered_at"].iloc[1]

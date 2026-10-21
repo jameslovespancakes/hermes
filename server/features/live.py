@@ -1,8 +1,12 @@
 """Live queries: at a courier event time s, one row per package that courier still holds.
 
-Causality: a package is pending at s if accepted at or before s and not recorded delivered at or before s.
-Only deliveries at or before s shape any feature; unknown deliveries (NaT) are treated as still pending.
-The courier's location is the destination of their most recent delivery at or before s.
+Causality: a package is pending at s if accepted at or before s and its delivery was not RECEIVED at or before s.
+Only deliveries received at or before s shape any feature; unknown deliveries (NaT) are treated as still pending.
+The courier's location is the destination of their most recent known delivery.
+
+Event time vs arrival time: if packages carry `_received_at` (server receive time) next to `_delivered_at`
+(the scanner's own event time), visibility follows the receive time while timing features use event time,
+and `upload_lag_min` reports how far the courier's feed runs behind. Without it, both are the same.
 """
 
 import numpy as np
@@ -15,15 +19,20 @@ MINUTE = np.timedelta64(1, "m")
 _ROUTE_SHAPE = ("greedy_pos", "greedy_pos_frac", "greedy_km", "aoi_greedy_pos_frac", "aoi_earlier_count")
 
 
-def _event_rows(s, idx, a, d, d_known_sorted, lat, lng, aoi, usual_ca, usual_end, usual_pace):
-    pending_mask = (a <= s) & ~(d <= s)            # NaT deliveries compare False -> still pending
+def _event_rows(s, idx, a, d, r, d_known_sorted, lat, lng, aoi, usual_ca, usual_end, usual_pace):
+    received = r <= s  # NaT compares False -> not yet known
+    pending_mask = (a <= s) & ~received
     if not pending_mask.any():
         return None
+    if d_known_sorted is None:  # event-time mode: the known set depends on s
+        known_times = d[received]
+        d_known_sorted = np.sort(known_times[~np.isnat(known_times)])
     pend = idx[pending_mask]
     n = len(pend)
     k1 = np.searchsorted(d_known_sorted, s, "right")
     last = d_known_sorted[k1 - 1] if k1 else None
-    done_now = idx[d == last] if last is not None else idx[:0]
+    done_now = idx[(d == last) & received] if last is not None else idx[:0]
+    lag_now = (r[np.flatnonzero((d == last) & received)[0]] - last) / MINUTE if len(done_now) else np.nan
     clat = np.nanmean(lat[done_now]) if len(done_now) else np.nan
     clng = np.nanmean(lng[done_now]) if len(done_now) else np.nan
     day = s.astype("datetime64[D]")
@@ -34,13 +43,21 @@ def _event_rows(s, idx, a, d, d_known_sorted, lat, lng, aoi, usual_ca, usual_end
     pace = since_first / (n_today - 1) if n_today >= 2 else np.nan
     clock_s = (s - day) / MINUTE
     plat, plng = lat[pend], lng[pend]
-    feed_age = (s - last) / MINUTE if last is not None else np.nan   # minutes since the last visible delivery
-    q = {"row": pend, "s": np.full(n, s), "cur_row": np.full(n, done_now[0] if len(done_now) else -1),
-         "feed_age_min": np.full(n, feed_age),
-         "elapsed_min": (s - a[pending_mask]) / MINUTE, "clock_s": np.full(n, clock_s),
-         "n_pending": np.full(n, n, float), "n_done_today": np.full(n, n_today, float),
-         "n_done_last_hour": np.full(n, k1 - np.searchsorted(d_known_sorted, s - 60 * MINUTE, "right"), float),
-         "pace_today_min": np.full(n, pace), "minutes_since_first_delivery_today": np.full(n, since_first)}
+    feed_age = (s - last) / MINUTE if last is not None else np.nan  # minutes since the last visible delivery
+    q = {
+        "row": pend,
+        "s": np.full(n, s),
+        "cur_row": np.full(n, done_now[0] if len(done_now) else -1),
+        "feed_age_min": np.full(n, feed_age),
+        "upload_lag_min": np.full(n, lag_now),
+        "elapsed_min": (s - a[pending_mask]) / MINUTE,
+        "clock_s": np.full(n, clock_s),
+        "n_pending": np.full(n, n, float),
+        "n_done_today": np.full(n, n_today, float),
+        "n_done_last_hour": np.full(n, k1 - np.searchsorted(d_known_sorted, s - 60 * MINUTE, "right"), float),
+        "pace_today_min": np.full(n, pace),
+        "minutes_since_first_delivery_today": np.full(n, since_first),
+    }
     dist = haversine_km(clat, clng, plat, plng)
     q["dist_from_courier_km"], q["dist_rank"] = dist, rank_fraction(dist)
     if np.isfinite(plat).all() and np.isfinite(plng).all() and np.isfinite(clat):
@@ -49,8 +66,15 @@ def _event_rows(s, idx, a, d, d_known_sorted, lat, lng, aoi, usual_ca, usual_end
         sizes = np.bincount(inv)
         area_order, _ = greedy_tour(clat, clng, np.bincount(inv, plat) / sizes, np.bincount(inv, plng) / sizes)
         earlier = np.array([sizes[area_order < area_order[k]].sum() for k in range(len(codes))])
-        q.update({"greedy_pos": order.astype(float), "greedy_pos_frac": order / max(n - 1, 1), "greedy_km": cumulative,
-                  "aoi_greedy_pos_frac": area_order[inv] / max(len(codes) - 1, 1), "aoi_earlier_count": earlier[inv].astype(float)})
+        q.update(
+            {
+                "greedy_pos": order.astype(float),
+                "greedy_pos_frac": order / max(n - 1, 1),
+                "greedy_km": cumulative,
+                "aoi_greedy_pos_frac": area_order[inv] / max(len(codes) - 1, 1),
+                "aoi_earlier_count": earlier[inv].astype(float),
+            }
+        )
     else:
         q.update({name: np.full(n, np.nan) for name in _ROUTE_SHAPE})
     _, inv2, counts = np.unique(aoi[pend], return_inverse=True, return_counts=True)
@@ -61,7 +85,7 @@ def _event_rows(s, idx, a, d, d_known_sorted, lat, lng, aoi, usual_ca, usual_end
     q["hab_shift_end_rel_now"] = usual_end[pend] - clock_s
     pace_used = pace if np.isfinite(pace) else np.nanmean(usual_pace[pend])
     q["est_stops_x_pace"] = (q["greedy_pos"] + 1) * pace_used
-    q["remaining_min"] = (d[pending_mask] - s) / MINUTE   # NaN when the outcome is unknown
+    q["remaining_min"] = (d[pending_mask] - s) / MINUTE  # NaN when the outcome is unknown
     return pd.DataFrame(q)
 
 
@@ -72,6 +96,8 @@ def build_live_queries(packages: pd.DataFrame, events: pd.DataFrame | None = Non
     """
     acc = packages["_accepted_at"].to_numpy()
     dlv = packages["_delivered_at"].to_numpy()
+    event_time_mode = "_received_at" in packages
+    rcv = packages["_received_at"].to_numpy() if event_time_mode else dlv
     lat, lng = packages["lat"].to_numpy(float), packages["lng"].to_numpy(float)
     acc_clock = (packages["_accepted_at"] - packages["_accepted_at"].dt.normalize()).dt.total_seconds().to_numpy() / 60
     usual_ca = packages["hab_ca_minutes_until_usual_delivery"].to_numpy() + acc_clock
@@ -86,18 +112,18 @@ def build_live_queries(packages: pd.DataFrame, events: pd.DataFrame | None = Non
         if wanted is not None and str(courier) not in wanted:
             continue
         idx = group.index.to_numpy()
-        a, d = acc[idx], dlv[idx]
+        a, d, r = acc[idx], dlv[idx], rcv[idx]
         known = d[~np.isnat(d)]
-        d_known_sorted = np.sort(known)
+        d_known_sorted = None if event_time_mode else np.sort(known)
         times = np.unique(known) if wanted is None else wanted[str(courier)]
         for s in times:
-            rows = _event_rows(s, idx, a, d, d_known_sorted, lat, lng, aoi, usual_ca, usual_end, usual_pace)
+            rows = _event_rows(s, idx, a, d, r, d_known_sorted, lat, lng, aoi, usual_ca, usual_end, usual_pace)
             if rows is not None:
                 chunks.append(rows)
     if not chunks:
-        return pd.DataFrame(columns=["row", "s", "cur_row", "feed_age_min", *LIVE_COLS, "remaining_min"])
+        return pd.DataFrame(columns=["row", "s", "cur_row", "feed_age_min", "upload_lag_min", *LIVE_COLS, "remaining_min"])
     live = pd.concat(chunks, ignore_index=True)
-    for column in LIVE_COLS + ["feed_age_min", "remaining_min"]:
+    for column in LIVE_COLS + ["feed_age_min", "upload_lag_min", "remaining_min"]:
         live[column] = live[column].astype("float32")
     return live
 

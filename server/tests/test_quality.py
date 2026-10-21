@@ -3,8 +3,9 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from server.quality.config import CleanMode
 from server.quality.detectors import bulk_scanned_courier_days, duplicate_records, running_bulk_share
-from server.quality.guard import DataGuard, oversight_flags
+from server.quality.guard import DataGuard, review_flags
 from server.tests.helpers import records
 
 
@@ -20,7 +21,7 @@ class QualityTests(unittest.TestCase):
     def test_clean_data_triggers_nothing(self):
         recs = records(days=3)
         guard = DataGuard().fit(recs)
-        cleaned, report = guard.clean(recs, mode="train")
+        cleaned, report = guard.clean(recs, mode=CleanMode.TRAIN)
         self.assertEqual(report["duplicates_dropped"], 0)
         self.assertEqual(report["coordinates_repaired"], 0)
         self.assertEqual(report["bulk_scanned_rows"], 0)
@@ -35,8 +36,8 @@ class QualityTests(unittest.TestCase):
         recs = records(days=2)
         guard = DataGuard().fit(recs)
         bad = recs.copy()
-        bad.loc[0, "lat"] += 0.05                                     # ~5.5 km off
-        cleaned, report = guard.clean(bad, mode="train")
+        bad.loc[0, "lat"] += 0.05  # ~5.5 km off
+        cleaned, report = guard.clean(bad, mode=CleanMode.TRAIN)
         self.assertEqual(report["coordinates_repaired"], 1)
         self.assertAlmostEqual(cleaned.loc[0, "lat"], guard.reference.loc[recs.loc[0, "aoi_id"], "lat"])
 
@@ -44,9 +45,9 @@ class QualityTests(unittest.TestCase):
         recs = bulk(records(days=2, per_day=8))
         self.assertTrue(bulk_scanned_courier_days(recs, 0.3)[recs["courier_id"] == 1].all())
         guard = DataGuard().fit(recs)
-        train, report = guard.clean(recs, mode="train")
+        train, report = guard.clean(recs, mode=CleanMode.TRAIN)
         self.assertFalse((train["courier_id"] == 1).any())
-        serve, _ = guard.clean(recs, mode="serve")
+        serve, _ = guard.clean(recs, mode=CleanMode.SERVE)
         self.assertTrue(serve.loc[serve["courier_id"] == 1, "guard_bulk_scan"].any())
         self.assertFalse(serve.loc[serve["courier_id"] == 2, "guard_bulk_scan"].any())
 
@@ -55,16 +56,17 @@ class QualityTests(unittest.TestCase):
         share = running_bulk_share(recs)
         later = recs.copy()
         last = later["delivered_at"] == later.loc[later["courier_id"] == 1, "delivered_at"].max()
-        later.loc[last, "delivered_at"] += pd.Timedelta(hours=3)        # change only the final batch
+        later.loc[last, "delivered_at"] += pd.Timedelta(hours=3)  # change only the final batch
         early = (recs["delivered_at"] < recs.loc[last, "delivered_at"].min()).to_numpy()
         np.testing.assert_allclose(share[early], running_bulk_share(later)[early])
 
     def test_oversight_flags(self):
-        live = pd.DataFrame({"feed_age_min": [10.0, 90.0], "cur_row": [0, 1]})
+        live = pd.DataFrame({"feed_age_min": [10.0, 90.0, 5.0, 900.0], "upload_lag_min": [0.0, 0.0, 60.0, 0.0],
+                             "n_done_today": [3, 3, 3, 0], "cur_row": [0, 1, 0, 0]})
         packages = pd.DataFrame({"guard_bulk_scan": [False, True]})
-        flags = oversight_flags(live, packages)
-        self.assertEqual(flags["flag_review"].tolist(), [False, True])
-        self.assertEqual(flags["flag_stale_feed"].tolist(), [False, True])
+        flags = review_flags(live, packages)
+        self.assertEqual(flags["needs_review"].tolist(), [False, True, True, False])   # overnight gap is not staleness
+        self.assertEqual(flags["flag_stale_feed"].tolist(), [False, True, True, False])
 
 
 if __name__ == "__main__":

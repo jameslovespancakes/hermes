@@ -42,6 +42,11 @@ class PackageETA(BaseModel):
     predicted_position: int
     packages_held: int
     minutes_since_accepted: float
+    feed_age_min: float = Field(description="Minutes since the courier's last recorded event")
+    upload_lag_min: float = Field(description="How far the courier's feed runs behind (receive time - event time)")
+    model_used: str = Field(description="'standard', or 'staleness' when the courier's feed is stale")
+    needs_review: bool = Field(description="True when a dispatcher should check this ETA")
+    review_reasons: list[str]
 
 
 class PredictResponse(BaseModel):
@@ -54,6 +59,23 @@ class PredictResponse(BaseModel):
 class CourierLoad(BaseModel):
     courier_id: str
     packages_held: int
+
+
+class ContractCheck(BaseModel):
+    check: str
+    observed: float
+    threshold: float
+    passed: bool
+
+
+class DataHealth(BaseModel):
+    at: str
+    status: str = Field(description="'ok', 'watch' (inputs drifting), or 'act' (contract failed or strong drift)")
+    records_checked: int
+    contract_passed: bool
+    contract: list[ContractCheck]
+    drift_psi: dict[str, float] | None
+    drift_levels: dict[str, str] | None
 
 
 class Health(BaseModel):

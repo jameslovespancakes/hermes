@@ -26,3 +26,9 @@ def live_table(packages: pd.DataFrame, transition_cutoff: pd.Timestamp, events: 
         return live
     live = annotate_events(live, packages, PACKAGE_COLS + habit_columns(packages))
     return add_transitions(live, packages, transition_cutoff)
+
+
+def checkpoints(records: pd.DataFrame, city: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    """Every recorded courier delivery moment in [start, end): when the live system re-predicts."""
+    sel = records.loc[(records["delivered_at"] >= start) & (records["delivered_at"] < end)]
+    return pd.DataFrame({"courier_id": f"{city}:" + sel["courier_id"].astype(str), "s": sel["delivered_at"]}).drop_duplicates()

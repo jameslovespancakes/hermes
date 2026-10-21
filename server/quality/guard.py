@@ -1,9 +1,9 @@
 """DataGuard: clean delivery records before training and before serving, and flag what cannot be fixed.
 
-Training mode drops duplicates, repairs implausible coordinates, and quarantines bulk-scanned courier-days
+TRAIN mode drops re-sent duplicates, repairs implausible coordinates, and quarantines bulk-synced courier-days
 (their delivery times are not real event times, so they would teach wrong durations).
-Serving mode drops duplicates and repairs coordinates but keeps bulk-scanned records, marking them so the
-prediction can be flagged for human review. Feed age is flagged at prediction time (see `oversight_flags`).
+SERVE mode drops duplicates and repairs coordinates but keeps bulk-synced records, marking them with
+`guard_bulk_scan` using only data recorded so far, so predictions can be flagged for review.
 """
 
 from dataclasses import dataclass, field
@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
+from server.quality.config import QUALITY, CleanMode, QualityConfig
 from server.quality.detectors import (
     area_reference,
     bulk_scanned_courier_days,
@@ -20,16 +21,9 @@ from server.quality.detectors import (
 )
 
 
-@dataclass(frozen=True)
-class GuardConfig:
-    max_area_offset_km: float = 1.5      # clean data: 0.3% of rows exceed this
-    bulk_scan_share: float = 0.3         # clean data: no courier-day has any shared timestamp
-    stale_feed_minutes: float = 45.0     # oversight: no visible delivery for this long while holding packages
-
-
 @dataclass
 class DataGuard:
-    config: GuardConfig = field(default_factory=GuardConfig)
+    config: QualityConfig = field(default_factory=lambda: QUALITY)
     reference: pd.DataFrame | None = None
 
     def fit(self, records: pd.DataFrame) -> "DataGuard":
@@ -37,11 +31,10 @@ class DataGuard:
         self.reference = area_reference(records)
         return self
 
-    def clean(self, records: pd.DataFrame, mode: str) -> tuple[pd.DataFrame, dict]:
-        if mode not in ("train", "serve"):
-            raise ValueError("mode must be 'train' or 'serve'")
+    def clean(self, records: pd.DataFrame, mode: CleanMode) -> tuple[pd.DataFrame, dict]:
         if self.reference is None:
             raise RuntimeError("DataGuard.fit must be called first")
+        mode = CleanMode(mode)
         out = records.copy()
         duplicate = duplicate_records(out)
         out = out.loc[~duplicate].copy()
@@ -50,13 +43,17 @@ class DataGuard:
         ref = self.reference.reindex(out["aoi_id"].to_numpy())
         out.loc[repair, "lat"] = ref["lat"].to_numpy()[repair]
         out.loc[repair, "lng"] = ref["lng"].to_numpy()[repair]
-        if mode == "train":   # offline cleaning of past days may use the whole day
+        if mode is CleanMode.TRAIN:
             bulk = bulk_scanned_courier_days(out, self.config.bulk_scan_share)
-        else:                 # serving: only deliveries recorded so far that day
+        else:
             bulk = running_bulk_share(out) >= self.config.bulk_scan_share
-        report = {"input_rows": len(records), "duplicates_dropped": int(duplicate.sum()), "coordinates_repaired": int(repair.sum()),
-                  "bulk_scanned_rows": int(bulk.sum())}
-        if mode == "train":
+        report = {
+            "input_rows": len(records),
+            "duplicates_dropped": int(duplicate.sum()),
+            "coordinates_repaired": int(repair.sum()),
+            "bulk_scanned_rows": int(bulk.sum()),
+        }
+        if mode is CleanMode.TRAIN:
             out = out.loc[~bulk]
             report["quarantined_rows"] = int(bulk.sum())
         else:
@@ -65,15 +62,19 @@ class DataGuard:
         return out.reset_index(drop=True), report
 
 
-DEFAULT_GUARD = GuardConfig()
+def feed_is_stale(live: pd.DataFrame, max_feed_age_min: float, max_upload_lag_min: float) -> np.ndarray:
+    """Stale = uploads running late, or no new delivery for a while since the courier's first delivery today
+    (the overnight gap before a shift starts is not staleness)."""
+    age = live["feed_age_min"].where(live["n_done_today"] > 0).to_numpy()
+    return (age > max_feed_age_min) | (live["upload_lag_min"].to_numpy() > max_upload_lag_min)
 
 
-def oversight_flags(live: pd.DataFrame, packages: pd.DataFrame, config: GuardConfig = DEFAULT_GUARD) -> pd.DataFrame:
-    """Per prediction: stale feed and/or bulk-scanned courier-day. Flagged predictions go to a dispatcher."""
-    stale = live["feed_age_min"].to_numpy() > config.stale_feed_minutes
+def review_flags(live: pd.DataFrame, packages: pd.DataFrame, config: QualityConfig = QUALITY) -> pd.DataFrame:
+    """Per prediction: stale feed and/or bulk-synced courier-day."""
+    stale = feed_is_stale(live, config.stale_feed_minutes, config.stale_feed_minutes)
     if "guard_bulk_scan" in packages:
         cur = live["cur_row"].to_numpy()
         bulk = np.where(cur >= 0, packages["guard_bulk_scan"].to_numpy()[np.maximum(cur, 0)], False).astype(bool)
     else:
         bulk = np.zeros(len(live), dtype=bool)
-    return pd.DataFrame({"flag_stale_feed": stale, "flag_bulk_scan": bulk, "flag_review": stale | bulk}, index=live.index)
+    return pd.DataFrame({"flag_stale_feed": stale, "flag_bulk_scan": bulk, "needs_review": stale | bulk}, index=live.index)

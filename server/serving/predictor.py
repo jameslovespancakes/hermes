@@ -1,47 +1,72 @@
-"""Serve live ETAs at an arbitrary moment using only what was known at that moment.
+"""Protected live-ETA prediction: the one prediction path used by the API, training evaluation, and experiments.
 
-Given the delivery log and a query time t, records accepted after t are dropped and deliveries recorded
-after t are hidden (treated as still pending) before ANY feature is built. The models were trained on
-courier delivery checkpoints, so predictions are most representative right after a delivery.
+Steps: (1) the bundle's DataGuard cleans records in SERVE mode (causal checks only); (2) causal live features are
+built (event time drives timing, receive time drives visibility); (3) route model -> standard ETA model; the
+staleness-aware model takes over when a courier's feed age or upload lag exceeds the configured limits;
+(4) review flags mark predictions a dispatcher should check.
 
-Two steps, so callers can cache the expensive one:
-  prepare(records, at)                 -> package table known at `at` (habits included; seconds)
-  predict_prepared(packages, courier, at) -> ETAs for one courier (fast)
+Batch mode (`predict_events`) scores many (courier, moment) events at once; single mode (`predict`) answers
+"what does courier X hold at time t" after hiding everything recorded after t.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
 
 from server.config import MODEL_STORE
 from server.models.bundle import ModelBundle
-from server.models.eta import predict_eta
 from server.models.route import add_route_outputs, predict_route
-from server.pipeline.features import live_table, package_table
+from server.pipeline.features import checkpoints, live_table, package_table
+from server.quality.config import QUALITY, CleanMode, QualityConfig
+from server.quality.guard import feed_is_stale, review_flags
+from server.quality.monitor import DRIFT_FEATURES, data_health
 
-OUTPUT_COLUMNS = ["order_id", "minutes_remaining", "predicted_delivery_at", "predicted_position", "packages_held",
-                  "minutes_since_accepted"]
+OUTPUT_COLUMNS = [
+    "order_id",
+    "minutes_remaining",
+    "predicted_delivery_at",
+    "predicted_position",
+    "packages_held",
+    "minutes_since_accepted",
+    "feed_age_min",
+    "upload_lag_min",
+    "model_used",
+    "needs_review",
+    "review_reasons",
+]
+HEALTH_EVENTS = 2000   # delivery checkpoints sampled for the drift check
+DIAGNOSTIC_COLUMNS = ["s", "courier", "n_pending", "dist_from_courier_km", "pace_today_min", "route_ahead"]
 
 
 def known_at(records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
-    """The log as it looked at time `at` (cleaned records from server.data.loading)."""
+    """The log as it looked at time `at`: later acceptances dropped, deliveries not yet received hidden."""
     known = records.loc[records["accepted_at"] <= at].copy()
-    future = known["delivered_at"] > at
+    arrived = known["received_at"] if "received_at" in known else known["delivered_at"]
+    future = arrived > at
     known.loc[future, "delivered_at"] = pd.NaT
     known.loc[future, "duration_minutes"] = np.nan
+    if "received_at" in known:
+        known.loc[future, "received_at"] = pd.NaT
     return known.reset_index(drop=True)
 
 
 def couriers_holding(records: pd.DataFrame, at: pd.Timestamp) -> pd.Series:
     """Number of packages each courier (raw id) holds at `at`, largest first."""
-    held = records.loc[(records["accepted_at"] <= at) & ~(records["delivered_at"] <= at)]
+    arrived = records["received_at"] if "received_at" in records else records["delivered_at"]
+    held = records.loc[(records["accepted_at"] <= at) & ~(arrived <= at)]
     return held.groupby("courier_id").size().sort_values(ascending=False)
+
+
+def _reasons(flags: pd.DataFrame) -> list[list[str]]:
+    names = {"flag_stale_feed": "courier feed is stale", "flag_bulk_scan": "delivery times are bulk-synced"}
+    return [[names[c] for c in names if row[c]] for _, row in flags.iterrows()]
 
 
 @dataclass
 class LiveETAPredictor:
     bundle: ModelBundle
+    config: QualityConfig = field(default_factory=lambda: QUALITY)
 
     @classmethod
     def from_store(cls, city: str) -> "LiveETAPredictor":
@@ -51,23 +76,75 @@ class LiveETAPredictor:
     def city(self) -> str:
         return self.bundle.city
 
+    def clean(self, records: pd.DataFrame) -> pd.DataFrame:
+        if self.bundle.guard is None:
+            return records
+        cleaned, _ = self.bundle.guard.clean(records, CleanMode.SERVE)
+        return cleaned
+
+    def score(self, live: pd.DataFrame, packages: pd.DataFrame, diagnostics: bool = False) -> pd.DataFrame:
+        """Predictions for live rows (route model -> standard or staleness-aware ETA -> review flags)."""
+        live = add_route_outputs(live, predict_route(self.bundle.route_model, live))
+        minutes = self.bundle.eta.predict(live)
+        model_used = np.full(len(live), "standard", dtype=object)
+        if self.bundle.staleness is not None:
+            stale = feed_is_stale(live, self.config.fresh_max_feed_age_min, self.config.fresh_max_upload_lag_min)
+            if stale.any():
+                minutes = np.where(stale, self.bundle.staleness.predict(live), minutes)
+                model_used[stale] = "staleness"
+        flags = review_flags(live, packages, self.config)
+        out = pd.DataFrame(
+            {
+                "order_id": live["_order_id"].to_numpy(),
+                "minutes_remaining": minutes,
+                "predicted_delivery_at": (pd.to_datetime(live["s"]) + pd.to_timedelta(minutes, unit="m")).dt.round("min").to_numpy(),
+                "predicted_position": (live["route_ahead"] + 1).astype(int).to_numpy(),
+                "packages_held": live["n_pending"].astype(int).to_numpy(),
+                "minutes_since_accepted": live["elapsed_min"].to_numpy(),
+                "feed_age_min": live["feed_age_min"].to_numpy(),
+                "upload_lag_min": live["upload_lag_min"].to_numpy(),
+                "model_used": model_used,
+                "needs_review": flags["needs_review"].to_numpy(),
+                "review_reasons": _reasons(flags),
+            }
+        )
+        if diagnostics:
+            out["s"], out["courier"] = live["s"].to_numpy(), live["courier_s"].to_numpy()
+            for column in DIAGNOSTIC_COLUMNS[2:]:
+                out[column] = live[column].to_numpy()
+        return out
+
+    def predict_events(self, records: pd.DataFrame, events: pd.DataFrame, transition_cutoff: pd.Timestamp, diagnostics: bool = False) -> pd.DataFrame:
+        """Batch predictions at many (courier_id 'city:id', s) events; every feature is causal per event."""
+        packages = package_table(self.clean(records), self.city)
+        live = live_table(packages, transition_cutoff, events)
+        return self.score(live, packages, diagnostics) if not live.empty else pd.DataFrame(columns=OUTPUT_COLUMNS)
+
     def prepare(self, records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
-        return package_table(known_at(records, at), self.city)
+        """Package table as known at `at` (the expensive, cacheable step)."""
+        return package_table(self.clean(known_at(records, at)), self.city)
 
     def predict_prepared(self, packages: pd.DataFrame, courier_id, at: pd.Timestamp) -> pd.DataFrame:
         events = pd.DataFrame({"courier_id": [f"{self.city}:{courier_id}"], "s": [at]})
         live = live_table(packages, transition_cutoff=at.normalize(), events=events)
         if live.empty:
             return pd.DataFrame(columns=OUTPUT_COLUMNS)
-        live = add_route_outputs(live, predict_route(self.bundle.route_model, live))
-        minutes = predict_eta(self.bundle.eta_model, self.bundle.eta_schema, live, self.bundle.eta_columns)
-        out = pd.DataFrame({"order_id": live["_order_id"].to_numpy(), "minutes_remaining": minutes.round(1),
-                            "predicted_delivery_at": (at + pd.to_timedelta(minutes, unit="m")).round("min"),
-                            "predicted_position": (live["route_ahead"] + 1).astype(int).to_numpy(),
-                            "packages_held": live["n_pending"].astype(int).to_numpy(),
-                            "minutes_since_accepted": live["elapsed_min"].to_numpy()})
-        return out.sort_values("predicted_position").reset_index(drop=True)
+        return self.score(live, packages).sort_values("predicted_position").reset_index(drop=True)
 
     def predict(self, records: pd.DataFrame, courier_id, at: pd.Timestamp) -> pd.DataFrame:
-        """ETAs for every package `courier_id` holds at time `at` (raw courier id, e.g. 2136)."""
+        """ETAs for every package `courier_id` (raw id) holds at time `at`."""
         return self.predict_prepared(self.prepare(records, at), courier_id, at)
+
+    def data_health(self, records: pd.DataFrame, packages: pd.DataFrame, at: pd.Timestamp) -> dict:
+        """Data contract and input drift over the 24 h before `at`, measured at delivery checkpoints like the
+        training reference (a sample of them, for speed)."""
+        if self.bundle.monitor is None:
+            raise RuntimeError("this model bundle has no monitoring baseline")
+        batch = known_at(records, at)
+        batch = batch.loc[batch["delivered_at"] > at - pd.Timedelta(days=1)]
+        events = checkpoints(batch, self.city, at - pd.Timedelta(days=1), at)
+        events = events.sample(n=min(HEALTH_EVENTS, len(events)), random_state=0)
+        live = live_table(packages, at.normalize(), events) if len(events) else pd.DataFrame(columns=DRIFT_FEATURES)
+        report = data_health(self.bundle.monitor, batch, live[DRIFT_FEATURES], self.config)
+        report["records_checked"] = len(batch)
+        return report

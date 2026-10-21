@@ -20,8 +20,9 @@ def clean_records(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     durations. Long and zero durations are kept.
     """
     frame = raw.rename(columns={"package_id": "order_id"}) if "order_id" not in raw and "package_id" in raw else raw.copy()
-    missing = set(CATEGORICAL + ["order_id", "accept_time", "delivery_time", "accept_gps_time",
-                                 "lng", "lat", "accept_gps_lng", "accept_gps_lat"]) - set(frame.columns)
+    missing = set(
+        CATEGORICAL + ["order_id", "accept_time", "delivery_time", "accept_gps_time", "lng", "lat", "accept_gps_lng", "accept_gps_lat"]
+    ) - set(frame.columns)
     if missing:
         raise ValueError(f"Missing required fields: {sorted(missing)}")
     frame["accepted_at"] = parse_time(frame["accept_time"])
@@ -29,10 +30,12 @@ def clean_records(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     frame["accept_gps_at"] = parse_time(frame["accept_gps_time"])
     frame["duration_minutes"] = (frame["delivered_at"] - frame["accepted_at"]).dt.total_seconds() / 60
     exclusions = {}
-    for reason, rule in [("missing_order_id", lambda f: f["order_id"].isna()),
-                         ("duplicate_order_id_all_occurrences", lambda f: f["order_id"].duplicated(keep=False)),
-                         ("unparseable_accept_or_delivery_time", lambda f: f["accepted_at"].isna() | f["delivered_at"].isna()),
-                         ("negative_duration", lambda f: f["duration_minutes"] < 0)]:
+    for reason, rule in [
+        ("missing_order_id", lambda f: f["order_id"].isna()),
+        ("duplicate_order_id_all_occurrences", lambda f: f["order_id"].duplicated(keep=False)),
+        ("unparseable_accept_or_delivery_time", lambda f: f["accepted_at"].isna() | f["delivered_at"].isna()),
+        ("negative_duration", lambda f: f["duration_minutes"] < 0),
+    ]:
         mask = rule(frame)
         exclusions[reason] = int(mask.sum())
         frame = frame.loc[~mask].copy()

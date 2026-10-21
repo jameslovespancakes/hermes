@@ -6,8 +6,7 @@ import pandas as pd
 from server.config import CATEGORICAL, CATS
 from server.features.geometry import haversine_km
 
-META = {"accepted_at": "_accepted_at", "delivered_at": "_delivered_at", "duration_minutes": "_duration_minutes",
-        "order_id": "_order_id"}
+META = {"accepted_at": "_accepted_at", "delivered_at": "_delivered_at", "duration_minutes": "_duration_minutes", "order_id": "_order_id"}
 
 
 def package_features(records: pd.DataFrame, city: str) -> pd.DataFrame:
@@ -23,8 +22,7 @@ def package_features(records: pd.DataFrame, city: str) -> pd.DataFrame:
     for name in ["lng", "lat", "accept_gps_lng", "accept_gps_lat"]:
         f[name] = pd.to_numeric(f[name], errors="coerce")
     f.loc[~(f["lng"].between(-180, 180) & f["lat"].between(-90, 90)), ["lng", "lat"]] = np.nan
-    gps_ok = ((records["accept_gps_at"] <= accepted) & f["accept_gps_lng"].between(-180, 180)
-              & f["accept_gps_lat"].between(-90, 90))
+    gps_ok = (records["accept_gps_at"] <= accepted) & f["accept_gps_lng"].between(-180, 180) & f["accept_gps_lat"].between(-90, 90)
     f.loc[~gps_ok, ["accept_gps_lng", "accept_gps_lat"]] = np.nan
     f["accept_gps_age_minutes"] = ((accepted - records["accept_gps_at"]).dt.total_seconds() / 60).where(gps_ok)
     f["accept_gps_missing"] = (~gps_ok).astype(int)
@@ -36,4 +34,6 @@ def package_features(records: pd.DataFrame, city: str) -> pd.DataFrame:
         f[column] = f[column].astype("float32")
     for source, target in META.items():
         f[target] = records[source].to_numpy()
+    if "received_at" in records:  # event-time mode: server receive time kept next to the scanner's event time
+        f["_received_at"] = records["received_at"].to_numpy()
     return f

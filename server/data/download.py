@@ -77,13 +77,24 @@ def download_city(city: str) -> dict:
     retrieved = datetime.now(timezone.utc).isoformat()
     if not downloaded and previous.get("sha256") == digest:
         retrieved = previous.get("retrieved_at_utc", retrieved)
-    manifest = {"dataset": HF_REPO, "subdataset": "LaDe-D", "task": "delivery", "revision": HF_REVISION,
-                "city": CITIES[city], "source_url": url, "selected_file": source_path,
-                "local_file": output.relative_to(ROOT).as_posix(), "retrieved_at_utc": retrieved,
-                "bytes": output.stat().st_size, "sha256": digest, **_csv_summary(output),
-                "subset_rule": "One complete city delivery CSV; no sampling at download.",
-                "modifications": "None; raw download preserved byte-for-byte.", "rights_statement": RIGHTS,
-                "paper_url": "https://arxiv.org/html/2306.10675v3",
-                "citation": "Wu et al., LaDe: The First Comprehensive Last-mile Delivery Dataset from Industry, arXiv:2306.10675."}
+    manifest = {
+        "dataset": HF_REPO,
+        "subdataset": "LaDe-D",
+        "task": "delivery",
+        "revision": HF_REVISION,
+        "city": CITIES[city],
+        "source_url": url,
+        "selected_file": source_path,
+        "local_file": output.relative_to(ROOT).as_posix(),
+        "retrieved_at_utc": retrieved,
+        "bytes": output.stat().st_size,
+        "sha256": digest,
+        **_csv_summary(output),
+        "subset_rule": "One complete city delivery CSV; no sampling at download.",
+        "modifications": "None; raw download preserved byte-for-byte.",
+        "rights_statement": RIGHTS,
+        "paper_url": "https://arxiv.org/html/2306.10675v3",
+        "citation": "Wu et al., LaDe: The First Comprehensive Last-mile Delivery Dataset from Industry, arXiv:2306.10675.",
+    }
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return manifest

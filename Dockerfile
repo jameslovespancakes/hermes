@@ -21,7 +21,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.12.1 /uv /uvx /bin/
 WORKDIR /app
 
 # Dependencies first (cached layer), exactly as locked; no dev tools in the image.
-COPY pyproject.toml uv.lock .python-version ./
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY server ./server

@@ -22,8 +22,14 @@ def add_transitions(live: pd.DataFrame, packages: pd.DataFrame, cutoff: pd.Times
     done = packages.loc[packages["_delivered_at"] < cutoff].sort_values(["courier_id", "_delivered_at"])
     prev = done.groupby("courier_id", observed=True).shift()
     same_day = done["_delivered_at"].dt.normalize() == prev["_delivered_at"].dt.normalize()
-    moves = pd.DataFrame({"c": done["courier_id"].astype(str), "a": prev["aoi_id"].astype(str), "b": done["aoi_id"].astype(str),
-                          "day": done["_delivered_at"].dt.strftime("%m-%d")}).loc[same_day]
+    moves = pd.DataFrame(
+        {
+            "c": done["courier_id"].astype(str),
+            "a": prev["aoi_id"].astype(str),
+            "b": done["aoi_id"].astype(str),
+            "day": done["_delivered_at"].dt.strftime("%m-%d"),
+        }
+    ).loc[same_day]
     cab, ca = moves.groupby(["c", "a", "b"]).size(), moves.groupby(["c", "a"]).size()
     gab, ga = moves.groupby(["a", "b"]).size(), moves.groupby("a").size()
     own_cab, own_ca = moves.groupby(["c", "day", "a", "b"]).size(), moves.groupby(["c", "day", "a"]).size()

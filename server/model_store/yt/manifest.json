@@ -1,5 +1,5 @@
 {
-  "created_utc": "2026-10-20T04:34:23.896775+00:00",
+  "created_utc": "2026-10-21T01:54:02.920796+00:00",
   "city": "yt",
   "seed": 42,
   "fit_sample": 800000,
@@ -83,7 +83,35 @@
     "route_ahead",
     "route_ahead_x_pace"
   ],
-  "model_sha256": "ef2e476485594361d90aa25b3c19854c0b2374adb50db265cc5d580fbe37abb2",
+  "staleness_extra_columns": [
+    "feed_age_min",
+    "upload_lag_min"
+  ],
+  "quality_config": {
+    "max_area_offset_km": 1.5,
+    "bulk_scan_share": 0.3,
+    "stale_feed_minutes": 45.0,
+    "fresh_max_feed_age_min": 20.0,
+    "fresh_max_upload_lag_min": 10.0,
+    "max_duplicate_order_id_pct": 0.1,
+    "max_delivered_before_accepted_pct": 0.0,
+    "max_outside_city_pct": 0.5,
+    "max_shared_timestamp_pct": 1.0,
+    "max_on_the_hour_pct": 5.0,
+    "max_resent_record_pct": 0.5,
+    "drift_watch": 0.1,
+    "drift_act": 0.25,
+    "drift_margin": 2.0,
+    "audit_rate": 0.1,
+    "min_audited_predictions": 500,
+    "min_improvement_min": 0.0,
+    "augment_share": 0.5,
+    "augment_min_lag_min": 15.0,
+    "augment_max_lag_min": 180.0,
+    "augment_sample": 400000
+  },
+  "promoted": true,
+  "model_sha256": "2f76f636f30d4780efb541e117ae2437cf86eb54a1bbce14c22214f7ad7aecc5",
   "source_manifest_sha256": "7de809005128954e46bc2e33c6bf6a48e53b44615a5ef975d45a7e0ce8052475",
   "versions": {
     "lightgbm": "4.6.0",
@@ -91,20 +119,20 @@
     "pandas": "2.3.3"
   },
   "top_features_by_gain_share": {
-    "route_ahead": 0.4073,
-    "aoi_id": 0.338,
-    "courier_id": 0.0529,
-    "greedy_km": 0.0241,
-    "route_score": 0.023,
-    "hab_ca_rel_now": 0.0207,
-    "n_pending": 0.0194,
-    "p_all_next_area": 0.0124,
-    "route_ahead_x_pace": 0.0085,
-    "dist_from_courier_km": 0.0075,
-    "hab_shift_end_rel_now": 0.0067,
-    "aoi_earlier_count": 0.0057,
-    "p_courier_next_area": 0.0056,
-    "clock_s": 0.0044,
+    "route_ahead": 0.4027,
+    "aoi_id": 0.3419,
+    "courier_id": 0.053,
+    "route_score": 0.0238,
+    "greedy_km": 0.0236,
+    "hab_ca_rel_now": 0.0215,
+    "n_pending": 0.0191,
+    "p_all_next_area": 0.0125,
+    "route_ahead_x_pace": 0.0089,
+    "dist_from_courier_km": 0.0078,
+    "hab_shift_end_rel_now": 0.0061,
+    "p_courier_next_area": 0.005,
+    "aoi_earlier_count": 0.0049,
+    "clock_s": 0.0046,
     "minutes_since_first_delivery_today": 0.004
   }
 }

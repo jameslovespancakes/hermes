@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -15,14 +16,28 @@ MODEL_STORE = SERVER_DIR / "model_store"
 HF_REPO = "Cainiao-AI/LaDe"
 HF_REVISION = "be2cec02775cafc8d52230303f32134382bcc50b"
 CITIES = {"yt": "Yantai", "jl": "Jilin", "cq": "Chongqing", "hz": "Hangzhou", "sh": "Shanghai"}
-RIGHTS = ("Provided by the W&M AI Case-a-thon organizers for this exercise; use confirmed with the case owners. "
-          "Public metadata differs (Hugging Face: Apache-2.0; LaDe paper: CC BY-NC 4.0), so keep attribution and "
-          "non-commercial use. No attempt to reidentify anonymized couriers or locations.")
+RIGHTS = (
+    "Provided by the W&M AI Case-a-thon organizers for this exercise; use confirmed with the case owners. "
+    "Public metadata differs (Hugging Face: Apache-2.0; LaDe paper: CC BY-NC 4.0), so keep attribution and "
+    "non-commercial use. No attempt to reidentify anonymized couriers or locations."
+)
 
 # Source timestamps omit the year; 2000 is only an ordering/duration anchor.
 PARSE_YEAR = 2000
-RAW_COLUMNS = ["order_id", "region_id", "courier_id", "aoi_id", "aoi_type", "lng", "lat",
-               "accept_time", "accept_gps_time", "accept_gps_lng", "accept_gps_lat", "delivery_time"]
+RAW_COLUMNS = [
+    "order_id",
+    "region_id",
+    "courier_id",
+    "aoi_id",
+    "aoi_type",
+    "lng",
+    "lat",
+    "accept_time",
+    "accept_gps_time",
+    "accept_gps_lng",
+    "accept_gps_lat",
+    "delivery_time",
+]
 CATEGORICAL = ["region_id", "courier_id", "aoi_id", "aoi_type"]
 CATS = CATEGORICAL + ["city"]
 
@@ -35,10 +50,11 @@ def ts(month_day: str) -> pd.Timestamp:
 @dataclass(frozen=True)
 class Split:
     """Chronological windows. Fit rows need outcomes known by fit_end; October is never loaded by default."""
+
     start: str = "05-01"
-    fit_end: str = "09-01"      # fit: events before this, outcomes known before this
-    stop_end: str = "09-16"     # early stopping: events fit_end..stop_end, outcomes known before stop_end
-    test_end: str = "10-01"     # test: events stop_end..test_end, all outcomes; also the data cutoff
+    fit_end: str = "09-01"  # fit: events before this, outcomes known before this
+    stop_end: str = "09-16"  # early stopping: events fit_end..stop_end, outcomes known before stop_end
+    test_end: str = "10-01"  # test: events stop_end..test_end, all outcomes; also the data cutoff
 
     @property
     def fit_cutoff(self) -> pd.Timestamp:
@@ -61,23 +77,62 @@ HABIT_WINDOW_DAYS = 28
 ROUTE_FOLDS = 5
 
 PACKAGE_COLS = ["region_id", "aoi_id", "aoi_type", "courier_id", "lng", "lat", "accept_hour", "straight_line_km"]
-LIVE_COLS = ["elapsed_min", "clock_s", "n_pending", "n_done_today", "n_done_last_hour", "pace_today_min",
-             "minutes_since_first_delivery_today", "dist_from_courier_km", "dist_rank", "greedy_pos", "greedy_pos_frac",
-             "greedy_km", "aoi_greedy_pos_frac", "aoi_earlier_count", "same_aoi_pending", "at_current_aoi",
-             "hab_ca_rel_now", "hab_ca_rank_now", "hab_shift_end_rel_now", "est_stops_x_pace"]
-TRANSITION_COLS = ["p_courier_next_area", "p_all_next_area", "courier_transition_support",
-                   "p_courier_next_area_rank", "p_all_next_area_rank"]
-ROUTE_INPUT_COLS = [c for c in LIVE_COLS if c != "est_stops_x_pace"] + [
-    "hab_ca_count", "hab_ca_typical_duration", "hab_cab_minutes_until_usual_delivery",
-    "hab_a_minutes_until_usual_delivery", "elapsed_rank"] + TRANSITION_COLS
+LIVE_COLS = [
+    "elapsed_min",
+    "clock_s",
+    "n_pending",
+    "n_done_today",
+    "n_done_last_hour",
+    "pace_today_min",
+    "minutes_since_first_delivery_today",
+    "dist_from_courier_km",
+    "dist_rank",
+    "greedy_pos",
+    "greedy_pos_frac",
+    "greedy_km",
+    "aoi_greedy_pos_frac",
+    "aoi_earlier_count",
+    "same_aoi_pending",
+    "at_current_aoi",
+    "hab_ca_rel_now",
+    "hab_ca_rank_now",
+    "hab_shift_end_rel_now",
+    "est_stops_x_pace",
+]
+TRANSITION_COLS = ["p_courier_next_area", "p_all_next_area", "courier_transition_support", "p_courier_next_area_rank", "p_all_next_area_rank"]
+ROUTE_INPUT_COLS = (
+    [c for c in LIVE_COLS if c != "est_stops_x_pace"]
+    + ["hab_ca_count", "hab_ca_typical_duration", "hab_cab_minutes_until_usual_delivery", "hab_a_minutes_until_usual_delivery", "elapsed_rank"]
+    + TRANSITION_COLS
+)
 ROUTE_OUTPUT_COLS = ["route_score", "route_ahead", "route_ahead_x_pace"]
 
-ROUTE_PARAMS = {"objective": "regression", "n_estimators": 500, "learning_rate": 0.05, "num_leaves": 255,
-                "min_child_samples": 50, "colsample_bytree": 0.8, "subsample": 0.8, "subsample_freq": 1}
-ETA_PARAMS = {"objective": "regression_l1", "n_estimators": 3000, "learning_rate": 0.05, "num_leaves": 255,
-              "min_child_samples": 50, "reg_lambda": 5.0, "colsample_bytree": 0.9}
+ROUTE_PARAMS: dict[str, Any] = {
+    "objective": "regression",
+    "n_estimators": 500,
+    "learning_rate": 0.05,
+    "num_leaves": 255,
+    "min_child_samples": 50,
+    "colsample_bytree": 0.8,
+    "subsample": 0.8,
+    "subsample_freq": 1,
+}
+ETA_PARAMS: dict[str, Any] = {
+    "objective": "regression_l1",
+    "n_estimators": 3000,
+    "learning_rate": 0.05,
+    "num_leaves": 255,
+    "min_child_samples": 50,
+    "reg_lambda": 5.0,
+    "colsample_bytree": 0.9,
+}
 EARLY_STOPPING_ROUNDS = 80
 THREADS = 16
 
-HORIZONS = [("under_30_min", 0, 30), ("30_to_60_min", 30, 60), ("1_to_3_hours", 60, 180),
-            ("3_to_24_hours", 180, 1440), ("over_24_hours", 1440, float("inf"))]
+HORIZONS = [
+    ("under_30_min", 0, 30),
+    ("30_to_60_min", 30, 60),
+    ("1_to_3_hours", 60, 180),
+    ("3_to_24_hours", 180, 1440),
+    ("over_24_hours", 1440, float("inf")),
+]

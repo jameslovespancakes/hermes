@@ -22,14 +22,17 @@ def main(argv=None):
 
     if args.command == "download":
         from server.data.download import download_city
+
         manifest = download_city(args.city)
         print(f"Verified {manifest['local_file']}: {manifest['row_count']:,} rows, sha256 {manifest['sha256']}")
     elif args.command == "train":
         from server.pipeline.train import train_city
+
         train_city(args.city)
     else:
         from server.data.loading import load_city
         from server.serving.predictor import LiveETAPredictor
+
         records, _ = load_city(args.city)
         at = pd.Timestamp(f"{PARSE_YEAR}-{args.at}")
         result = LiveETAPredictor.from_store(args.city).predict(records, args.courier, at)

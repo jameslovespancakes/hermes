@@ -23,7 +23,7 @@ class HabitTests(unittest.TestCase):
         recs = records(days=3)
         last_day = recs["accepted_at"].dt.normalize() == recs["accepted_at"].dt.normalize().max()
         changed = recs.copy()
-        changed.loc[last_day, "delivered_at"] += pd.Timedelta(hours=5)   # rewrite the query day's own outcomes
+        changed.loc[last_day, "delivered_at"] += pd.Timedelta(hours=5)  # rewrite the query day's own outcomes
         changed["duration_minutes"] = (changed["delivered_at"] - changed["accepted_at"]).dt.total_seconds() / 60
         pd.testing.assert_frame_equal(habits(recs).loc[last_day.to_numpy()], habits(changed).loc[last_day.to_numpy()])
 

@@ -2,7 +2,8 @@
 
 Predicts **minutes until each pending package is delivered**, re-predicted after every courier delivery.
 Best model from our research (see `../research.md`): a LightGBM **route-order model** feeding a LightGBM
-**ETA model**, built only from information available at the moment of prediction.
+**ETA model**, built only from information available at the moment of prediction, and protected against
+stale and low-quality courier data (see "Data-quality safeguards").
 
 | Yantai, test Sep 16-30 (October untouched) | Result |
 |---|---:|
@@ -30,15 +31,24 @@ server/
 │   ├── encoding.py      categorical vocabularies from training rows only
 │   ├── route.py         route-order model (out-of-fold by courier-day)
 │   ├── eta.py           ETA model (absolute-error objective, early stopping)
-│   └── bundle.py        save/load the trained bundle
+│   └── bundle.py        the trained bundle: models + guard + monitoring baseline
 ├── pipeline/
 │   ├── features.py      shared feature assembly (training and serving)
-│   ├── train.py         end-to-end train -> evaluate -> store
-│   └── evaluate.py      error by time remaining; route-order quality
+│   ├── staleness.py     training rows with simulated upload delays (staleness-aware model)
+│   ├── train.py         train -> evaluate -> gate against the stored model -> store
+│   └── evaluate.py      error by time remaining; route-order quality; review flags
+├── quality/
+│   ├── config.py        every data-quality threshold, in one place
+│   ├── detectors.py     re-sent records, GPS offsets, bulk-synced timestamps
+│   ├── guard.py         DataGuard (clean before training and serving) + review flags
+│   ├── contract.py      daily data contract (expectations every batch must meet)
+│   ├── drift.py         input drift (PSI) with thresholds calibrated on clean history
+│   ├── monitor.py       monitoring baseline + data-health check
+│   └── gating.py        retrained model replaces the stored one only if better on audited deliveries
 ├── serving/
-│   └── predictor.py     LiveETAPredictor.predict(records, courier, at): hides everything after `at`
+│   └── predictor.py     LiveETAPredictor: guard -> features -> standard or staleness-aware model -> flags
 ├── api/
-│   ├── app.py           FastAPI app: /health, /model, /couriers, /predict
+│   ├── app.py           FastAPI app: /health, /model, /couriers, /predict, /data-health
 │   └── schemas.py       request/response models
 ├── tests/               unit tests, one file per module (synthetic data, a few seconds)
 └── model_store/<city>/  model.pkl, metrics.json, manifest.json
@@ -50,11 +60,10 @@ Dependencies are pinned in the root `pyproject.toml` / `uv.lock` and managed wit
 uv sync
 uv run python -m server.cli download --city yt
 uv run python -m unittest discover -s server/tests -t .
-uv run python -m server.cli train --city yt                 # ~7 min on 16 CPU threads
+uv run python -m server.cli train --city yt                 # ~15 min on 16 CPU threads
 uv run python -m server.cli predict --city yt --courier 2136 --at "09-20 10:30:00"
 ```
-Add a dependency with `uv add <package>==<version>` (updates `pyproject.toml` and `uv.lock`); lint with
-`uv run ruff check server`.
+Add a dependency with `uv add <package>==<version>`; lint with `uv run ruff check server`.
 
 ## HTTP API and Docker
 ```powershell
@@ -67,15 +76,14 @@ docker run --rm -p 8000:8000 hermes-eta                 # then open http://local
 | `GET /health` | status, city, model cutoff, records loaded |
 | `GET /model` | stored test metrics (overall, by time remaining, route quality) |
 | `GET /couriers?at=09-20 10:30:00` | couriers holding packages at that moment, busiest first |
-| `POST /predict` `{"courier_id": "2136", "at": "09-20 10:30:00"}` | ETA for each package the courier holds, in predicted route order |
+| `POST /predict` `{"courier_id": "2136", "at": "09-20 10:30:00"}` | ETA for each package the courier holds, in predicted route order, with `model_used` and `needs_review` |
+| `GET /data-health?at=09-20 10:30:00` | data contract on the past 24 h of records + input drift vs training: `ok` / `watch` / `act` |
 
 The first request for a new moment takes a few seconds (it rebuilds what was known then); repeat requests for
 that moment are cached.
 
-## CI/CD (`.github/workflows/ci-cd.yml`)
-1. **test**: `uv sync --frozen`, ruff lint, all unit tests (no Git LFS download needed).
-2. **docker**: build the image, start it, smoke-test `/health`, `/model`, `/predict`, and input validation.
-3. **publish** (pushes to `main` only): push the image to `ghcr.io/<owner>/<repo>` tagged `latest` and the commit SHA.
+CI (`.github/workflows/ci.yml`) runs the lint and unit tests on every push.
+
 In Python:
 ```python
 import pandas as pd
@@ -86,6 +94,19 @@ records, _ = load_city("yt")
 etas = LiveETAPredictor.from_store("yt").predict(records, courier_id=2136, at=pd.Timestamp("2000-09-20 10:30"))
 ```
 Source timestamps have no year; `2000` is only a parsing anchor.
+
+## Data-quality safeguards
+Validated on a simulated bad-data timeline (results: `../evidence/degradation/REPORT.md`); thresholds in `quality/config.py`.
+
+| Problem | Safeguard | Where |
+|---|---|---|
+| Re-sent duplicate records | dropped before features are built | `DataGuard` (training and serving) |
+| Implausible GPS (far from its delivery area) | repaired to the area's usual point | `DataGuard` |
+| Bulk-synced delivery times | courier-days quarantined from training; flagged when serving | `DataGuard`, review flags |
+| Late uploads (stale feed) | event time drives features, receive time drives visibility; staleness-aware model takes over when feed age > 20 min or upload lag > 10 min | `features/live.py`, `LiveETAPredictor` |
+| Doubtful ETAs | `needs_review` + reasons on every prediction | `/predict` |
+| Bad batches / shifting inputs | daily data contract + PSI drift alerts | `/data-health` |
+| Retraining on bad data | new model stored only if better on a 10% audited sample; otherwise saved under `candidate/` | `pipeline/train.py` |
 
 ## How leakage is prevented
 - **Splits:** fit on events before Sep 1 whose outcomes were known before Sep 1; early-stop on Sep 1-15;
@@ -104,5 +125,7 @@ Source timestamps have no year; `2000` is only a parsing anchor.
 - Models are trained at delivery checkpoints; predictions are most representative right after a delivery.
   `predict` rebuilds features from the full history for clarity, not speed.
 - `model.pkl` is a pickle: load only files this project produced.
+- The safeguards recover most, not all, of the damage from bad data; GPS repair catches about a third of jittered
+  coordinates, and retraining gates cannot catch a slow decline that also affects the audited sample.
 - Data: provided by the case organizers (use confirmed with the case owners); raw CSVs are stored with Git LFS.
   Keep LaDe attribution and non-commercial use.
