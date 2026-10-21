@@ -26,10 +26,9 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY server ./server
 
-# Data: the pinned, checksum-verified city file from Hugging Face (keeps Git LFS bandwidth for people, not builds).
+# Data: the pinned, checksum-verified city file from Hugging Face.
 ARG CITY=yt
 ENV ETA_CITY=${CITY}
-COPY data/manifest_${CITY}.json ./data/
 RUN /app/.venv/bin/python -m server.cli download --city ${CITY}
 
 RUN useradd --create-home --uid 10001 app   # read-only app files stay root-owned

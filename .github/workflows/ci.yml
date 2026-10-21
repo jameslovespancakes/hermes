@@ -14,5 +14,6 @@ jobs:
         with:
           version: "0.12.1"
       - run: uv sync --frozen
-      - run: uv run ruff check server
+      - run: uv run ruff check server evidence
       - run: uv run python -m unittest discover -s server/tests -t .
+      - run: uv run python -m unittest discover -s evidence -t .

@@ -96,7 +96,7 @@ etas = LiveETAPredictor.from_store("yt").predict(records, courier_id=2136, at=pd
 Source timestamps have no year; `2000` is only a parsing anchor.
 
 ## Data-quality safeguards
-Validated on a simulated bad-data timeline (results: `../evidence/degradation/REPORT.md`); thresholds in `quality/config.py`.
+Validated on a simulated bad-data timeline (results: `../evidence/baddata/results/REPORT.md`); thresholds in `quality/config.py`.
 
 | Problem | Safeguard | Where |
 |---|---|---|
@@ -127,5 +127,6 @@ Validated on a simulated bad-data timeline (results: `../evidence/degradation/RE
 - `model.pkl` is a pickle: load only files this project produced.
 - The safeguards recover most, not all, of the damage from bad data; GPS repair catches about a third of jittered
   coordinates, and retraining gates cannot catch a slow decline that also affects the audited sample.
-- Data: provided by the case organizers (use confirmed with the case owners); raw CSVs are stored with Git LFS.
+- Data: provided by the case organizers (use confirmed with the case owners); not stored in the repo. `download`
+  fetches the pinned Hugging Face revision and verifies its checksum.
   Keep LaDe attribution and non-commercial use.

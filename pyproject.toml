@@ -26,7 +26,9 @@ dev = [
 [tool.ruff]
 line-length = 150
 target-version = "py310"
+extend-exclude = ["evidence/leaks/LaDe"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
 
+per-file-ignores = { "evidence/leaks/clean.py" = ["E501"] }   # long lines are edits to the authors' code

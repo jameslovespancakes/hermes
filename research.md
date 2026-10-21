@@ -1,7 +1,9 @@
 # Research findings: delivery-time prediction on LaDe
 
 Plain-language summary of what the published research says about this dataset, what we found when we checked
-it, and what our own experiments showed. Numbers come from files in `evidence/`; the best model lives in `server/`.
+it, and what our own experiments showed. The best model lives in `server/`; `evidence/` reproduces the claims:
+`evidence/leaks` (the published benchmark's leaks), `evidence/model` (our model's results), `evidence/baddata`
+(the bad-data experiment).
 
 ## 1. In one paragraph
 We predict **how many minutes until a courier delivers a package**, re-predicted after every delivery. Our best
@@ -38,12 +40,12 @@ packages, it scores **77 minutes; ours scores 58.6**.
 We downloaded the LaDe authors' code and trained their best ETA model (M2G4RTP) ourselves.
 
 **The code did not run as published.** Seven fixes were needed (missing modules, wrong imports, an evaluation crash,
-a hard-coded GPU, a results-saving crash). See `evidence/lade_reproduction/LADE_PATCHES.md`.
+a hard-coded GPU, a results-saving crash): `evidence/leaks/fixes.diff`, applied by `evidence/leaks/setup.py`.
 
-**Leaks and shortcuts in their setup** (from reading and running the code):
+**Leaks and shortcuts in their setup** (`uv run python -m evidence.leaks.check` prints each one with file and line):
 1. **Inputs filtered by the answer:** a package is shown to the model only if it *will* be delivered within
    2 hours. The paper never mentions this filter.
-2. **Inputs limited to the next ~24 deliveries in true delivery order.**
+2. **Inputs cut by true delivery order:** only a courier-day's first 24 deliveries (in actual order) can be inputs.
 3. **Busy test days discarded** (more than 25 packages).
 4. **Statistics computed over all dates**, test period included.
 5. **M2G4RTP only:** area features built from the courier's *actual future route*.
@@ -102,7 +104,7 @@ minutes remaining. Trained on May-August, early-stopped on September 1-15, teste
 - The 5-minute timestamp floor and multi-day holds limit any model's accuracy.
 
 ## 8. Bad data: how much it hurts, and what fixes it
-Full report: `evidence/degradation/REPORT.md` (simulated progression on real Yantai data; always scored against true
+Full report: `evidence/baddata/results/REPORT.md` (simulated progression on real Yantai data; always scored against true
 delivery times, on the same real packages and moments for every condition).
 
 **What we broke** (the case's two failure types):
@@ -120,23 +122,23 @@ if a retrained one is better on an audited sample.
 
 | Condition (Sep 16-30, average error) | No fix | With fix | Damage recovered |
 |---|---:|---:|---:|
-| Clean reference | 58.7 | 58.5 | (no cost on clean data) |
-| Stale only | 63.6 | 59.9 | **75%** |
-| Low quality only | 79.7 | 65.6 | **67%** |
-| Both | 83.6 | 66.0 | **70%** |
+| Clean reference | 58.5 | 58.5 | (no cost on clean data) |
+| Stale only | 63.3 | 60.0 | **68%** |
+| Low quality only | 80.1 | 66.7 | **62%** |
+| Both | 84.0 | 66.9 | **67%** |
 
 - **More data made it worse:** as the low-quality feed grew, monthly retraining degraded steadily: extra error
-  +8.6 min (July) -> +12.3 (August) -> +21.0 (September). The guard cut that to +3.7 -> +6.2 -> +11.1.
+  +8.9 min (July) -> +12.3 (August) -> +21.6 (September). The guard cut that to +3.4 -> +6.0 -> +11.3.
 - **Mechanism:** bad records inflated the packages a courier appears to hold (+8 per prediction) and scrambled the
   predicted route order (79% of positions changed); late uploads make the courier look stuck (+78 min feed age).
 - **Early warning:** the data contract failed 0 of 92 clean days and 88 of 92 bad-feed days (from Jul 5). Drift
   alerts fired on 3 of 47 clean days and on every low-quality day; stale feeds were caught on 11 of 15 days.
 - **Guard accuracy:** 100% of injected duplicates removed with 0 real packages lost; 97% of bad-feed records
   quarantined vs 0.03% of good ones; only 32% of bad GPS repaired (the threshold is deliberately conservative).
-- **Oversight:** flagged predictions really are worse (e.g. 72 vs 63 min under low-quality data), so routing them to a
-  dispatcher protects customers; 18-39% of predictions get flagged under bad data, none on clean data.
-- **Limits:** (1) an unanticipated degradation (random +/-30 min timestamp errors) is only partly handled (69.6 -> 62.7
-  vs 58.7 clean); (2) the retraining gate never blocked a model: each month's retrain still beat the old model on
+- **Oversight:** flagged predictions are worse (64 vs 59 min under stale data, 68 vs 66 under low-quality data), so
+  routing them to a dispatcher helps; 13-28% of predictions get flagged under bad data, none on clean data.
+- **Limits:** (1) an unanticipated degradation (random +/-30 min timestamp errors) is only partly handled (69.7 -> 62.7
+  vs 58.5 clean); (2) the retraining gate never blocked a model: each month's retrain still beat the old model on
   recent audited deliveries, so a slow decline that affects everything gets through; (3) about a third of the damage
   from low-quality data remains.
 
@@ -150,4 +152,3 @@ if a retrained one is better on an audited sample.
 - Wen et al., *Survey on Service Route and Time Prediction in Instant Delivery*, arXiv:2309.01194.
 - Uber DeeprETA (arXiv:2206.02127); Google Maps GNN ETA (arXiv:2108.11482); JD TransPDT (arXiv:2505.00375);
   DoorDash and Swiggy engineering blogs; Google TimesFM 3.0 (non-commercial license).
-- Our evidence: `evidence/` (results JSON, Optuna trials, LaDe reproduction notes and re-scoring).

@@ -5,3 +5,6 @@ __pycache__/
 .env.*
 !.env.example
 *.part
+data/
+evidence/leaks/LaDe/
+evidence/baddata/artifacts/
