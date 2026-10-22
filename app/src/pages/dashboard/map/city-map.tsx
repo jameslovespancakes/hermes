@@ -10,6 +10,8 @@ import { addLayers, drawOverview } from './layers';
 
 type MapLibreModule = typeof import('maplibre-gl');
 
+const MARGIN = 4; // degrees of map kept around the cities
+
 interface Props {
   /** Every city on the map; the first view frames them all. */
   cities: City[];
@@ -60,7 +62,7 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
     };
   }, []);
 
-  // Frame every city once they are known.
+  // Frame every city once they are known, and keep the map within reach of them.
   useEffect(() => {
     if (!map || !cities.length) return;
     const west = Math.min(...cities.map((c) => c.bounds[0][0]));
@@ -74,6 +76,10 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
       ],
       { padding: 80, duration: 0 },
     );
+    map.map.setMaxBounds([
+      [west - MARGIN, south - MARGIN],
+      [east + MARGIN, north + MARGIN],
+    ]);
   }, [map, cities]);
 
   // Data layers follow the fleet and the selection.

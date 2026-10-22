@@ -1,10 +1,11 @@
-// The four tour figures: thin lines on a soft card. Parcels and times in the audit figures are invented.
+// The tour figures: thin lines on a soft card. Parcels and times in the audit figures are invented.
 
+// LaDe Table 4, each method's MAE averaged over the paper's three cities (Shanghai, Yantai, Chongqing).
 const lanes = [
-  { name: 'LightGBM', value: 23.32 },
-  { name: 'FDNET', value: 22.41 },
-  { name: 'RankETPA', value: 21.36 },
-  { name: 'M2G4RTP', value: 17.21 },
+  { name: 'LightGBM', value: 21.59 },
+  { name: 'FDNET', value: 21.25 },
+  { name: 'RankETPA', value: 20.16 },
+  { name: 'M2G4RTP', value: 14.47 },
 ];
 
 export function Lanes() {
@@ -12,7 +13,7 @@ export function Lanes() {
     <svg
       viewBox="0 0 400 300"
       role="img"
-      aria-label="Published LaDe Table 4 Yantai results: LightGBM 23.32, FDNET 22.41, RankETPA 21.36, M2G4RTP 17.21 minutes mean absolute error, from zero. Lower is better."
+      aria-label="Published LaDe Table 4 results averaged over Shanghai, Yantai and Chongqing: LightGBM 21.59, FDNET 21.25, RankETPA 20.16, M2G4RTP 14.47 minutes mean absolute error, from zero. Lower is better."
     >
       {lanes.map((lane, i) => {
         const y = 60 + i * 62;
@@ -135,6 +136,46 @@ export function Rods() {
           </text>
         </g>
       ))}
+    </svg>
+  );
+}
+
+// Hermes on its own test window (Sep 16 to 30) in every city, scored on every waiting parcel after every delivery.
+const cities = [
+  { name: 'Jilin', value: 45.85 },
+  { name: 'Yantai', value: 55.85 },
+  { name: 'Shanghai', value: 156.57 },
+  { name: 'Chongqing', value: 519.24 },
+  { name: 'Hangzhou', value: 610.87 },
+  { name: 'Average', value: 277.68 },
+];
+
+export function Cities() {
+  return (
+    <svg
+      viewBox="0 0 400 300"
+      role="img"
+      aria-label="Hermes mean absolute error by city: Jilin 45.85, Yantai 55.85, Shanghai 156.57, Chongqing 519.24, Hangzhou 610.87 minutes; average over the five cities 277.68. Lines from zero; lower is better."
+    >
+      {cities.map((city, i) => {
+        const y = 40 + i * 46;
+        const end = 24 + (city.value / 650) * 270;
+        return (
+          <g
+            key={city.name}
+            className={city.name === 'Average' ? 'city-row lead' : 'city-row'}
+            data-value={city.value}
+          >
+            <text x={24} y={y - 10}>
+              {city.name}
+            </text>
+            <path className="line" d={`M24 ${String(y)}H${end.toFixed(1)}`} />
+            <text className="value" x={end + 10} y={y + 5}>
+              {city.value}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
