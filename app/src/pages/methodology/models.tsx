@@ -1,6 +1,23 @@
-// Models, two steps. First the boosting fan: early trees miss widely, later ones correct the remaining
-// error, so the lines converge on one rising estimate. Then the two models: a stop-order tree whose
-// leaves all feed one ETA tree. Illustrative, not fitted trees.
+// Models: the boosting fan (early trees miss widely, later ones correct the remaining error), the
+// stop-order model feeding the ETA model (illustrative, not fitted trees), then what is actually trained
+// per city and what goes in (from server/models and server/config).
+import { Spec } from './spec';
+
+const chain = [
+  ['Next zone', 'LightGBM classifier, 16 inputs: which group of about 10 buildings comes next'],
+  ['Stop order', "LightGBM regressor, 47 inputs: each parcel's place in the coming stops"],
+  ['ETA x 3', 'LightGBM regressor, 94 inputs, 3 seeds averaged: minutes until delivery'],
+  ['Later day x 2', 'classifier and regressor: will it slip to another day, and when'],
+  ['Stale feed', 'LightGBM regressor, 96 inputs: replaces the ETA when uploads lag'],
+  ['Risk', 'LightGBM regressor: expected error size, flags the riskiest 10%'],
+] as const;
+
+const inputs = [
+  ['The parcel', 'area, address, region, distance from pickup, hour accepted'],
+  ['Past days', 'usual delivery times for this courier and area, shift end, area-to-area moves'],
+  ['Right now', 'parcels held, pace today, distance from the courier, area activity in the last hour'],
+  ['Stop order', "stops predicted ahead, and those stops times today's pace"],
+] as const;
 
 const width = 720;
 const trees = 48;
@@ -83,7 +100,7 @@ export function Models() {
               <article
                 className="step"
                 role="listitem"
-                aria-label="A stop-order model predicts each courier's next stops; its predicted rank feeds a LightGBM ETA model of 155 boosted trees. The faint lines illustrate boosting: early trees miss widely and each later tree corrects the remaining error, converging on one estimate. Illustrative, not fitted trees. Models train offline and stay fixed during replay."
+                aria-label="Each LightGBM model adds trees until its error on held-out August days stops falling, up to 3,000. The faint lines illustrate boosting: early trees miss widely and each later tree corrects the remaining error, converging on one estimate. Illustrative, not fitted trees. Models train offline and stay fixed during replay."
               >
                 <svg
                   className="ensemble fan"
@@ -111,14 +128,14 @@ export function Models() {
                   </g>
                 </svg>
                 <div className="step-copy" aria-hidden="true">
-                  <strong className="step-number">155</strong>
-                  <span className="step-label">trees, each correcting the last</span>
+                  <strong className="step-number">3,000</strong>
+                  <span className="step-label">trees at most, each correcting the last</span>
                 </div>
               </article>
               <article
                 className="step"
                 role="listitem"
-                aria-label="Two models in sequence. A stop-order model predicts each courier's next stops, getting the next three right 69% of the time; every branch of its output feeds the ETA model, which predicts minutes remaining. Illustrative tree shapes, not fitted trees."
+                aria-label="Two models in sequence. A stop-order model predicts each courier's next stops, getting the next three right 69.2% of the time across five cities; every branch of its output feeds the ETA model, which predicts minutes remaining. Illustrative tree shapes, not fitted trees."
               >
                 <svg className="ensemble" viewBox="0 0 800 440" aria-hidden="true">
                   {orderBranches.map((b, i) => (
@@ -150,9 +167,33 @@ export function Models() {
                   </text>
                 </svg>
                 <div className="step-copy" aria-hidden="true">
-                  <strong className="step-number">69%</strong>
-                  <span className="step-label">of next three stops right, fed to the ETA</span>
+                  <strong className="step-number">69.2%</strong>
+                  <span className="step-label">
+                    of next three stops right across five cities, fed to the ETA
+                  </span>
                 </div>
+              </article>
+              <article
+                className="step"
+                role="listitem"
+                aria-label={`What is trained for each city: ${chain.map(([n, d]) => `${n}, ${d}`).join('; ')}.`}
+              >
+                <div className="step-copy" aria-hidden="true">
+                  <strong className="step-number">9</strong>
+                  <span className="step-label">models trained per city, in one chain</span>
+                </div>
+                <Spec rows={chain} />
+              </article>
+              <article
+                className="step"
+                role="listitem"
+                aria-label={`The ETA model's 94 inputs, in four groups: ${inputs.map(([n, d]) => `${n}, ${d}`).join('; ')}.`}
+              >
+                <div className="step-copy" aria-hidden="true">
+                  <strong className="step-number">94</strong>
+                  <span className="step-label">inputs to every ETA, all known at that moment</span>
+                </div>
+                <Spec rows={inputs} />
               </article>
             </div>
           </figure>

@@ -187,7 +187,9 @@
 .link-label.start {
   text-anchor: start;
 }
-.model-stage .step-label {
+.model-stage .step-label,
+.model-stage .spec,
+.model-stage .spec dt {
   color: inherit;
 }
 .method-sticky .model-stage {

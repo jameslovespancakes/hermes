@@ -106,3 +106,31 @@
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
+/* A step's list of rules or parts: in flow on narrow screens, under the number on the deck. */
+.spec {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  margin: 12px 4px 0;
+  font: 400 14px/1.35 var(--sans);
+  color: var(--ink);
+}
+.spec div {
+  display: grid;
+  grid-template-columns: minmax(120px, 34%) 1fr;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+.spec dt {
+  font-weight: 600;
+  color: var(--green);
+}
+.spec dd {
+  margin: 0;
+}
+.deck-enhanced .spec {
+  position: absolute;
+  inset: auto 0 4% 0;
+  margin: 0;
+}
