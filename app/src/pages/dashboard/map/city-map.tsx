@@ -14,6 +14,8 @@ interface Props {
   overview: Overview | null;
   alerts: Alert[];
   selected: Alert | null;
+  /** The selected courier's road path, once loaded. */
+  road: [number, number][] | null;
   onSelect: (alert: Alert) => void;
 }
 
@@ -32,7 +34,7 @@ function core(overview: Overview): [[number, number], [number, number]] {
 // The card sits bottom-right, so a focused alert is framed left of centre.
 const FOCUS_OFFSET: [number, number] = [-170, -60];
 
-export function CityMap({ overview, alerts, selected, onSelect }: Props) {
+export function CityMap({ overview, alerts, selected, road, onSelect }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<{ map: MapLibre; lib: MapLibreModule } | null>(null);
   const framed = useRef(false);
@@ -70,7 +72,7 @@ export function CityMap({ overview, alerts, selected, onSelect }: Props) {
   // Data layers follow the overview and the selection.
   useEffect(() => {
     if (!map || !overview) return;
-    drawOverview(map.map, overview, selected);
+    drawOverview(map.map, overview, selected, road);
     if (!framed.current && overview.parcels.length) {
       framed.current = true;
       map.map.fitBounds(core(overview), {
@@ -78,7 +80,7 @@ export function CityMap({ overview, alerts, selected, onSelect }: Props) {
         duration: 0,
       });
     }
-  }, [map, overview, selected]);
+  }, [map, overview, selected, road]);
 
   // One icon per alert.
   useEffect(() => {

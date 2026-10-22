@@ -52,11 +52,11 @@ class ContractTests(unittest.TestCase):
     def test_dashboard_types_match_api(self):
         import re
 
-        from server.api.schemas import CourierPosition, DataHealth, Overview, ParcelStatus
+        from server.api.schemas import CourierPosition, DataHealth, Overview, ParcelStatus, Route
 
         source = (Path(__file__).resolve().parents[2] / "app/src/pages/dashboard/api.ts").read_text(encoding="utf-8")
         interfaces = {name: body for name, body in re.findall(r"export interface (\w+) \{(.*?)\n\}", source, re.S)}
-        for name, model in (("Parcel", ParcelStatus), ("Courier", CourierPosition), ("Overview", Overview)):
+        for name, model in (("Parcel", ParcelStatus), ("Courier", CourierPosition), ("Overview", Overview), ("Route", Route)):
             fields = set(re.findall(r"^\s+(\w+):", interfaces[name], re.M))
             self.assertEqual(fields, set(model.model_fields), name)
         self.assertLessEqual(set(re.findall(r"^\s+(\w+):", interfaces["DataHealth"], re.M)), set(DataHealth.model_fields))

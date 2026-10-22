@@ -7,12 +7,14 @@ from server.api.app import create_app
 from server.pipeline.features import live_table, package_table
 from server.quality.monitor import fit_baseline
 from server.serving.predictor import LiveETAPredictor
-from server.tests.helpers import constant_bundle, records
+from server.tests.helpers import constant_bundle, records, street_grid
 
 
 def client():
     bundle = constant_bundle(eta=30.0)
-    return TestClient(create_app(predictor=LiveETAPredictor(bundle), records=records(days=2, couriers=(1, 2), per_day=6), frontend=None))
+    return TestClient(
+        create_app(predictor=LiveETAPredictor(bundle), records=records(days=2, couriers=(1, 2), per_day=6), roads=street_grid(), frontend=None)
+    )
 
 
 class ApiTests(unittest.TestCase):
@@ -48,7 +50,7 @@ class ApiTests(unittest.TestCase):
         packages = package_table(recs, "yt")
         live = live_table(packages, pd.Timestamp("2000-05-03"))
         bundle = constant_bundle(eta=30.0, monitor=fit_baseline(live, recs, pd.Timestamp("2000-05-03")))
-        with TestClient(create_app(predictor=LiveETAPredictor(bundle), records=recs, frontend=None)) as c:
+        with TestClient(create_app(predictor=LiveETAPredictor(bundle), records=recs, roads=street_grid(), frontend=None)) as c:
             body = c.get("/api/data-health", params={"at": "05-04 10:00:00"}).json()
         self.assertTrue(body["contract_passed"])
         self.assertGreater(body["records_checked"], 0)
@@ -60,6 +62,14 @@ class ApiTests(unittest.TestCase):
             response = c.post("/api/predict", json={"courier_id": 99, "at": "05-01 12:00:00"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["packages"], [])
+
+    def test_route_follows_roads(self):
+        with client() as c:
+            body = c.post("/api/route", json={"points": [[121.0, 37.0], [121.004, 37.004]]}).json()
+            self.assertEqual(c.post("/api/route", json={"points": [[121.0, 37.0]]}).status_code, 422)
+        self.assertEqual(body["coordinates"][0], [121.0, 37.0])
+        self.assertEqual(body["coordinates"][-1], [121.004, 37.004])
+        self.assertGreater(len(body["coordinates"]), 2)
 
     def test_bad_time_is_rejected(self):
         with client() as c:

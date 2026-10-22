@@ -22,12 +22,15 @@ from server.api.schemas import (
     ParcelStatus,
     PredictRequest,
     PredictResponse,
+    Route,
+    RouteRequest,
     format_moment,
     parse_moment,
 )
 from server.data.loading import load_city
 from server.serving.overview import build_overview
 from server.serving.predictor import LiveETAPredictor
+from server.serving.roads import RoadGraph
 
 CACHE_SIZE = 8
 MomentQuery = Annotated[Moment, Query(examples=["09-20 10:30:00"])]
@@ -54,7 +57,10 @@ class PreparedCache:
 
 
 def create_app(
-    predictor: LiveETAPredictor | None = None, records: pd.DataFrame | None = None, frontend: Path | None = DIST
+    predictor: LiveETAPredictor | None = None,
+    records: pd.DataFrame | None = None,
+    roads: RoadGraph | None = None,
+    frontend: Path | None = DIST,
 ) -> FastAPI:
     state: dict = {}
 
@@ -62,6 +68,7 @@ def create_app(
     async def lifespan(_app: FastAPI):
         state["predictor"] = predictor or LiveETAPredictor.from_store(os.environ.get("ETA_CITY", "yt"))
         state["records"] = records if records is not None else load_city(state["predictor"].city)[0]
+        state["roads"] = roads or RoadGraph.load(state["predictor"].city)
         state["cache"] = PreparedCache(CACHE_SIZE)
         yield
         state.clear()
@@ -147,9 +154,12 @@ def create_app(
             drift_levels=drift["levels"] if drift else None,
         )
 
+    @api.post("/route", response_model=Route)
+    def route(request: RouteRequest) -> Route:
+        return Route(coordinates=state["roads"].path(request.points))
+
     app = FastAPI(title="Hermes live ETA", version="1.0.0", lifespan=lifespan)
     app.include_router(api)
     if frontend is not None:
         mount_frontend(app, frontend)
     return app
-

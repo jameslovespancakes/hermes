@@ -6,11 +6,12 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from server.config import CITIES, DATA_DIR, HF_REPO, HF_REVISION, RAW_DIR, RIGHTS, ROOT
+from server.config import CITIES, DATA_DIR, HF_REPO, HF_REVISION, RAW_DIR, RIGHTS, ROAD_CITY, ROOT
 
 
 def sha256_file(path: Path) -> str:
@@ -46,22 +47,21 @@ def _csv_summary(path: Path) -> dict:
         return {"row_count": sum(1 for row in reader if row), "columns": columns}
 
 
-def download_city(city: str) -> dict:
-    """Download (if missing), verify, and write data/manifest_<city>.json. Returns the manifest."""
-    source_path = f"delivery/delivery_{city}.csv"
+def fetch(source_path: str) -> tuple[Path, dict, str, bool]:
+    """Download a file from the pinned revision if missing and verify it. Returns path, listing entry, url, downloaded."""
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     output = RAW_DIR / Path(source_path).name
-    manifest_path = DATA_DIR / f"manifest_{city}.json"
     url = f"https://huggingface.co/datasets/{HF_REPO}/resolve/{HF_REVISION}/{source_path}"
     retry = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
     with requests.Session() as session:
         session.mount("https://", HTTPAdapter(max_retries=retry))
-        listing = session.get(f"https://huggingface.co/api/datasets/{HF_REPO}/tree/{HF_REVISION}/delivery", timeout=60)
+        folder = source_path.rsplit("/", 1)[0]
+        listing = session.get(f"https://huggingface.co/api/datasets/{HF_REPO}/tree/{HF_REVISION}/{folder}", timeout=60)
         listing.raise_for_status()
         entry = next(item for item in listing.json() if item["path"] == source_path)
         downloaded = not output.exists()
         if downloaded:
-            part = output.with_suffix(".csv.part")
+            part = output.with_suffix(output.suffix + ".part")
             try:
                 with session.get(url, stream=True, timeout=(30, 120)) as response:
                     response.raise_for_status()
@@ -72,6 +72,25 @@ def download_city(city: str) -> dict:
                 part.replace(output)
             finally:
                 part.unlink(missing_ok=True)
+    verify(output, entry)
+    return output, entry, url, downloaded
+
+
+def download_roads(city: str) -> Path:
+    """The city's OpenStreetMap roads from LaDe's road network file (data/raw/roads_<city>.csv)."""
+    source, _, _, _ = fetch("road-network/roads.csv")
+    roads = pd.read_csv(source, sep="	", usecols=["fclass", "city", "geometry"])
+    output = RAW_DIR / f"roads_{city}.csv"
+    roads.loc[roads["city"] == ROAD_CITY[city], ["fclass", "geometry"]].to_csv(output, index=False)
+    source.unlink()
+    return output
+
+
+def download_city(city: str) -> dict:
+    """Download (if missing), verify, and write data/manifest_<city>.json. Returns the manifest."""
+    source_path = f"delivery/delivery_{city}.csv"
+    manifest_path = DATA_DIR / f"manifest_{city}.json"
+    output, entry, url, downloaded = fetch(source_path)
     digest = verify(output, entry)
     previous = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
     retrieved = datetime.now(timezone.utc).isoformat()

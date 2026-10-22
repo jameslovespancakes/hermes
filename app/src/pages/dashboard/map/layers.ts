@@ -1,12 +1,17 @@
 // Map sources and layers for parcels, couriers and the selected courier's route.
-import type { GeoJSONSource, LayerSpecification, Map as MapLibre } from 'maplibre-gl';
+import type {
+  ExpressionSpecification,
+  GeoJSONSource,
+  LayerSpecification,
+  Map as MapLibre,
+} from 'maplibre-gl';
 import type { Alert } from '../alerts';
 import type { Overview } from '../api';
 import { MAP_IMAGES } from '../icons';
 
-type Point = [number, number];
 const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
-const zoomed = (...stops: number[]) => ['interpolate', ['linear'], ['zoom'], ...stops];
+const zoomed = (...stops: number[]) =>
+  ['interpolate', ['linear'], ['zoom'], ...stops] as ExpressionSpecification;
 const dimmed = (normal: number) => ['case', ['get', 'dim'], 0.25, normal];
 
 function image(svg: string): Promise<HTMLImageElement> {
@@ -27,7 +32,7 @@ export async function addLayers(map: MapLibre) {
     type: 'line',
     source: 'route',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#16201e', 'line-width': 2, 'line-dasharray': [1, 2], 'line-opacity': 0.55 },
+    paint: { 'line-color': '#16201e', 'line-width': zoomed(11, 2, 16, 4), 'line-opacity': 0.7 },
   });
   map.addLayer({
     id: 'parcels',
@@ -62,8 +67,13 @@ const points = (items: { lat: number; lng: number; dim: boolean }[]): GeoJSON.Fe
   })),
 });
 
-/** Draws every parcel and courier; with an alert selected, the rest fade and its route is traced. */
-export function drawOverview(map: MapLibre, overview: Overview, selected: Alert | null) {
+/** Draws every parcel and courier; with an alert selected, the rest fade and its road route is traced. */
+export function drawOverview(
+  map: MapLibre,
+  overview: Overview,
+  selected: Alert | null,
+  road: [number, number][] | null,
+) {
   const focus = selected?.parcel.courier_id;
   const dim = (courierId: string) => focus !== undefined && courierId !== focus;
   const source = (id: string) => map.getSource<GeoJSONSource>(id);
@@ -73,15 +83,9 @@ export function drawOverview(map: MapLibre, overview: Overview, selected: Alert 
   source('couriers')?.setData(
     points(overview.couriers.map((c) => ({ lat: c.lat, lng: c.lng, dim: dim(c.courier_id) }))),
   );
-  const path: Point[] = [];
-  if (selected) {
-    if (selected.courier) path.push([selected.courier.lng, selected.courier.lat]);
-    for (const stop of selected.route.filter((p) => p.position <= selected.parcel.position))
-      path.push([stop.lng, stop.lat]);
-  }
   source('route')?.setData(
-    path.length > 1
-      ? { type: 'Feature', geometry: { type: 'LineString', coordinates: path }, properties: {} }
+    selected && road
+      ? { type: 'Feature', geometry: { type: 'LineString', coordinates: road }, properties: {} }
       : empty,
   );
 }

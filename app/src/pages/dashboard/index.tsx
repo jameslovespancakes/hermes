@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Nav } from '../../nav';
 import { AlertCard } from './alert-card';
-import { alerts as findAlerts, type Alert } from './alerts';
+import { alerts as findAlerts, stops, type Alert } from './alerts';
 import { api, moment, type DataHealth, type Overview } from './api';
 import { Defs } from './defs';
 import { CityMap } from './map/city-map';
@@ -39,8 +39,32 @@ function useMoment(at: string) {
     overview: shown?.overview ?? null,
     health,
     loading: shown?.at !== at && !failed,
-    error: failed ? 'The ETA service is not reachable. Start it with uvicorn server.api.app:app.' : '',
+    error: failed
+      ? 'The ETA service is not reachable. Start it with: uv run uvicorn server.api.app:create_app --factory'
+      : '',
   };
+}
+
+// The selected courier's road path, fetched when the selection changes.
+function useRoad(selected: Alert | null) {
+  const [road, setRoad] = useState<{ order: number; path: [number, number][] } | null>(null);
+  const order = selected?.parcel.order_id;
+  useEffect(() => {
+    if (!selected) return;
+    const points = stops(selected);
+    if (points.length < 2) return;
+    let current = true;
+    api.route(points).then(
+      (route) => current && setRoad({ order: selected.parcel.order_id, path: route.coordinates }),
+      () => current && setRoad(null),
+    );
+    return () => {
+      current = false;
+    };
+    // The path depends only on which parcel is selected.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order]);
+  return road && road.order === order ? road.path : null;
 }
 
 export function Dashboard() {
@@ -54,13 +78,14 @@ export function Dashboard() {
   // The selection follows the parcel across refreshes and disappears with it.
   const selected = list.find((a) => a.parcel.order_id === selectedOrder) ?? null;
   const select = useCallback((alert: Alert) => setSelectedOrder(alert.parcel.order_id), []);
+  const road = useRoad(selected);
 
   return (
     <>
       <Defs />
       <Nav page="dashboard" />
       <main className="dash">
-        <CityMap overview={overview} alerts={list} selected={selected} onSelect={select} />
+        <CityMap overview={overview} alerts={list} selected={selected} road={road} onSelect={select} />
         <TimeControl
           date={date}
           time={time}

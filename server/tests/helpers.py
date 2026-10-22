@@ -100,3 +100,12 @@ def constant_bundle(eta: float = 25.0, staleness: float | None = None, **extra):
         eta=EtaModel([Constant(eta)], ["n_pending"], {}),
         **{**parts, **extra},
     )
+
+
+def street_grid(n: int = 5, step: float = 0.002):
+    """A RoadGraph of n x n streets around the synthetic log's coordinates."""
+    from server.serving.roads import RoadGraph
+
+    ticks = np.arange(n) * step
+    lines = [np.c_[121.0 + ticks, np.full(n, 37.0 + t)] for t in ticks] + [np.c_[np.full(n, 121.0 + t), 37.0 + ticks] for t in ticks]
+    return RoadGraph.from_lines(lines)

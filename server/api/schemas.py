@@ -102,6 +102,14 @@ class Overview(BaseModel):
     parcels: list[ParcelStatus]
 
 
+class RouteRequest(BaseModel):
+    points: list[tuple[float, float]] = Field(min_length=2, description="(lng, lat) stops in visiting order")
+
+
+class Route(BaseModel):
+    coordinates: list[tuple[float, float]] = Field(description="(lng, lat) road path through the stops")
+
+
 class Health(BaseModel):
     status: str
     city: str

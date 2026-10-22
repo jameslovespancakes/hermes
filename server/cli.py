@@ -21,10 +21,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.command == "download":
-        from server.data.download import download_city
+        from server.data.download import download_city, download_roads
 
         manifest = download_city(args.city)
         print(f"Verified {manifest['local_file']}: {manifest['row_count']:,} rows, sha256 {manifest['sha256']}")
+        print(f"Roads: {download_roads(args.city)}")
     elif args.command == "train":
         from server.pipeline.train import train_city
 

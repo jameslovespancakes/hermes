@@ -39,6 +39,16 @@ export function alerts(overview: Overview, dismissed: ReadonlySet<string> = new 
     }));
 }
 
+/** The selected courier's position, then each stop up to the flagged parcel, as (lng, lat). */
+export function stops(alert: Alert): [number, number][] {
+  const start: [number, number][] = alert.courier ? [[alert.courier.lng, alert.courier.lat]] : [];
+  return start.concat(
+    alert.route
+      .filter((p) => p.position <= alert.parcel.position)
+      .map((p): [number, number] => [p.lng, p.lat]),
+  );
+}
+
 export function route(overview: Overview, courierId: string): Parcel[] {
   return overview.parcels.filter((p) => p.courier_id === courierId).sort((a, b) => a.position - b.position);
 }

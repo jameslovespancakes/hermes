@@ -43,8 +43,13 @@ export interface DataHealth {
   status: 'ok' | 'watch' | 'act';
 }
 
-async function json<T>(path: string): Promise<T> {
-  const response = await fetch(path);
+/** A road path through stops, as (lng, lat) pairs. */
+export interface Route {
+  coordinates: [number, number][];
+}
+
+async function json<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, init);
   if (!response.ok) throw new Error(`${path}: ${String(response.status)}`);
   return (await response.json()) as T;
 }
@@ -54,6 +59,12 @@ const query = (at: string) => `?at=${encodeURIComponent(at)}`;
 export const api = {
   overview: (at: string) => json<Overview>(`/api/overview${query(at)}`),
   dataHealth: (at: string) => json<DataHealth>(`/api/data-health${query(at)}`),
+  route: (points: [number, number][]) =>
+    json<Route>('/api/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points }),
+    }),
 };
 
 // Inputs give '2000-09-20' and '10:30'; the API wants '09-20 10:30:00'.

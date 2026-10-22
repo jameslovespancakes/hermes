@@ -15,6 +15,7 @@ MODEL_STORE = SERVER_DIR / "model_store"
 HF_REPO = "Cainiao-AI/LaDe"
 HF_REVISION = "be2cec02775cafc8d52230303f32134382bcc50b"
 CITIES = {"yt": "Yantai", "jl": "Jilin", "cq": "Chongqing", "hz": "Hangzhou", "sh": "Shanghai"}
+ROAD_CITY = {"yt": "烟台市", "jl": "吉林市", "cq": "重庆市", "hz": "杭州市", "sh": "上海市"}
 RIGHTS = (
     "Provided by the W&M AI Case-a-thon organizers for this exercise; use confirmed with the case owners. "
     "Public metadata differs (Hugging Face: Apache-2.0; LaDe paper: CC BY-NC 4.0), so keep attribution and "
