@@ -76,14 +76,16 @@ def fetch(source_path: str) -> tuple[Path, dict, str, bool]:
     return output, entry, url, downloaded
 
 
-def download_roads(city: str) -> Path:
-    """The city's OpenStreetMap roads from LaDe's road network file (data/raw/roads_<city>.csv)."""
+def download_roads() -> list[Path]:
+    """Every city's OpenStreetMap roads from LaDe's road network file (data/raw/roads_<city>.csv)."""
     source, _, _, _ = fetch("road-network/roads.csv")
     roads = pd.read_csv(source, sep="	", usecols=["fclass", "city", "geometry"])
-    output = RAW_DIR / f"roads_{city}.csv"
-    roads.loc[roads["city"] == ROAD_CITY[city], ["fclass", "geometry"]].to_csv(output, index=False)
+    outputs = []
+    for city, name in ROAD_CITY.items():
+        outputs.append(RAW_DIR / f"roads_{city}.csv")
+        roads.loc[roads["city"] == name, ["fclass", "geometry"]].to_csv(outputs[-1], index=False)
     source.unlink()
-    return output
+    return outputs
 
 
 def download_city(city: str) -> dict:

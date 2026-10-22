@@ -3,16 +3,14 @@
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from threadpoolctl import threadpool_limits
 
 from server.config import ROUTE_FOLDS, ROUTE_INPUT_COLS, ROUTE_PARAMS, SEED, THREADS
+from server.models.parallel import fit_all
 
 
-def _fit(rows: pd.DataFrame) -> lgb.LGBMRegressor:
-    model = lgb.LGBMRegressor(**ROUTE_PARAMS, random_state=SEED, n_jobs=THREADS, verbosity=-1)
-    with threadpool_limits(limits=THREADS):
-        model.fit(rows[ROUTE_INPUT_COLS], rows["true_pos"])
-    return model
+def _fit(rows: pd.DataFrame, threads: int = THREADS) -> lgb.LGBMRegressor:
+    model = lgb.LGBMRegressor(**ROUTE_PARAMS, random_state=SEED, n_jobs=threads, force_col_wise=True, verbosity=-1)
+    return model.fit(rows[ROUTE_INPUT_COLS], rows["true_pos"])
 
 
 def courier_day_folds(live: pd.DataFrame) -> np.ndarray:
@@ -32,20 +30,18 @@ def fit_route_folds(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarra
     """Out-of-fold route scores, the full model, and the per-fold models (fold k never saw fold k's courier-days)."""
     trainable = trainable_events(live, cutoff)
     fold = courier_day_folds(live)
+    jobs = [lambda threads, k=k: _fit(live.loc[trainable & (fold != k)], threads) for k in range(ROUTE_FOLDS)]
+    *fold_models, full = fit_all([*jobs, lambda threads: _fit(live.loc[trainable], threads)])
     scores = np.full(len(live), np.nan)
-    fold_models = []
-    for k in range(ROUTE_FOLDS):
+    for k, model in enumerate(fold_models):
         held = trainable & (fold == k)
-        fold_models.append(_fit(live.loc[trainable & (fold != k)]))
-        scores[held] = fold_models[k].predict(live.loc[held, ROUTE_INPUT_COLS])
-    full = _fit(live.loc[trainable])
+        scores[held] = model.predict(live.loc[held, ROUTE_INPUT_COLS])
     scores[~trainable] = full.predict(live.loc[~trainable, ROUTE_INPUT_COLS])
     return scores, full, fold_models
 
 
 def predict_route(model, live: pd.DataFrame) -> np.ndarray:
-    with threadpool_limits(limits=THREADS):
-        return model.predict(live[ROUTE_INPUT_COLS])
+    return model.predict(live[ROUTE_INPUT_COLS])
 
 
 def add_route_outputs(live: pd.DataFrame, scores: np.ndarray) -> pd.DataFrame:

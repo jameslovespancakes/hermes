@@ -105,8 +105,8 @@ Requires Python 3.10+, [uv](https://docs.astral.sh/uv/) and [Bun](https://bun.sh
 
 ```sh
 uv sync
-uv run python -m server.cli download --city yt     # pinned, checksum-verified data
-uv run python -m server.cli train --city yt        # about 20 min on 16 threads
+uv run python -m server.cli download                # every city's pinned, checksum-verified data and roads
+uv run python -m server.cli train                   # every city; Yantai about 7 min, Hangzhou and Shanghai longer
 (cd app && bun install --frozen-lockfile && bun run build)
 uv run uvicorn server.api.app:create_app --factory # site and API on http://localhost:8000 (API under /api, docs at /docs)
 ```

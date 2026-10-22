@@ -5,7 +5,7 @@ import type {
   LayerSpecification,
   Map as MapLibre,
 } from 'maplibre-gl';
-import type { Overview } from '../api';
+import { courierKey, type Fleet } from '../api';
 import { MAP_IMAGES } from '../icons';
 
 const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
@@ -58,29 +58,33 @@ export async function addLayers(map: MapLibre) {
 }
 
 const points = (
-  items: { lat: number; lng: number; dim: boolean; courier_id: string }[],
+  items: { lat: number; lng: number; dim: boolean; courier: string }[],
 ): GeoJSON.FeatureCollection => ({
   type: 'FeatureCollection',
-  features: items.map(({ lat, lng, dim, courier_id }) => ({
+  features: items.map(({ lat, lng, dim, courier }) => ({
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [lng, lat] },
-    properties: { dim, courier_id },
+    properties: { dim, courier },
   })),
 });
 
-/** Draws every parcel and courier; with a courier in focus, the rest fade and its road route is traced. */
+/** Draws every parcel and courier; with a courier in focus (key 'city:id'), the rest fade and its road route is traced. */
 export function drawOverview(
   map: MapLibre,
-  overview: Overview,
+  fleet: Fleet,
   focus: string | null,
   road: [number, number][] | null,
 ) {
-  const dim = (courierId: string) => focus !== null && courierId !== focus;
   const source = (id: string) => map.getSource<GeoJSONSource>(id);
-  const at = (items: { lat: number; lng: number; courier_id: string }[]) =>
-    points(items.map((i) => ({ lat: i.lat, lng: i.lng, courier_id: i.courier_id, dim: dim(i.courier_id) })));
-  source('parcels')?.setData(at(overview.parcels));
-  source('couriers')?.setData(at(overview.couriers));
+  const at = (items: { city: string; courier_id: string; lat: number; lng: number }[]) =>
+    points(
+      items.map((i) => {
+        const courier = courierKey(i);
+        return { lat: i.lat, lng: i.lng, courier, dim: focus !== null && courier !== focus };
+      }),
+    );
+  source('parcels')?.setData(at(fleet.parcels));
+  source('couriers')?.setData(at(fleet.couriers));
   source('route')?.setData(
     focus && road
       ? { type: 'Feature', geometry: { type: 'LineString', coordinates: road }, properties: {} }

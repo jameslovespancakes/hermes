@@ -49,8 +49,7 @@ def train_bundle(
         records, info["guard"] = guard.clean(records, CleanMode.TRAIN)
     packages = package_table(records, city)
     zones = Zones.fit(packages, split.fit_cutoff)
-    live = live_table(packages, split.fit_cutoff)
-    live = live.loc[live["s"] < split.stop_cutoff]
+    live = live_table(packages, split.fit_cutoff, checkpoints(records, city, split.start_cutoff, split.stop_cutoff))
     live = pd.concat([live, zone_features(live, packages, zones)], axis=1)
     zone_scores, zone_model, zone_folds = fit_zone_folds(live, split.fit_cutoff)
     live = add_zone_outputs(live, zone_scores)
@@ -61,7 +60,7 @@ def train_bundle(
     columns = eta_columns(habit_columns(packages))
     fit, stop = fit_rows(live, split), stop_rows(live, split)
     eta = fit_eta(fit, stop, columns, seeds=ENSEMBLE_SEEDS)
-    later = fit_later_day(fit, stop, columns)
+    later = fit_later_day(fit, columns)
     risk = fit_risk(fit, stop, columns)
     info.update(fit_rows=len(fit), stop_rows=len(stop), eta_rounds=[int(m.best_iteration_) for m in eta.models])
     log(f"[{city}] ETA models: {info['eta_rounds']} rounds on {len(fit):,} rows")
@@ -69,7 +68,7 @@ def train_bundle(
     staleness = None
     if use_staleness:
         fold_of = dict(zip(live["courier_s"] + "|" + live["day"], courier_day_folds(live), strict=False))
-        events = staleness_events if staleness_events is not None else checkpoints(records, city, records["delivered_at"].min(), split.stop_cutoff)
+        events = staleness_events if staleness_events is not None else checkpoints(records, city, split.start_cutoff, split.stop_cutoff)
         truth = truth if truth is not None else records.set_index("order_id")["delivered_at"]
         rows = staleness_rows(
             records, city, events, truth, split.fit_cutoff, zones, (zone_model, zone_folds), (route_model, route_folds), fold_of, config

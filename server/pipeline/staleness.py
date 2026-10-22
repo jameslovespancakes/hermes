@@ -27,10 +27,10 @@ def delayed_uploads(records: pd.DataFrame, share: float, min_lag: float, max_lag
 
 def by_fold(live: pd.DataFrame, fold_of: dict, full, folds: list, predict) -> np.ndarray:
     """Predictions from the fold model that never saw the row's courier-day (full model otherwise)."""
-    out = predict(full, live)
-    keys = (live["courier_s"] + "|" + live["day"]).map(fold_of)
-    for k, model in enumerate(folds):
-        mask = (keys == k).to_numpy()
+    keys = (live["courier_s"] + "|" + live["day"]).map(fold_of).to_numpy()
+    out = np.empty(len(live))
+    for k, model in [(np.nan, full), *enumerate(folds)]:
+        mask = np.isnan(keys) if k is np.nan else keys == k
         if mask.any():
             out[mask] = predict(model, live.loc[mask])
     return out

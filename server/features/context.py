@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from server.features.geometry import haversine_km
+from server.features.live_kernel import expanding_median, window_counts
 
 MINUTE = np.timedelta64(1, "m")
 FAR_KM = 0.5
@@ -25,28 +26,22 @@ def rank_in_event(live: pd.DataFrame, values) -> np.ndarray:
 
 def window_stats(row_keys, row_times, event_keys, event_times, event_values, windows) -> dict[str, np.ndarray]:
     """Per row: count and mean value of same-key events in (t - w, t] for each window, plus the count up to t."""
-    n = len(row_times)
-    out = {"n_all": np.zeros(n, np.float32)}
-    for w in windows:
-        out[f"n_{w}"] = np.zeros(n, np.float32)
-        out[f"mean_{w}"] = np.full(n, np.nan, np.float32)
-    events = pd.DataFrame({"k": event_keys, "t": event_times, "v": event_values})
-    events = events.loc[events["k"].isin(set(row_keys))].sort_values(["k", "t"])
-    lookup = {k: (g["t"].to_numpy(), np.concatenate([[0.0], np.cumsum(g["v"].to_numpy(dtype=float))])) for k, g in events.groupby("k", sort=False)}
-    rows = pd.DataFrame({"k": row_keys, "t": row_times, "i": np.arange(n)})
-    for k, g in rows.groupby("k", sort=False):
-        if k not in lookup:
-            continue
-        times, cumsum = lookup[k]
-        t, i = g["t"].to_numpy(), g["i"].to_numpy()
-        hi = np.searchsorted(times, t, "right")
-        out["n_all"][i] = hi
-        for w in windows:
-            lo = np.searchsorted(times, t - w * MINUTE, "right")
-            count = hi - lo
-            out[f"n_{w}"][i] = count
-            with np.errstate(invalid="ignore", divide="ignore"):
-                out[f"mean_{w}"][i] = np.where(count > 0, (cumsum[hi] - cumsum[lo]) / np.maximum(count, 1), np.nan)
+    codes, keys = pd.factorize(pd.Index(np.asarray(event_keys)), sort=False)
+    row_group = keys.get_indexer(np.asarray(row_keys))
+    order = np.lexsort((np.asarray(event_times).view(np.int64), codes))
+    starts = np.searchsorted(codes[order], np.arange(len(keys) + 1))
+    n_all, counts, means = window_counts(
+        row_group.astype(np.int64),
+        np.asarray(row_times).view(np.int64),
+        starts.astype(np.int64),
+        np.asarray(event_times).view(np.int64)[order],
+        np.asarray(event_values, dtype=float)[order],
+        np.array(windows, dtype=np.int64),
+    )
+    out = {"n_all": n_all.astype(np.float32)}
+    for k, w in enumerate(windows):
+        out[f"n_{w}"] = counts[k].astype(np.float32)
+        out[f"mean_{w}"] = means[k].astype(np.float32)
     return out
 
 
@@ -156,9 +151,11 @@ def depot(live: pd.DataFrame, packages: pd.DataFrame) -> pd.DataFrame:
     pickups["day"] = pickups["t"].dt.normalize()
     couriers, days = _moments(live)
     pickups = pickups.loc[pickups["c"].isin(couriers) & pickups["day"].isin(days)].sort_values("t", kind="stable")
-    group = pickups.groupby(["c", "day"])
-    pickups["dlat"] = group["lat"].transform(lambda x: x.expanding().median())
-    pickups["dlng"] = group["lng"].transform(lambda x: x.expanding().median())
+    pickups = pickups.sort_values(["c", "day", "t"], kind="stable")
+    key = pd.factorize(pickups["c"] + "|" + pickups["day"].astype(str))[0]
+    starts = np.flatnonzero(np.r_[True, key[1:] != key[:-1], True])
+    pickups["dlat"] = expanding_median(pickups["lat"].to_numpy(float), starts)
+    pickups["dlng"] = expanding_median(pickups["lng"].to_numpy(float), starts)
     where = _today_asof(live, pickups, ["dlat", "dlng"])
     rows = live["row"].to_numpy()
     out = pd.DataFrame(index=live.index)

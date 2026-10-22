@@ -6,6 +6,7 @@ export type DataIssue = 'lagging' | 'silent' | 'bulk' | 'moved' | 'resent';
 export type Issue = DataIssue | 'suspect' | 'late';
 
 export interface Parcel {
+  city: string;
   order_id: number;
   courier_id: string;
   lat: number;
@@ -24,6 +25,7 @@ export interface Parcel {
 }
 
 export interface Courier {
+  city: string;
   courier_id: string;
   lat: number;
   lng: number;
@@ -40,10 +42,24 @@ export interface Overview {
   parcels: Parcel[];
 }
 
+/** Every city's couriers and parcels together. */
+export type Fleet = Pick<Overview, 'couriers' | 'parcels'>;
+
+/** Ids repeat between cities, so couriers and parcels are keyed by city too. */
+export const courierKey = (x: { city: string; courier_id: string }) => `${x.city}:${x.courier_id}`;
+export const parcelKey = (p: { city: string; order_id: number }) => `${p.city}:${String(p.order_id)}`;
+
 /** City-wide input check: 'watch' or 'act' means today's data passed the contract but looks unlike training. */
 export interface DataHealth {
   at: string;
   status: 'ok' | 'watch' | 'act';
+}
+
+/** A city with a trained model; bounds are the south-west and north-east (lng, lat) corners. */
+export interface City {
+  id: string;
+  name: string;
+  bounds: [[number, number], [number, number]];
 }
 
 /** A road path through stops, as (lng, lat) pairs. */
@@ -57,16 +73,17 @@ async function json<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-const query = (at: string) => `?at=${encodeURIComponent(at)}`;
+const query = (city: string, at: string) => `?city=${city}&at=${encodeURIComponent(at)}`;
 
 export const api = {
-  overview: (at: string) => json<Overview>(`/api/overview${query(at)}`),
-  dataHealth: (at: string) => json<DataHealth>(`/api/data-health${query(at)}`),
-  route: (points: [number, number][]) =>
+  cities: () => json<City[]>('/api/cities'),
+  overview: (city: string, at: string) => json<Overview>(`/api/overview${query(city, at)}`),
+  dataHealth: (city: string, at: string) => json<DataHealth>(`/api/data-health${query(city, at)}`),
+  route: (city: string, points: [number, number][]) =>
     json<Route>('/api/route', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ points }),
+      body: JSON.stringify({ city, points }),
     }),
 };
 

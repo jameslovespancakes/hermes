@@ -58,6 +58,10 @@ class Split:
     test_end: str = "10-01"
 
     @property
+    def start_cutoff(self) -> pd.Timestamp:
+        return ts(self.start)
+
+    @property
     def fit_cutoff(self) -> pd.Timestamp:
         return ts(self.fit_end)
 
@@ -71,6 +75,7 @@ class Split:
 
 
 DEFAULT_SPLIT = Split()
+CITY_SPLITS = {city: Split(start=start) for city, start in {"yt": "05-01", "jl": "05-01", "cq": "07-16", "sh": "08-01", "hz": "08-01"}.items()}
 
 SEED = 42
 FIT_SAMPLE = 800_000
@@ -153,7 +158,7 @@ ETA_PARAMS: dict[str, Any] = {
 ENSEMBLE_SEEDS = (42, 1, 2)
 ZONE_SIZE = 10
 EARLY_STOPPING_ROUNDS = 80
-THREADS = 16
+THREADS = 10
 
 HORIZONS = [
     ("under_30_min", 0, 30),

@@ -27,6 +27,7 @@ Moment = Annotated[str, StringConstraints(pattern=TIME_PATTERN), AfterValidator(
 
 
 class PredictRequest(BaseModel):
+    city: str = Field(examples=["yt"])
     courier_id: Annotated[str, BeforeValidator(str)] = Field(examples=["2136"])
     at: Moment = Field(examples=["09-20 10:30:00"])
 
@@ -72,6 +73,7 @@ class DataHealth(BaseModel):
 
 
 class CourierPosition(BaseModel):
+    city: str
     courier_id: str
     lat: float
     lng: float
@@ -81,6 +83,7 @@ class CourierPosition(BaseModel):
 
 
 class ParcelStatus(BaseModel):
+    city: str
     order_id: int
     courier_id: str
     lat: float
@@ -104,6 +107,7 @@ class Overview(BaseModel):
 
 
 class RouteRequest(BaseModel):
+    city: str = Field(examples=["yt"])
     points: list[tuple[float, float]] = Field(min_length=2, description="(lng, lat) stops in visiting order")
 
 
@@ -111,8 +115,12 @@ class Route(BaseModel):
     coordinates: list[tuple[float, float]] = Field(description="(lng, lat) road path through the stops")
 
 
+class City(BaseModel):
+    id: str
+    name: str
+    bounds: tuple[tuple[float, float], tuple[float, float]] = Field(description="South-west and north-east (lng, lat) corners")
+
+
 class Health(BaseModel):
     status: str
-    city: str
-    trained_through: str
-    records: int
+    cities: list[str]

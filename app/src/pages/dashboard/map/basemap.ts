@@ -2,11 +2,8 @@
 import type { Map as MapLibre } from 'maplibre-gl';
 
 export const STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
-export const YANTAI = { center: [121.38, 37.505] as [number, number], zoom: 12 };
-export const BOUNDS: [[number, number], [number, number]] = [
-  [120.6, 37.0],
-  [122.0, 37.8],
-];
+// Eastern China, where the LaDe cities are; the map frames them all once they load.
+export const CHINA = { center: [114.5, 33.5] as [number, number], zoom: 4.6 };
 
 const paint = (map: MapLibre, id: string, property: string, value: unknown) => {
   try {

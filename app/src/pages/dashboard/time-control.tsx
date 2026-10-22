@@ -1,11 +1,10 @@
 // The one control on the map: which recorded moment to replay. Also shows loading and city-wide input health.
-import type { DataHealth } from './api';
-
 interface Props {
   date: string;
   time: string;
   loading: boolean;
-  health: DataHealth | null;
+  /** Cities whose inputs look unlike training at this moment. */
+  unusual: string[];
   onDate: (date: string) => void;
   onTime: (time: string) => void;
 }
@@ -17,8 +16,7 @@ const minutesOf = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.
 const timeOf = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
-export function TimeControl({ date, time, loading, health, onDate, onTime }: Props) {
-  const unusual = health && health.status !== 'ok';
+export function TimeControl({ date, time, loading, unusual, onDate, onTime }: Props) {
   return (
     <div className="time-control">
       <input
@@ -44,13 +42,13 @@ export function TimeControl({ date, time, loading, health, onDate, onTime }: Pro
       />
       <strong className="time">{time}</strong>
       <span
-        className={loading ? 'status loading' : unusual ? 'status unusual' : 'status'}
+        className={loading ? 'status loading' : unusual.length ? 'status unusual' : 'status'}
         title={
           loading
             ? 'Updating'
-            : unusual
-              ? "Today's data passed every check but looks unlike the training data; estimates may be less certain"
-              : 'Inputs look normal'
+            : unusual.length
+              ? `${unusual.join(', ')}: data passed every check but looks unlike training; estimates may be less certain`
+              : 'Inputs look normal in every city'
         }
       />
     </div>

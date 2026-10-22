@@ -1,12 +1,10 @@
 import unittest
 
 import pandas as pd
-from fastapi.testclient import TestClient
 
-from server.api.app import create_app
 from server.serving.overview import IssueRules, classify
-from server.serving.predictor import LiveETAPredictor, courier_positions
-from server.tests.helpers import constant_bundle, records, street_grid
+from server.serving.predictor import courier_positions
+from server.tests.helpers import app_client, records
 
 AT = pd.Timestamp("2000-05-02 10:00")
 
@@ -90,8 +88,8 @@ class OverviewApiTests(unittest.TestCase):
     def test_overview_lists_couriers_and_parcels(self):
         recs = records(days=2, couriers=(1, 2), per_day=6)
         at = recs.loc[recs["courier_id"] == 1, "delivered_at"].iloc[8] + pd.Timedelta(minutes=1)
-        with TestClient(create_app(predictor=LiveETAPredictor(constant_bundle(eta=30.0)), records=recs, roads=street_grid(), frontend=None)) as c:
-            body = c.get("/api/overview", params={"at": at.strftime("%m-%d %H:%M:%S")}).json()
+        with app_client(recs=recs) as c:
+            body = c.get("/api/overview", params={"city": "yt", "at": at.strftime("%m-%d %H:%M:%S")}).json()
         self.assertEqual(body["baseline_at"], (at - pd.Timedelta(hours=1)).strftime("%m-%d %H:%M:%S"))
         self.assertGreater(len(body["parcels"]), 0)
         self.assertEqual({c["courier_id"] for c in body["couriers"]}, {p["courier_id"] for p in body["parcels"]})
@@ -99,6 +97,7 @@ class OverviewApiTests(unittest.TestCase):
         self.assertEqual(
             set(parcel),
             {
+                "city",
                 "order_id",
                 "courier_id",
                 "lat",

@@ -34,10 +34,8 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY server ./server
 COPY --from=frontend /frontend/dist ./app/dist
 
-# Data: the pinned, checksum-verified city file from Hugging Face.
-ARG CITY=yt
-ENV ETA_CITY=${CITY}
-RUN /app/.venv/bin/python -m server.cli download --city ${CITY}
+# Data: every city's pinned, checksum-verified delivery file and road network from Hugging Face.
+RUN /app/.venv/bin/python -m server.cli download
 
 RUN useradd --create-home --uid 10001 app   # read-only app files stay root-owned
 USER app

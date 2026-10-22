@@ -56,6 +56,7 @@ jobs:
           curl -fsS http://127.0.0.1:8000/benchmarks | grep -F 'A number needs' > /dev/null
           curl -fsS http://127.0.0.1:8000/methodology | grep -F 'Hold the' > /dev/null
           curl -fsS http://127.0.0.1:8000/dashboard | grep -F 'Overview' > /dev/null
-          curl -fsS 'http://127.0.0.1:8000/api/overview?at=09-20%2010:30:00' | grep -F '"parcels"' > /dev/null
+          curl -fsS http://127.0.0.1:8000/api/cities | grep -F '"yt"' > /dev/null
+          curl -fsS 'http://127.0.0.1:8000/api/overview?city=yt&at=09-20%2010:30:00' | grep -F '"parcels"' > /dev/null
           curl -fsS http://127.0.0.1:8000/assets/favicon.svg > /dev/null
 

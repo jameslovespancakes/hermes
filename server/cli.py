@@ -10,10 +10,9 @@ from server.config import CITIES, PARSE_YEAR
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m server.cli", description="Live delivery ETA (LaDe-D).")
     sub = parser.add_subparsers(dest="command", required=True)
-    p = sub.add_parser("download", help="Download and verify a city's raw delivery file.")
-    p.add_argument("--city", choices=CITIES, default="yt")
+    sub.add_parser("download", help="Download and verify every city's delivery file and road network.")
     p = sub.add_parser("train", help="Train, evaluate, and store the live ETA model.")
-    p.add_argument("--city", choices=CITIES, default="yt")
+    p.add_argument("--city", choices=[*CITIES, "all"], default="all")
     p = sub.add_parser("predict", help="ETAs for one courier's pending packages at a moment in time.")
     p.add_argument("--city", choices=CITIES, default="yt")
     p.add_argument("--courier", required=True, help="Raw courier id from the CSV, e.g. 75")
@@ -23,13 +22,16 @@ def main(argv=None):
     if args.command == "download":
         from server.data.download import download_city, download_roads
 
-        manifest = download_city(args.city)
-        print(f"Verified {manifest['local_file']}: {manifest['row_count']:,} rows, sha256 {manifest['sha256']}")
-        print(f"Roads: {download_roads(args.city)}")
+        for city in CITIES:
+            manifest = download_city(city)
+            print(f"Verified {manifest['local_file']}: {manifest['row_count']:,} rows, sha256 {manifest['sha256']}")
+        print(f"Roads: {', '.join(path.name for path in download_roads())}")
     elif args.command == "train":
+        from server.config import CITY_SPLITS
         from server.pipeline.train import train_city
 
-        train_city(args.city)
+        for city in CITIES if args.city == "all" else [args.city]:
+            train_city(city, CITY_SPLITS[city])
     else:
         from server.data.loading import load_city
         from server.serving.predictor import LiveETAPredictor

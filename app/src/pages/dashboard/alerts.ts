@@ -9,7 +9,7 @@ import {
   WifiDisconnected01Icon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
-import type { Courier, Issue, Overview, Parcel } from './api';
+import { courierKey, type Courier, type Fleet, type Issue, type Parcel } from './api';
 
 const DATA = '#e58f0b';
 
@@ -43,22 +43,32 @@ export interface Alert {
 
 const flagged = (p: Parcel): p is Parcel & { issue: Issue } => p.issue !== null;
 
-/** The worst flagged parcel of each courier, worst couriers first; dismissed couriers are skipped. */
-export function alerts(overview: Overview, dismissed: ReadonlySet<string> = new Set()): Alert[] {
+/** The worst flagged parcel of each courier, worst couriers first; dismissed couriers (by key) are skipped. */
+export function alerts(fleet: Fleet, dismissed: ReadonlySet<string> = new Set()): Alert[] {
   const worst = new Map<string, Parcel & { issue: Issue }>();
-  for (const parcel of overview.parcels.filter(flagged)) {
-    if (dismissed.has(parcel.courier_id)) continue;
-    const current = worst.get(parcel.courier_id);
-    if (!current || severity(parcel) < severity(current)) worst.set(parcel.courier_id, parcel);
+  for (const parcel of fleet.parcels.filter(flagged)) {
+    const key = courierKey(parcel);
+    if (dismissed.has(key)) continue;
+    const current = worst.get(key);
+    if (!current || severity(parcel) < severity(current)) worst.set(key, parcel);
   }
-  const couriers = new Map(overview.couriers.map((c) => [c.courier_id, c]));
-  return [...worst.values()]
-    .sort((a, b) => severity(a) - severity(b))
-    .map((parcel) => ({
-      parcel,
-      courier: couriers.get(parcel.courier_id),
-      route: route(overview, parcel.courier_id),
-    }));
+  const couriers = new Map(fleet.couriers.map((c) => [courierKey(c), c]));
+  const routes = byCourier(fleet.parcels);
+  return [...worst.entries()]
+    .sort(([, a], [, b]) => severity(a) - severity(b))
+    .map(([key, parcel]) => ({ parcel, courier: couriers.get(key), route: routes.get(key) ?? [] }));
+}
+
+/** Parcels grouped by courier key, each in predicted stop order. */
+function byCourier(parcels: Parcel[]): Map<string, Parcel[]> {
+  const groups = new Map<string, Parcel[]>();
+  for (const parcel of parcels) {
+    const group = groups.get(courierKey(parcel));
+    if (group) group.push(parcel);
+    else groups.set(courierKey(parcel), [parcel]);
+  }
+  for (const group of groups.values()) group.sort((a, b) => a.position - b.position);
+  return groups;
 }
 
 /** A courier's position, then each stop in order up to `until`, as (lng, lat). */
@@ -69,9 +79,9 @@ export function stops(courier: Courier | undefined, parcels: Parcel[], until = I
   );
 }
 
-/** A courier's pending parcels in predicted stop order. */
-export function route(overview: Overview, courierId: string): Parcel[] {
-  return overview.parcels.filter((p) => p.courier_id === courierId).sort((a, b) => a.position - b.position);
+/** A courier's pending parcels (courier key 'city:id') in predicted stop order. */
+export function route(fleet: Fleet, key: string): Parcel[] {
+  return fleet.parcels.filter((p) => courierKey(p) === key).sort((a, b) => a.position - b.position);
 }
 
 // Lower is worse: issue kind first, then how far the estimate moved.

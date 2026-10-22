@@ -4,113 +4,52 @@ import numpy as np
 import pandas as pd
 
 from server.config import LIVE_COLS
-from server.features.geometry import greedy_tour, haversine_km, rank_fraction
-
-MINUTE = np.timedelta64(1, "m")
-_ROUTE_SHAPE = ("greedy_pos", "greedy_pos_frac", "greedy_km", "aoi_greedy_pos_frac", "aoi_earlier_count")
-
-
-def _event_rows(s, idx, a, d, r, d_known_sorted, lat, lng, aoi, usual_ca, usual_end, usual_pace):
-    received = r <= s
-    pending_mask = (a <= s) & ~received
-    if not pending_mask.any():
-        return None
-    if d_known_sorted is None:
-        known_times = d[received]
-        d_known_sorted = np.sort(known_times[~np.isnat(known_times)])
-    pend = idx[pending_mask]
-    n = len(pend)
-    k1 = np.searchsorted(d_known_sorted, s, "right")
-    last = d_known_sorted[k1 - 1] if k1 else None
-    done_now = idx[(d == last) & received] if last is not None else idx[:0]
-    lag_now = (r[np.flatnonzero((d == last) & received)[0]] - last) / MINUTE if len(done_now) else np.nan
-    clat = np.nanmean(lat[done_now]) if len(done_now) else np.nan
-    clng = np.nanmean(lng[done_now]) if len(done_now) else np.nan
-    day = s.astype("datetime64[D]")
-    k0 = np.searchsorted(d_known_sorted, day, "left")
-    n_today = k1 - k0
-    first_today = d_known_sorted[k0] if n_today > 0 else None
-    since_first = (s - first_today) / MINUTE if first_today is not None else np.nan
-    pace = since_first / (n_today - 1) if n_today >= 2 else np.nan
-    clock_s = (s - day) / MINUTE
-    plat, plng = lat[pend], lng[pend]
-    feed_age = (s - last) / MINUTE if last is not None else np.nan
-    q = {
-        "row": pend,
-        "s": np.full(n, s),
-        "cur_row": np.full(n, done_now[0] if len(done_now) else -1),
-        "feed_age_min": np.full(n, feed_age),
-        "upload_lag_min": np.full(n, lag_now),
-        "elapsed_min": (s - a[pending_mask]) / MINUTE,
-        "clock_s": np.full(n, clock_s),
-        "n_pending": np.full(n, n, float),
-        "n_done_today": np.full(n, n_today, float),
-        "n_done_last_hour": np.full(n, k1 - np.searchsorted(d_known_sorted, s - 60 * MINUTE, "right"), float),
-        "pace_today_min": np.full(n, pace),
-        "minutes_since_first_delivery_today": np.full(n, since_first),
-    }
-    dist = haversine_km(clat, clng, plat, plng)
-    q["dist_from_courier_km"], q["dist_rank"] = dist, rank_fraction(dist)
-    if np.isfinite(plat).all() and np.isfinite(plng).all() and np.isfinite(clat):
-        order, cumulative = greedy_tour(clat, clng, plat, plng)
-        codes, inv = np.unique(aoi[pend], return_inverse=True)
-        sizes = np.bincount(inv)
-        area_order, _ = greedy_tour(clat, clng, np.bincount(inv, plat) / sizes, np.bincount(inv, plng) / sizes)
-        earlier = np.array([sizes[area_order < area_order[k]].sum() for k in range(len(codes))])
-        q.update(
-            {
-                "greedy_pos": order.astype(float),
-                "greedy_pos_frac": order / max(n - 1, 1),
-                "greedy_km": cumulative,
-                "aoi_greedy_pos_frac": area_order[inv] / max(len(codes) - 1, 1),
-                "aoi_earlier_count": earlier[inv].astype(float),
-            }
-        )
-    else:
-        q.update({name: np.full(n, np.nan) for name in _ROUTE_SHAPE})
-    _, inv2, counts = np.unique(aoi[pend], return_inverse=True, return_counts=True)
-    q["same_aoi_pending"] = counts[inv2].astype(float)
-    q["at_current_aoi"] = np.isin(aoi[pend], aoi[done_now]).astype(float)
-    relative = usual_ca[pend] - clock_s
-    q["hab_ca_rel_now"], q["hab_ca_rank_now"] = relative, rank_fraction(relative)
-    q["hab_shift_end_rel_now"] = usual_end[pend] - clock_s
-    pace_used = pace if np.isfinite(pace) else np.nanmean(usual_pace[pend])
-    q["est_stops_x_pace"] = (q["greedy_pos"] + 1) * pace_used
-    q["remaining_min"] = (d[pending_mask] - s) / MINUTE
-    return pd.DataFrame(q)
+from server.features.live_kernel import COLUMNS, live_rows
 
 
 def build_live_queries(packages: pd.DataFrame, events: pd.DataFrame | None = None) -> pd.DataFrame:
     """Live query rows for every recorded delivery moment, or for the given (courier, moment) events."""
-    acc = packages["_accepted_at"].to_numpy()
-    dlv = packages["_delivered_at"].to_numpy()
-    event_time_mode = "_received_at" in packages
-    rcv = packages["_received_at"].to_numpy() if event_time_mode else dlv
-    lat, lng = packages["lat"].to_numpy(float), packages["lng"].to_numpy(float)
-    acc_clock = (packages["_accepted_at"] - packages["_accepted_at"].dt.normalize()).dt.total_seconds().to_numpy() / 60
-    usual_ca = packages["hab_ca_minutes_until_usual_delivery"].to_numpy() + acc_clock
-    usual_end = packages["hab_courier_minutes_until_usual_shift_end"].to_numpy() + acc_clock
+    as_ns = lambda column: packages[column].to_numpy("datetime64[ns]").view(np.int64)  # noqa: E731
+    delivered = packages["_delivered_at"].to_numpy("datetime64[ns]")
+    event_time = "_received_at" in packages
+    received = packages["_received_at"].to_numpy("datetime64[ns]") if event_time else delivered
+    accepted_clock = (packages["_accepted_at"] - packages["_accepted_at"].dt.normalize()).dt.total_seconds().to_numpy() / 60
     usual_pace = (packages["hab_courier_usual_shift_hours"] * 60 / packages["hab_courier_usual_deliveries_per_day"]).to_numpy()
-    aoi = pd.factorize(packages["aoi_id"].astype(str))[0]
-    wanted = None
-    if events is not None:
-        wanted = {c: np.unique(g["s"].to_numpy(dtype="datetime64[ns]")) for c, g in events.groupby(events["courier_id"].astype(str))}
-    chunks = []
-    for courier, group in packages.groupby("courier_id", observed=True, sort=False):
-        if wanted is not None and str(courier) not in wanted:
-            continue
-        idx = group.index.to_numpy()
-        a, d, r = acc[idx], dlv[idx], rcv[idx]
-        known = d[~np.isnat(d)]
-        d_known_sorted = None if event_time_mode else np.sort(known)
-        times = np.unique(known) if wanted is None else wanted[str(courier)]
-        for s in times:
-            rows = _event_rows(s, idx, a, d, r, d_known_sorted, lat, lng, aoi, usual_ca, usual_end, usual_pace)
-            if rows is not None:
-                chunks.append(rows)
-    if not chunks:
-        return pd.DataFrame(columns=["row", "s", "cur_row", "feed_age_min", "upload_lag_min", *LIVE_COLS, "remaining_min"])
-    live = pd.concat(chunks, ignore_index=True)
+
+    code, couriers = pd.factorize(packages["courier_id"].astype(str))
+    groups = np.argsort(code, kind="stable")
+    starts = np.searchsorted(code[groups], np.arange(len(couriers) + 1))
+    if events is None:
+        per_group = [np.unique(delivered[groups[starts[g] : starts[g + 1]]]) for g in range(len(couriers))]
+        per_group = [t[~np.isnat(t)] for t in per_group]
+    else:
+        wanted = {c: np.unique(g["s"].to_numpy("datetime64[ns]")) for c, g in events.groupby(events["courier_id"].astype(str))}
+        per_group = [wanted.get(c, np.array([], "datetime64[ns]")) for c in couriers]
+    times = np.concatenate([t.view(np.int64) for t in per_group]) if per_group else np.array([], np.int64)
+    t_starts = np.concatenate([[0], np.cumsum([len(t) for t in per_group])]).astype(np.int64)
+
+    rows, moments, cur, values = live_rows(
+        groups.astype(np.int64),
+        starts.astype(np.int64),
+        times,
+        t_starts,
+        as_ns("_accepted_at"),
+        delivered.view(np.int64),
+        ~np.isnat(delivered),
+        received.view(np.int64),
+        ~np.isnat(received),
+        event_time,
+        packages["lat"].to_numpy(float),
+        packages["lng"].to_numpy(float),
+        pd.factorize(packages["aoi_id"].astype(str))[0].astype(np.int64),
+        packages["hab_ca_minutes_until_usual_delivery"].to_numpy(float) + accepted_clock,
+        packages["hab_courier_minutes_until_usual_shift_end"].to_numpy(float) + accepted_clock,
+        usual_pace,
+    )
+    live = pd.DataFrame(values, columns=list(COLUMNS))
+    live.insert(0, "row", rows)
+    live.insert(1, "s", moments.view("datetime64[ns]"))
+    live.insert(2, "cur_row", cur)
     for column in LIVE_COLS + ["feed_age_min", "upload_lag_min", "remaining_min"]:
         live[column] = live[column].astype("float32")
     return live
@@ -123,8 +62,11 @@ def annotate_events(live: pd.DataFrame, packages: pd.DataFrame, package_cols: li
     live["_delivered_at"] = packages["_delivered_at"].to_numpy()[rows]
     live["_order_id"] = packages["_order_id"].to_numpy()[rows]
     live["courier_s"] = packages["courier_id"].astype(str).to_numpy()[rows]
-    live["event"] = pd.factorize(live["courier_s"] + "|" + live["s"].astype(str))[0]
-    live["day"] = pd.to_datetime(live["s"]).dt.strftime("%m-%d")
+    s = live["s"].to_numpy()
+    starts = np.r_[True, (s[1:] != s[:-1]) | (live["courier_s"].to_numpy()[1:] != live["courier_s"].to_numpy()[:-1])]
+    live["event"] = np.cumsum(starts) - 1
+    days, day_index = np.unique(s.astype("datetime64[D]"), return_inverse=True)
+    live["day"] = pd.Index(days).strftime("%m-%d").to_numpy()[day_index]
     by_event = live.groupby("event")
     spread = (live["n_pending"] - 1).clip(lower=1)
     live["true_pos"] = ((by_event["remaining_min"].rank(method="first") - 1) / spread).astype("float32")

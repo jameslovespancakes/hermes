@@ -1,96 +1,127 @@
-// Dispatcher view: the city at a recorded moment, with an icon wherever a delivery needs a person.
-// The service replays the Yantai log as it stood at that moment, so nothing shown uses later information.
+// Dispatcher view: every city at a recorded moment, with an icon wherever a delivery needs a person.
+// The service replays each city's log as it stood at that moment, so nothing shown uses later information.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Nav } from '../../nav';
 import { AlertCard } from './alert-card';
 import { alerts as findAlerts, route, stops, type Alert } from './alerts';
 import { CourierCard } from './courier-card';
-import { api, moment, type DataHealth, type Overview } from './api';
+import {
+  api,
+  courierKey,
+  moment,
+  parcelKey,
+  type City,
+  type DataHealth,
+  type Fleet,
+  type Overview,
+} from './api';
 import { Defs } from './defs';
 import { CityMap } from './map/city-map';
 import { TimeControl } from './time-control';
 
 const SETTLE_MS = 350; // wait for the slider to settle before asking the service
 
-function useMoment(at: string) {
-  const [shown, setShown] = useState<{ at: string; overview: Overview } | null>(null);
-  const [health, setHealth] = useState<DataHealth | null>(null);
-  const [failedAt, setFailedAt] = useState('');
+function useCities() {
+  const [cities, setCities] = useState<City[]>([]);
+  useEffect(() => {
+    void api.cities().then(setCities);
+  }, []);
+  return cities;
+}
+
+// Every city's overview and input health at `at`; each city shows its latest view until the new one arrives.
+function useMoment(cities: City[], at: string) {
+  const [views, setViews] = useState<Partial<Record<string, Overview>>>({});
+  const [health, setHealth] = useState<Partial<Record<string, DataHealth>>>({});
+  const [failed, setFailed] = useState<Partial<Record<string, string>>>({});
 
   useEffect(() => {
     let current = true;
     const timer = setTimeout(() => {
-      api.overview(at).then(
-        (overview) => current && setShown({ at, overview }),
-        () => current && setFailedAt(at),
-      );
-      api.dataHealth(at).then(
-        (report) => current && setHealth(report),
-        () => current && setHealth(null),
-      );
+      for (const city of cities) {
+        api.overview(city.id, at).then(
+          (overview) => current && setViews((prev) => ({ ...prev, [city.id]: overview })),
+          () => current && setFailed((prev) => ({ ...prev, [city.id]: at })),
+        );
+        void api
+          .dataHealth(city.id, at)
+          .then((report) => current && setHealth((prev) => ({ ...prev, [city.id]: report })));
+      }
     }, SETTLE_MS);
     return () => {
       current = false;
       clearTimeout(timer);
     };
-  }, [at]);
+  }, [cities, at]);
 
-  const failed = failedAt === at && shown?.at !== at;
+  const shown = Object.values(views).filter((v): v is Overview => v !== undefined);
+  const fleet = useMemo<Fleet>(
+    () => ({ couriers: shown.flatMap((v) => v.couriers), parcels: shown.flatMap((v) => v.parcels) }),
+    // `views` changes whenever a city's view does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [views],
+  );
+  const down = cities.filter((c) => failed[c.id] === at && views[c.id]?.at !== at);
   return {
-    overview: shown?.overview ?? null,
-    health,
-    loading: shown?.at !== at && !failed,
-    error: failed
-      ? 'The ETA service is not reachable. Start it with: uv run uvicorn server.api.app:create_app --factory'
+    fleet,
+    loading: cities.some((c) => views[c.id]?.at !== at && failed[c.id] !== at),
+    unusual: cities
+      .filter((c) => health[c.id]?.at === at && health[c.id]?.status !== 'ok')
+      .map((c) => c.name),
+    error: down.length
+      ? `No data for ${down.map((c) => c.name).join(', ')}. Is the API running? uv run uvicorn server.api.app:create_app --factory`
       : '',
   };
 }
 
 // The road path through the given stops, fetched again whenever the stops change.
-function useRoad(points: [number, number][] | null) {
+function useRoad(city: string | null, points: [number, number][] | null) {
   const [road, setRoad] = useState<{ key: string; path: [number, number][] } | null>(null);
-  const key = points && points.length > 1 ? points.map((p) => p.join(',')).join(';') : '';
+  const key =
+    city && points && points.length > 1 ? `${city}|${points.map((p) => p.join(',')).join(';')}` : '';
   useEffect(() => {
-    if (!points || !key) return;
+    if (!city || !points || !key) return;
     let current = true;
-    api.route(points).then(
-      (route) => current && setRoad({ key, path: route.coordinates }),
+    api.route(city, points).then(
+      (result) => current && setRoad({ key, path: result.coordinates }),
       () => current && setRoad(null),
     );
     return () => {
       current = false;
     };
-    // `key` captures the stops; `points` is rebuilt every render.
+    // `key` captures the city and stops; `points` is rebuilt every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   return road && road.key === key ? road.path : null;
 }
 
 export function Dashboard() {
+  const cities = useCities();
   const [date, setDate] = useState('2000-09-20');
   const [time, setTime] = useState('10:30');
-  const { overview, health, error, loading } = useMoment(moment(date, time));
+  const { fleet, loading, unusual, error } = useMoment(cities, moment(date, time));
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
-  const [selectedOrder, setSelectedOrder] = useState<number | null>(null);
-  const [courierId, setCourierId] = useState<string | null>(null);
+  const [selectedParcel, setSelectedParcel] = useState<string | null>(null);
+  const [selectedCourier, setSelectedCourier] = useState<string | null>(null);
 
-  const list = useMemo(() => (overview ? findAlerts(overview, dismissed) : []), [overview, dismissed]);
+  const list = useMemo(() => findAlerts(fleet, dismissed), [fleet, dismissed]);
   // Selections follow the parcel or courier across refreshes and disappear with them.
-  const selected = list.find((a) => a.parcel.order_id === selectedOrder) ?? null;
-  const courier = overview?.couriers.find((c) => c.courier_id === courierId) ?? null;
+  const selected = list.find((a) => parcelKey(a.parcel) === selectedParcel) ?? null;
+  const courier = fleet.couriers.find((c) => courierKey(c) === selectedCourier) ?? null;
   const held = useMemo(
-    () => (overview && courierId ? route(overview, courierId) : []),
-    [overview, courierId],
+    () => (selectedCourier ? route(fleet, selectedCourier) : []),
+    [fleet, selectedCourier],
   );
   const select = useCallback((alert: Alert) => {
-    setCourierId(null);
-    setSelectedOrder(alert.parcel.order_id);
+    setSelectedCourier(null);
+    setSelectedParcel(parcelKey(alert.parcel));
   }, []);
-  const pickCourier = useCallback((id: string) => {
-    setSelectedOrder(null);
-    setCourierId(id);
+  const pickCourier = useCallback((key: string) => {
+    setSelectedParcel(null);
+    setSelectedCourier(key);
   }, []);
   const road = useRoad(
+    selected?.parcel.city ?? courier?.city ?? null,
     selected
       ? stops(selected.courier, selected.route, selected.parcel.position)
       : courier
@@ -104,10 +135,11 @@ export function Dashboard() {
       <Nav page="dashboard" />
       <main className="dash">
         <CityMap
-          overview={overview}
+          cities={cities}
+          fleet={fleet}
           alerts={list}
           selected={selected}
-          focus={selected?.parcel.courier_id ?? courier?.courier_id ?? null}
+          focus={selected ? courierKey(selected.parcel) : selectedCourier}
           road={road}
           onSelect={select}
           onCourier={pickCourier}
@@ -116,7 +148,7 @@ export function Dashboard() {
           date={date}
           time={time}
           loading={loading}
-          health={health}
+          unusual={unusual}
           onDate={setDate}
           onTime={setTime}
         />
@@ -128,14 +160,14 @@ export function Dashboard() {
         {selected && (
           <AlertCard
             alert={selected}
-            onClose={() => setSelectedOrder(null)}
+            onClose={() => setSelectedParcel(null)}
             onDismiss={() => {
-              setDismissed((prev) => new Set(prev).add(selected.parcel.courier_id));
-              setSelectedOrder(null);
+              setDismissed((prev) => new Set(prev).add(courierKey(selected.parcel)));
+              setSelectedParcel(null);
             }}
           />
         )}
-        {courier && <CourierCard courier={courier} parcels={held} onClose={() => setCourierId(null)} />}
+        {courier && <CourierCard courier={courier} parcels={held} onClose={() => setSelectedCourier(null)} />}
       </main>
     </>
   );

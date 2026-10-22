@@ -109,3 +109,19 @@ def street_grid(n: int = 5, step: float = 0.002):
     ticks = np.arange(n) * step
     lines = [np.c_[121.0 + ticks, np.full(n, 37.0 + t)] for t in ticks] + [np.c_[np.full(n, 121.0 + t), 37.0 + ticks] for t in ticks]
     return RoadGraph.from_lines(lines)
+
+
+def app_client(bundle=None, recs=None):
+    """A TestClient for the API serving one synthetic city ('yt')."""
+    from fastapi.testclient import TestClient
+
+    from server.api.app import create_app
+    from server.serving.city import CityService
+    from server.serving.predictor import LiveETAPredictor
+
+    service = CityService(
+        LiveETAPredictor(bundle or constant_bundle(eta=30.0)),
+        recs if recs is not None else records(days=2, couriers=(1, 2), per_day=6),
+        street_grid(),
+    )
+    return TestClient(create_app(services={"yt": service}, frontend=None))

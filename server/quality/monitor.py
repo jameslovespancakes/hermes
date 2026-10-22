@@ -9,7 +9,7 @@ from server.quality.contract import city_bounds, validate
 from server.quality.drift import calibrate, drift_report
 
 DRIFT_FEATURES = ["n_pending", "dist_from_courier_km", "pace_today_min", "feed_age_min", "upload_lag_min"]
-BASELINE_DAYS = 30
+BASELINE_DAYS = 15
 BASELINE_SAMPLE = 200_000
 
 

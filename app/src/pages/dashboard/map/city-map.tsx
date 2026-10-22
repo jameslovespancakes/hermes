@@ -3,15 +3,17 @@
 import type { MapLayerMouseEvent, Map as MapLibre, Marker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { ISSUES, type Alert } from '../alerts';
-import type { Overview } from '../api';
+import { courierKey, type City, type Fleet } from '../api';
 import { iconSvg } from '../icons';
-import { BOUNDS, quietBasemap, STYLE_URL, YANTAI } from './basemap';
+import { CHINA, quietBasemap, STYLE_URL } from './basemap';
 import { addLayers, drawOverview } from './layers';
 
 type MapLibreModule = typeof import('maplibre-gl');
 
 interface Props {
-  overview: Overview | null;
+  /** Every city on the map; the first view frames them all. */
+  cities: City[];
+  fleet: Fleet;
   alerts: Alert[];
   selected: Alert | null;
   /** The courier in focus (selected alert's or clicked courier); others fade. */
@@ -22,25 +24,12 @@ interface Props {
   onCourier: (courierId: string) => void;
 }
 
-// Frame where most parcels are: the 5th-95th percentile box, so a few far-off drops don't zoom the city out.
-function core(overview: Overview): [[number, number], [number, number]] {
-  const pick = (values: number[], q: number) =>
-    values.sort((a, b) => a - b)[Math.floor(q * (values.length - 1))] ?? 0;
-  const lng = overview.parcels.map((p) => p.lng);
-  const lat = overview.parcels.map((p) => p.lat);
-  return [
-    [pick(lng, 0.05), pick(lat, 0.05)],
-    [pick(lng, 0.95), pick(lat, 0.95)],
-  ];
-}
-
 // The card sits bottom-right, so a focused alert is framed left of centre.
 const FOCUS_OFFSET: [number, number] = [-170, -60];
 
-export function CityMap({ overview, alerts, selected, focus, road, onSelect, onCourier }: Props) {
+export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect, onCourier }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<{ map: MapLibre; lib: MapLibreModule } | null>(null);
-  const framed = useRef(false);
 
   useEffect(() => {
     let instance: MapLibre | undefined;
@@ -52,8 +41,7 @@ export function CityMap({ overview, alerts, selected, focus, road, onSelect, onC
       instance = new lib.Map({
         container: container.current,
         style: STYLE_URL,
-        ...YANTAI,
-        maxBounds: BOUNDS,
+        ...CHINA,
         dragRotate: false,
         pitchWithRotate: false,
       });
@@ -72,25 +60,33 @@ export function CityMap({ overview, alerts, selected, focus, road, onSelect, onC
     };
   }, []);
 
-  // Data layers follow the overview and the selection.
+  // Frame every city once they are known.
   useEffect(() => {
-    if (!map || !overview) return;
-    drawOverview(map.map, overview, focus, road);
-    if (!framed.current && overview.parcels.length) {
-      framed.current = true;
-      map.map.fitBounds(core(overview), {
-        padding: { top: 130, bottom: 90, left: 60, right: 60 },
-        duration: 0,
-      });
-    }
-  }, [map, overview, focus, road]);
+    if (!map || !cities.length) return;
+    const west = Math.min(...cities.map((c) => c.bounds[0][0]));
+    const south = Math.min(...cities.map((c) => c.bounds[0][1]));
+    const east = Math.max(...cities.map((c) => c.bounds[1][0]));
+    const north = Math.max(...cities.map((c) => c.bounds[1][1]));
+    map.map.fitBounds(
+      [
+        [west, south],
+        [east, north],
+      ],
+      { padding: 80, duration: 0 },
+    );
+  }, [map, cities]);
+
+  // Data layers follow the fleet and the selection.
+  useEffect(() => {
+    if (map) drawOverview(map.map, fleet, focus, road);
+  }, [map, fleet, focus, road]);
 
   // Clicking a courier opens their card.
   useEffect(() => {
     if (!map) return;
     const click = (event: MapLayerMouseEvent) => {
-      const id: unknown = event.features?.[0]?.properties.courier_id;
-      if (typeof id === 'string') onCourier(id);
+      const key: unknown = event.features?.[0]?.properties.courier;
+      if (typeof key === 'string') onCourier(key);
     };
     const pointer = () => (map.map.getCanvas().style.cursor = 'pointer');
     const plain = () => (map.map.getCanvas().style.cursor = '');
@@ -138,7 +134,7 @@ export function CityMap({ overview, alerts, selected, focus, road, onSelect, onC
   const parcelId = selected?.parcel.order_id;
   useEffect(() => {
     if (!map) return;
-    const courier = overview?.couriers.find((c) => c.courier_id === focus);
+    const courier = fleet.couriers.find((c) => courierKey(c) === focus);
     const target = selected ? selected.parcel : courier;
     if (!target) return;
     map.map.flyTo({ center: [target.lng, target.lat], zoom: 15.5, offset: FOCUS_OFFSET, duration: 1200 });

@@ -5,9 +5,9 @@ from typing import Protocol
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from threadpoolctl import threadpool_limits
 
 from server.config import ROUTE_FOLDS, SEED, THREADS
+from server.models.parallel import fit_all
 from server.models.route import courier_day_folds
 
 
@@ -48,15 +48,13 @@ def zone_table(live: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
     return table, key
 
 
-def _fit(rows: pd.DataFrame) -> lgb.LGBMClassifier:
-    model = lgb.LGBMClassifier(**PARAMS, random_state=SEED, n_jobs=THREADS, verbosity=-1)
-    with threadpool_limits(limits=THREADS):
-        return model.fit(rows[ZONE_INPUTS], rows["label"])
+def _fit(rows: pd.DataFrame, threads: int = THREADS) -> lgb.LGBMClassifier:
+    model = lgb.LGBMClassifier(**PARAMS, random_state=SEED, n_jobs=threads, force_col_wise=True, verbosity=-1)
+    return model.fit(rows[ZONE_INPUTS], rows["label"])
 
 
 def _proba(model, rows: pd.DataFrame) -> np.ndarray:
-    with threadpool_limits(limits=THREADS):
-        return model.predict_proba(rows[ZONE_INPUTS])[:, 1]
+    return model.predict_proba(rows[ZONE_INPUTS])[:, 1]
 
 
 def fit_zone_folds(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarray, lgb.LGBMClassifier, list]:
@@ -65,13 +63,12 @@ def fit_zone_folds(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarray
     last = table.groupby("event")["_delivered_at"].transform("max")
     trainable = ((table["s"] < cutoff) & (last < cutoff)).to_numpy()
     fold = courier_day_folds(table)
+    jobs = [lambda threads, k=k: _fit(table.loc[trainable & (fold != k)], threads) for k in range(ROUTE_FOLDS)]
+    *folds, full = fit_all([*jobs, lambda threads: _fit(table.loc[trainable], threads)])
     prob = np.full(len(table), np.nan)
-    folds = []
-    for k in range(ROUTE_FOLDS):
-        folds.append(_fit(table.loc[trainable & (fold != k)]))
+    for k, model in enumerate(folds):
         held = trainable & (fold == k)
-        prob[held] = _proba(folds[k], table.loc[held])
-    full = _fit(table.loc[trainable])
+        prob[held] = _proba(model, table.loc[held])
     prob[~trainable] = _proba(full, table.loc[~trainable])
     return prob[key], full, folds
 

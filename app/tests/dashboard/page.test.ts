@@ -20,6 +20,7 @@ test('dashboard shell is the map and one time control', () => {
 });
 
 const parcel = (over: Partial<Parcel>): Parcel => ({
+  city: 'yt',
   order_id: 1,
   courier_id: 'a',
   lat: 37.5,
@@ -40,7 +41,15 @@ const overview = (parcels: Parcel[]): Overview => ({
   at: '09-20 10:30:00',
   baseline_at: '09-20 09:30:00',
   couriers: [
-    { courier_id: 'a', lat: 37.5, lng: 121.4, packages_held: 3, feed_age_min: 2, model_used: 'standard' },
+    {
+      city: 'yt',
+      courier_id: 'a',
+      lat: 37.5,
+      lng: 121.4,
+      packages_held: 3,
+      feed_age_min: 2,
+      model_used: 'standard',
+    },
   ],
   parcels,
 });
@@ -57,8 +66,8 @@ test('one alert per courier: guard flags first, then the biggest slip', () => {
   expect(list.map((a) => a.parcel.order_id)).toEqual([2, 5]);
   expect(list[0]?.route.map((p) => p.order_id)).toEqual([3, 1, 2]);
   expect(list[0]?.courier?.packages_held).toBe(3);
-  expect(alerts(view, new Set(['a'])).map((a) => a.parcel.order_id)).toEqual([5]);
-  expect(route(view, 'b')).toHaveLength(2);
+  expect(alerts(view, new Set(['yt:a'])).map((a) => a.parcel.order_id)).toEqual([5]);
+  expect(route(view, 'yt:b')).toHaveLength(2);
 });
 
 test('stops start at the courier and stop at the flagged parcel', () => {
@@ -67,8 +76,8 @@ test('stops start at the courier and stop at the flagged parcel', () => {
     parcel({ order_id: 2, position: 2, lng: 121.5 }),
   ]);
   const courier = view.couriers[0];
-  expect(stops(courier, route(view, 'a'))).toHaveLength(3);
-  expect(stops(courier, route(view, 'a'), 1)).toEqual([
+  expect(stops(courier, route(view, 'yt:a'))).toHaveLength(3);
+  expect(stops(courier, route(view, 'yt:a'), 1)).toEqual([
     [121.4, 37.5],
     [121.4, 37.5],
   ]);
