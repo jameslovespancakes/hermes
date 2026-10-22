@@ -5,7 +5,7 @@ import pandas as pd
 
 from server.quality.config import CleanMode
 from server.quality.detectors import bulk_scanned_courier_days, duplicate_records, running_bulk_share
-from server.quality.guard import DataGuard, review_flags
+from server.quality.guard import DataGuard, data_issues
 from server.tests.helpers import records
 
 
@@ -60,14 +60,31 @@ class QualityTests(unittest.TestCase):
         early = (recs["delivered_at"] < recs.loc[last, "delivered_at"].min()).to_numpy()
         np.testing.assert_allclose(share[early], running_bulk_share(later)[early])
 
-    def test_oversight_flags(self):
+    def test_data_issues_in_priority_order_with_reasons(self):
         live = pd.DataFrame(
-            {"feed_age_min": [10.0, 90.0, 5.0, 900.0], "upload_lag_min": [0.0, 0.0, 60.0, 0.0], "n_done_today": [3, 3, 3, 0], "cur_row": [0, 1, 0, 0]}
+            {
+                "feed_age_min": [10.0, 90.0, 5.0, 900.0],
+                "upload_lag_min": [0.0, 0.0, 60.0, 0.0],
+                "n_done_today": [3, 3, 3, 0],
+                "row": [0, 1, 0, 1],
+                "cur_row": [0, 1, 0, 0],
+            }
         )
-        packages = pd.DataFrame({"guard_bulk_scan": [False, True]})
-        flags = review_flags(live, packages)
-        self.assertEqual(flags["needs_review"].tolist(), [False, True, True, False])  # overnight gap is not staleness
-        self.assertEqual(flags["flag_stale_feed"].tolist(), [False, True, True, False])
+        packages = pd.DataFrame({"guard_bulk_scan": [False, True], "guard_moved_km": [np.nan, 2.4], "guard_resent": [False, True]})
+        out = data_issues(live, packages)
+        self.assertEqual(out["issues"].tolist(), [[], ["silent", "bulk", "moved", "resent"], ["lagging"], ["moved", "resent"]])
+        self.assertEqual(out["reasons"][1][0], "No scans from the courier for 90 min")
+        self.assertEqual(out["reasons"][3][0], "Address was 2.4 km off its area and was moved")
+
+    def test_serving_marks_moved_addresses_and_removed_copies(self):
+        recs = records(days=2)
+        bad = recs.copy()
+        bad.loc[0, "lat"] += 0.05
+        copy = bad.iloc[[1]].assign(order_id=bad["order_id"].max() + 1)
+        cleaned, _ = DataGuard.fit(recs).clean(pd.concat([bad, copy], ignore_index=True), mode=CleanMode.SERVE)
+        self.assertGreater(cleaned.loc[cleaned["order_id"] == recs.loc[0, "order_id"], "guard_moved_km"].iloc[0], 1.5)
+        self.assertTrue(cleaned.loc[cleaned["order_id"] == recs.loc[1, "order_id"], "guard_resent"].iloc[0])
+        self.assertEqual(int(cleaned["guard_resent"].sum()), 1)
 
 
 if __name__ == "__main__":

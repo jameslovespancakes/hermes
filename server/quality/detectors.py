@@ -6,13 +6,19 @@ import pandas as pd
 from server.features.geometry import haversine_km
 
 
-def duplicate_records(records: pd.DataFrame) -> pd.Series:
-    """Re-sent copies: same courier, acceptance, area, delivery time and coordinates (lowest id kept)."""
+def record_keys(records: pd.DataFrame) -> pd.DataFrame:
+    """What makes two records the same delivery: courier, acceptance, area, delivery time, coordinates (~10 m)."""
     keys = records[["courier_id", "accepted_at", "aoi_id", "delivered_at"]].copy()
     keys["lat"], keys["lng"] = records["lat"].round(4), records["lng"].round(4)
+    return keys
+
+
+def duplicate_records(records: pd.DataFrame) -> pd.Series:
+    """Re-sent copies of the same delivery scan (lowest id kept); parcels not yet delivered are never copies."""
+    keys = record_keys(records)
     order = records["order_id"].argsort(kind="stable")
-    repeat = keys.iloc[order].duplicated(keep="first")
-    return repeat.reindex(records.index)
+    repeat = keys.iloc[order].duplicated(keep="first").reindex(records.index)
+    return repeat & records["delivered_at"].notna()
 
 
 def bulk_scanned_courier_days(records: pd.DataFrame, min_share: float) -> pd.Series:

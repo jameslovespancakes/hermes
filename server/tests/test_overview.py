@@ -18,7 +18,7 @@ def frame(**columns) -> pd.DataFrame:
         "order_id": list(range(n)),
         "predicted_delivery_at": [AT + pd.Timedelta(minutes=30)] * n,
         "minutes_remaining": [30.0] * n,
-        "needs_review": [False] * n,
+        "data_issues": [[] for _ in range(n)],
         "review_reasons": [[] for _ in range(n)],
         "dist_from_courier_km": [1.0] * n,
     }
@@ -42,7 +42,7 @@ class ClassifyTests(unittest.TestCase):
     def test_large_slip_is_late(self):
         out = classify(frame(order_id=[0]), before([AT - pd.Timedelta(minutes=70)]), self.rules)
         self.assertEqual(out["issue"][0], "late")
-        self.assertEqual(out["reasons"][0], ["estimate moved 100 min later in an hour"])
+        self.assertEqual(out["reasons"][0], ["ETA slipped 100 min in the last hour"])
 
     def test_implausible_inputs_are_suspect(self):
         out = classify(
@@ -51,17 +51,22 @@ class ClassifyTests(unittest.TestCase):
             self.rules,
         )
         self.assertEqual(out["issue"].tolist(), ["suspect", "suspect"])
-        self.assertEqual(out["reasons"][0], ["20 km from the courier"])
-        self.assertEqual(out["reasons"][1], ["estimate moved 70 min earlier in an hour"])
+        self.assertEqual(out["reasons"][0], ["Parcel is 20 km from the courier"])
+        self.assertEqual(out["reasons"][1], ["ETA jumped 70 min earlier in the last hour"])
 
     def test_guard_flags_win_and_keep_their_reasons(self):
         out = classify(
-            frame(order_id=[0], needs_review=[True], review_reasons=[["courier feed is stale"]], dist_from_courier_km=[20.0]),
+            frame(
+                order_id=[0],
+                data_issues=[["silent", "moved"]],
+                review_reasons=[["No scans from the courier for 70 min", "Address was 2.0 km off its area and was moved"]],
+                dist_from_courier_km=[20.0],
+            ),
             before([AT - pd.Timedelta(minutes=90)]),
             self.rules,
         )
-        self.assertEqual(out["issue"][0], "data")
-        self.assertEqual(out["reasons"][0], ["courier feed is stale"])
+        self.assertEqual(out["issue"][0], "silent")
+        self.assertEqual(out["reasons"][0][0], "No scans from the courier for 70 min")
 
     def test_parcels_new_since_the_baseline_have_no_slip(self):
         out = classify(frame(order_id=[0]), before([]), self.rules)
@@ -93,9 +98,22 @@ class OverviewApiTests(unittest.TestCase):
         parcel = body["parcels"][0]
         self.assertEqual(
             set(parcel),
-            {"order_id", "courier_id", "lat", "lng", "position", "eta", "minutes_remaining", "baseline_eta", "slip_min", "issue", "reasons"},
+            {
+                "order_id",
+                "courier_id",
+                "lat",
+                "lng",
+                "position",
+                "accepted_at",
+                "eta",
+                "minutes_remaining",
+                "baseline_eta",
+                "slip_min",
+                "issue",
+                "reasons",
+            },
         )
-        self.assertIn(parcel["issue"], {None, "data", "suspect", "late"})
+        self.assertIn(parcel["issue"], {None, "lagging", "silent", "bulk", "moved", "resent", "suspect", "late"})
 
 
 if __name__ == "__main__":

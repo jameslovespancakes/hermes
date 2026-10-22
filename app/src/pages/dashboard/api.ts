@@ -1,7 +1,9 @@
 // Typed client for the ETA API (server/api/app.py, under /api). Times use the source format 'MM-DD HH:MM:SS'.
 
-/** Why a parcel needs a person: guards flagged its data, it passed them but looks wrong, or its ETA slipped. */
-export type Issue = 'data' | 'suspect' | 'late';
+/** Data problems the safeguards caught (most urgent first). */
+export type DataIssue = 'lagging' | 'silent' | 'bulk' | 'moved' | 'resent';
+/** Why a parcel needs a person: a data problem, inputs that look wrong, or an ETA that slipped. */
+export type Issue = DataIssue | 'suspect' | 'late';
 
 export interface Parcel {
   order_id: number;
@@ -10,6 +12,7 @@ export interface Parcel {
   lng: number;
   /** Predicted stop number on the courier's route (1 = next). */
   position: number;
+  accepted_at: string;
   eta: string;
   minutes_remaining: number;
   /** The ETA the model gave an hour earlier, if the courier held the parcel then. */

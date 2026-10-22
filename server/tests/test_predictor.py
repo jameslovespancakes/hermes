@@ -51,7 +51,8 @@ class PredictorTests(unittest.TestCase):
         self.assertTrue((out["model_used"] == "staleness").all())
         self.assertTrue((out["minutes_remaining"] == 40.0).all())
         self.assertTrue(out["needs_review"].all())
-        self.assertIn("courier feed is stale", out["review_reasons"].iloc[0])
+        self.assertEqual(out["data_issues"].iloc[0][0], "lagging")
+        self.assertRegex(out["review_reasons"].iloc[0][0], r"^Scans reach us \d+ min late$")
 
     def test_fresh_courier_keeps_standard_model(self):
         recs = records(days=2, couriers=(1, 2), per_day=6)

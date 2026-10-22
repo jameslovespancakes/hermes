@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from server.features.geometry import gcj02_to_wgs84
-from server.serving.predictor import LiveETAPredictor, courier_positions, couriers_holding
+from server.serving.predictor import OUTPUT_COLUMNS, LiveETAPredictor, courier_positions
 
 
 @dataclass(frozen=True)
@@ -32,16 +32,18 @@ class IssueRules:
 
 
 RULES = IssueRules()
-ISSUE_ORDER = ("data", "suspect", "late")  # when several apply, the first one is reported
 
 
-def city_predictions(predictor: LiveETAPredictor, packages: pd.DataFrame, records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
-    """ETAs with diagnostics for every package held at `at`, plus its destination and raw courier id."""
-    couriers = couriers_holding(records, at).index
-    out = predictor.predict_couriers(packages, couriers, at, diagnostics=True)
-    if out.empty:
-        return out
-    where = packages.set_index("_order_id")[["lat", "lng"]]
+def city_predictions(predictor: LiveETAPredictor, day_table: pd.DataFrame, moments: list[pd.Timestamp]) -> pd.DataFrame:
+    """ETAs with diagnostics for every package held at each moment (one batch; column `s` is the moment)."""
+    seen = day_table["_received_at"] if "_received_at" in day_table else day_table["_delivered_at"]
+    held = [day_table.loc[(day_table["_accepted_at"] <= m) & ~(seen <= m), ["courier_id"]].drop_duplicates().assign(s=m) for m in moments]
+    events = pd.concat(held)
+    if events.empty:
+        return pd.DataFrame(columns=[*OUTPUT_COLUMNS, "s", "courier", "lat", "lng", "courier_id"])
+    events["courier_id"] = events["courier_id"].astype(str)
+    out = predictor.score_events(day_table, events, moments[0].normalize())
+    where = day_table.set_index("_order_id")[["lat", "lng"]]
     out = out.join(where, on="order_id")
     out["courier_id"] = out["courier"].str.split(":", n=1).str[1]
     return out
@@ -57,26 +59,25 @@ def classify(now: pd.DataFrame, before: pd.DataFrame, rules: IssueRules = RULES)
     out["baseline_eta"] = pd.to_datetime(out["baseline_eta"])  # all-missing when nothing was held at the baseline
     out["slip_min"] = (pd.to_datetime(out["predicted_delivery_at"]) - out["baseline_eta"]).dt.total_seconds() / 60
     slip = np.nan_to_num(out["slip_min"].to_numpy(dtype=float))
-
+    far = out["dist_from_courier_km"].to_numpy(dtype=float)
     checks = {
-        "data": [(out["needs_review"].to_numpy(dtype=bool), None)],
         "suspect": [
-            (slip <= -rules.early_jump_min, lambda r: f"estimate moved {-r.slip_min:.0f} min earlier in an hour"),
-            (
-                out["dist_from_courier_km"].to_numpy(dtype=float) >= rules.far_from_courier_km,
-                lambda r: f"{r.dist_from_courier_km:.0f} km from the courier",
-            ),
+            (slip <= -rules.early_jump_min, lambda r: f"ETA jumped {-r.slip_min:.0f} min earlier in the last hour"),
+            (far >= rules.far_from_courier_km, lambda r: f"Parcel is {r.dist_from_courier_km:.0f} km from the courier"),
         ],
-        "late": [(slip >= rules.late_slip_min, lambda r: f"estimate moved {r.slip_min:.0f} min later in an hour")],
+        "late": [(slip >= rules.late_slip_min, lambda r: f"ETA slipped {r.slip_min:.0f} min in the last hour")],
     }
     issues, reasons = [], []
     for i, row in enumerate(out.itertuples(index=False)):
+        if row.data_issues:
+            issues.append(row.data_issues[0])
+            reasons.append(list(row.review_reasons))
+            continue
         kind, why = None, []
-        for name in ISSUE_ORDER:
-            hits = [describe for mask, describe in checks[name] if mask[i]]
+        for name in ("suspect", "late"):
+            hits = [describe(row) for mask, describe in checks[name] if mask[i]]
             if hits:
-                kind = name
-                why = list(row.review_reasons) if name == "data" else [describe(row) for describe in hits]
+                kind, why = name, hits
                 break
         issues.append(kind)
         reasons.append(why)
@@ -84,22 +85,15 @@ def classify(now: pd.DataFrame, before: pd.DataFrame, rules: IssueRules = RULES)
     return out
 
 
-def build_overview(
-    predictor: LiveETAPredictor,
-    prepared: Callable[[pd.Timestamp], pd.DataFrame],
-    records: pd.DataFrame,
-    at: pd.Timestamp,
-    rules: IssueRules = RULES,
-) -> dict:
-    """Couriers (last known positions) and parcels (ETA now vs an hour ago, issue) at `at`.
+def build_overview(city: Callable[[pd.Timestamp], pd.DataFrame], records: pd.DataFrame, at: pd.Timestamp, rules: IssueRules = RULES) -> dict:
+    """Couriers and parcels at `at`, each parcel's ETA now vs an hour earlier, and its issue.
 
-    `prepared(moment)` returns the package table known at that moment (cached by the caller)."""
+    `city(moment)` returns `city_predictions` at that moment (cached by the caller)."""
     baseline_at = at - pd.Timedelta(minutes=rules.lookback_min)
-    now = city_predictions(predictor, prepared(at), records, at)
+    now = city(at)
     if now.empty:
         return {"baseline_at": baseline_at, "couriers": pd.DataFrame(), "parcels": now}
-    before = predictor.predict_couriers(prepared(baseline_at), couriers_holding(records, baseline_at).index, baseline_at)
-    parcels = classify(now, before, rules)
+    parcels = classify(now, city(baseline_at), rules)
 
     positions = courier_positions(records, at)
     per_courier = parcels.groupby("courier_id").agg(

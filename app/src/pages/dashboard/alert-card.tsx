@@ -66,6 +66,7 @@ export function AlertCard({ alert, onClose, onDismiss }: Props) {
           <HugeiconsIcon icon={Cancel01Icon} size={18} />
         </button>
       </header>
+      <p className="alert-why">{parcel.reasons[0]}</p>
       <RouteStrip route={route} parcel={parcel} color={issue.color} />
       <footer>
         <Action icon={Notification01Icon} label={`Notify customer · ${eta}`} primary />

@@ -5,7 +5,6 @@ import type {
   LayerSpecification,
   Map as MapLibre,
 } from 'maplibre-gl';
-import type { Alert } from '../alerts';
 import type { Overview } from '../api';
 import { MAP_IMAGES } from '../icons';
 
@@ -58,33 +57,32 @@ export async function addLayers(map: MapLibre) {
   } as LayerSpecification);
 }
 
-const points = (items: { lat: number; lng: number; dim: boolean }[]): GeoJSON.FeatureCollection => ({
+const points = (
+  items: { lat: number; lng: number; dim: boolean; courier_id: string }[],
+): GeoJSON.FeatureCollection => ({
   type: 'FeatureCollection',
-  features: items.map(({ lat, lng, dim }) => ({
+  features: items.map(({ lat, lng, dim, courier_id }) => ({
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [lng, lat] },
-    properties: { dim },
+    properties: { dim, courier_id },
   })),
 });
 
-/** Draws every parcel and courier; with an alert selected, the rest fade and its road route is traced. */
+/** Draws every parcel and courier; with a courier in focus, the rest fade and its road route is traced. */
 export function drawOverview(
   map: MapLibre,
   overview: Overview,
-  selected: Alert | null,
+  focus: string | null,
   road: [number, number][] | null,
 ) {
-  const focus = selected?.parcel.courier_id;
-  const dim = (courierId: string) => focus !== undefined && courierId !== focus;
+  const dim = (courierId: string) => focus !== null && courierId !== focus;
   const source = (id: string) => map.getSource<GeoJSONSource>(id);
-  source('parcels')?.setData(
-    points(overview.parcels.map((p) => ({ lat: p.lat, lng: p.lng, dim: dim(p.courier_id) }))),
-  );
-  source('couriers')?.setData(
-    points(overview.couriers.map((c) => ({ lat: c.lat, lng: c.lng, dim: dim(c.courier_id) }))),
-  );
+  const at = (items: { lat: number; lng: number; courier_id: string }[]) =>
+    points(items.map((i) => ({ lat: i.lat, lng: i.lng, courier_id: i.courier_id, dim: dim(i.courier_id) })));
+  source('parcels')?.setData(at(overview.parcels));
+  source('couriers')?.setData(at(overview.couriers));
   source('route')?.setData(
-    selected && road
+    focus && road
       ? { type: 'Feature', geometry: { type: 'LineString', coordinates: road }, properties: {} }
       : empty,
   );

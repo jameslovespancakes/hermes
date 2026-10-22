@@ -86,11 +86,12 @@ class ParcelStatus(BaseModel):
     lat: float
     lng: float
     position: int = Field(description="Predicted stop number on the courier's route (1 = next)")
+    accepted_at: str = Field(description="When the courier accepted the parcel")
     eta: str
     minutes_remaining: float
     baseline_eta: str | None = Field(description="The ETA the model gave at `baseline_at` (none if not yet held then)")
     slip_min: float | None = Field(description="Minutes the ETA moved since `baseline_at` (positive = later)")
-    issue: Literal["data", "suspect", "late"] | None
+    issue: Literal["lagging", "silent", "bulk", "moved", "resent", "suspect", "late"] | None
     reasons: list[str]
 
 

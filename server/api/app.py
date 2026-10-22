@@ -28,29 +28,31 @@ from server.api.schemas import (
     parse_moment,
 )
 from server.data.loading import load_city
-from server.serving.overview import build_overview
-from server.serving.predictor import LiveETAPredictor
+from server.serving.overview import build_overview, city_predictions
+from server.serving.predictor import LiveETAPredictor, at_moment
 from server.serving.roads import RoadGraph
 
-CACHE_SIZE = 8
+DAYS_CACHED = 3
+MOMENTS_CACHED = 24
+GRID = {pd.Timedelta(minutes=m) for m in range(6 * 60, 21 * 60 + 1, 15)}
 MomentQuery = Annotated[Moment, Query(examples=["09-20 10:30:00"])]
 
 
-class PreparedCache:
-    """Thread-safe LRU of package tables by moment (the expensive step)."""
+class LruCache:
+    """Thread-safe least-recently-used cache."""
 
     def __init__(self, size: int):
         self.size, self.lock = size, threading.Lock()
-        self.items: OrderedDict[pd.Timestamp, pd.DataFrame] = OrderedDict()
+        self.items: OrderedDict = OrderedDict()
 
-    def get(self, at: pd.Timestamp, build: Callable[[], pd.DataFrame]) -> pd.DataFrame:
+    def get(self, key, build: Callable):
         with self.lock:
-            if at in self.items:
-                self.items.move_to_end(at)
-                return self.items[at]
+            if key in self.items:
+                self.items.move_to_end(key)
+                return self.items[key]
         value = build()
         with self.lock:
-            self.items[at] = value
+            self.items[key] = value
             while len(self.items) > self.size:
                 self.items.popitem(last=False)
         return value
@@ -69,12 +71,23 @@ def create_app(
         state["predictor"] = predictor or LiveETAPredictor.from_store(os.environ.get("ETA_CITY", "yt"))
         state["records"] = records if records is not None else load_city(state["predictor"].city)[0]
         state["roads"] = roads or RoadGraph.load(state["predictor"].city)
-        state["cache"] = PreparedCache(CACHE_SIZE)
+        state["days"], state["city"], state["moments"] = LruCache(DAYS_CACHED), LruCache(DAYS_CACHED), LruCache(MOMENTS_CACHED)
         yield
         state.clear()
 
+    def day_table(day: pd.Timestamp) -> pd.DataFrame:
+        return state["days"].get(day, lambda: state["predictor"].prepare_day(state["records"], day))
+
     def prepared(at: pd.Timestamp) -> pd.DataFrame:
-        return state["cache"].get(at, lambda: state["predictor"].prepare(state["records"], at))
+        return at_moment(day_table(at.normalize()), at)
+
+    def city(at: pd.Timestamp) -> pd.DataFrame:
+        """City predictions at `at`: the dashboard's 15-minute grid is computed for the whole day in one batch."""
+        day = at.normalize()
+        if at - day in GRID:
+            frame = state["city"].get(day, lambda: city_predictions(state["predictor"], day_table(day), [day + g for g in sorted(GRID)]))
+            return frame.loc[frame["s"] == at]
+        return state["moments"].get(at, lambda: city_predictions(state["predictor"], day_table(day), [at]))
 
     api = APIRouter(prefix="/api")
 
@@ -109,7 +122,8 @@ def create_app(
 
     @api.get("/overview", response_model=Overview)
     def overview(at: MomentQuery) -> Overview:
-        view = build_overview(state["predictor"], prepared, state["records"], parse_moment(at))
+        moment = parse_moment(at)
+        view = build_overview(city, state["records"], moment)
         parcels = [
             ParcelStatus(
                 order_id=int(r.order_id),
@@ -117,6 +131,7 @@ def create_app(
                 lat=float(r.lat),
                 lng=float(r.lng),
                 position=int(r.predicted_position),
+                accepted_at=format_moment(moment - pd.Timedelta(minutes=float(r.minutes_since_accepted))),
                 eta=format_moment(r.predicted_delivery_at),
                 minutes_remaining=round(float(r.minutes_remaining), 1),
                 baseline_eta=None if pd.isna(r.baseline_eta) else format_moment(r.baseline_eta),

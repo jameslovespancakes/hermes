@@ -9,7 +9,7 @@ from server.config import MODEL_STORE
 from server.models.bundle import ModelBundle
 from server.pipeline.features import checkpoints, live_table, package_table
 from server.quality.config import QUALITY, CleanMode, QualityConfig
-from server.quality.guard import feed_is_stale, review_flags
+from server.quality.guard import data_issues, feed_is_stale
 from server.quality.monitor import DRIFT_FEATURES, data_health
 
 OUTPUT_COLUMNS = [
@@ -23,6 +23,7 @@ OUTPUT_COLUMNS = [
     "upload_lag_min",
     "model_used",
     "needs_review",
+    "data_issues",
     "review_reasons",
     "risk_min",
     "uncertain",
@@ -43,6 +44,18 @@ def known_at(records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
     return known.reset_index(drop=True)
 
 
+def at_moment(day_table: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
+    """A day's package table as it looked at `at`: later acceptances dropped, later deliveries hidden."""
+    rows = day_table.loc[day_table["_accepted_at"] <= at].copy()
+    seen = rows["_received_at"] if "_received_at" in rows else rows["_delivered_at"]
+    future = (seen > at).to_numpy()
+    rows.loc[future, "_delivered_at"] = pd.NaT
+    rows.loc[future, "_duration_minutes"] = np.nan
+    if "_received_at" in rows:
+        rows.loc[future, "_received_at"] = pd.NaT
+    return rows.reset_index(drop=True)
+
+
 def couriers_holding(records: pd.DataFrame, at: pd.Timestamp) -> pd.Series:
     """Number of packages each courier (raw id) holds at `at`, largest first."""
     arrived = records["received_at"] if "received_at" in records else records["delivered_at"]
@@ -60,11 +73,6 @@ def courier_positions(records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
     last_accept = accepted.groupby("courier_id")[["accept_gps_lat", "accept_gps_lng"]].last()
     last_accept.columns = ["lat", "lng"]
     return last_drop.combine_first(last_accept).dropna()
-
-
-def _reasons(flags: pd.DataFrame) -> list[list[str]]:
-    names = {"flag_stale_feed": "courier feed is stale", "flag_bulk_scan": "delivery times are bulk-synced"}
-    return [[names[c] for c in names if row[c]] for _, row in flags.iterrows()]
 
 
 @dataclass
@@ -96,7 +104,7 @@ class LiveETAPredictor:
             if stale.any():
                 minutes = np.where(stale, self.bundle.staleness.predict(live), minutes)
                 model_used[stale] = "staleness"
-        flags = review_flags(live, packages, self.config)
+        issues = data_issues(live, packages, self.config)
         risk = self.bundle.risk.predict(live, minutes)
         out = pd.DataFrame(
             {
@@ -109,8 +117,9 @@ class LiveETAPredictor:
                 "feed_age_min": live["feed_age_min"].to_numpy(),
                 "upload_lag_min": live["upload_lag_min"].to_numpy(),
                 "model_used": model_used,
-                "needs_review": flags["needs_review"].to_numpy(),
-                "review_reasons": _reasons(flags),
+                "needs_review": issues["issues"].str.len().to_numpy() > 0,
+                "data_issues": issues["issues"].to_numpy(),
+                "review_reasons": issues["reasons"].to_numpy(),
                 "risk_min": risk,
                 "uncertain": risk > self.bundle.risk.threshold,
             }
@@ -129,9 +138,18 @@ class LiveETAPredictor:
             return pd.DataFrame(columns=OUTPUT_COLUMNS)
         return self.score(live, packages, diagnostics)
 
+    def score_events(self, packages: pd.DataFrame, events: pd.DataFrame, day: pd.Timestamp) -> pd.DataFrame:
+        """Predictions with diagnostics at many (courier_id 'city:id', s) events of one day, in stop order."""
+        out = self.score(live_table(packages, day, events), packages, diagnostics=True)
+        return out.sort_values(["s", "courier", "predicted_position"], kind="stable").reset_index(drop=True)
+
     def prepare(self, records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
-        """Package table as known at `at` (the expensive, cacheable step)."""
-        return package_table(self.clean(known_at(records, at)), self.city)
+        """Package table as known at `at`."""
+        return at_moment(self.prepare_day(records, at.normalize()), at)
+
+    def prepare_day(self, records: pd.DataFrame, day: pd.Timestamp) -> pd.DataFrame:
+        """Package table as known at the end of `day` (the expensive step; one per day serves every moment)."""
+        return package_table(self.clean(known_at(records, day + pd.Timedelta(days=1) - pd.Timedelta(seconds=1))), self.city)
 
     def predict_couriers(self, packages: pd.DataFrame, courier_ids, at: pd.Timestamp, diagnostics: bool = False) -> pd.DataFrame:
         """ETAs for every package the given couriers (raw ids) hold at `at`, in predicted stop order."""

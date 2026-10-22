@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Nav } from '../../nav';
 import { AlertCard } from './alert-card';
-import { alerts as findAlerts, stops, type Alert } from './alerts';
+import { alerts as findAlerts, route, stops, type Alert } from './alerts';
+import { CourierCard } from './courier-card';
 import { api, moment, type DataHealth, type Overview } from './api';
 import { Defs } from './defs';
 import { CityMap } from './map/city-map';
@@ -45,26 +46,24 @@ function useMoment(at: string) {
   };
 }
 
-// The selected courier's road path, fetched when the selection changes.
-function useRoad(selected: Alert | null) {
-  const [road, setRoad] = useState<{ order: number; path: [number, number][] } | null>(null);
-  const order = selected?.parcel.order_id;
+// The road path through the given stops, fetched again whenever the stops change.
+function useRoad(points: [number, number][] | null) {
+  const [road, setRoad] = useState<{ key: string; path: [number, number][] } | null>(null);
+  const key = points && points.length > 1 ? points.map((p) => p.join(',')).join(';') : '';
   useEffect(() => {
-    if (!selected) return;
-    const points = stops(selected);
-    if (points.length < 2) return;
+    if (!points || !key) return;
     let current = true;
     api.route(points).then(
-      (route) => current && setRoad({ order: selected.parcel.order_id, path: route.coordinates }),
+      (route) => current && setRoad({ key, path: route.coordinates }),
       () => current && setRoad(null),
     );
     return () => {
       current = false;
     };
-    // The path depends only on which parcel is selected.
+    // `key` captures the stops; `points` is rebuilt every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order]);
-  return road && road.order === order ? road.path : null;
+  }, [key]);
+  return road && road.key === key ? road.path : null;
 }
 
 export function Dashboard() {
@@ -73,19 +72,46 @@ export function Dashboard() {
   const { overview, health, error, loading } = useMoment(moment(date, time));
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
   const [selectedOrder, setSelectedOrder] = useState<number | null>(null);
+  const [courierId, setCourierId] = useState<string | null>(null);
 
   const list = useMemo(() => (overview ? findAlerts(overview, dismissed) : []), [overview, dismissed]);
-  // The selection follows the parcel across refreshes and disappears with it.
+  // Selections follow the parcel or courier across refreshes and disappear with them.
   const selected = list.find((a) => a.parcel.order_id === selectedOrder) ?? null;
-  const select = useCallback((alert: Alert) => setSelectedOrder(alert.parcel.order_id), []);
-  const road = useRoad(selected);
+  const courier = overview?.couriers.find((c) => c.courier_id === courierId) ?? null;
+  const held = useMemo(
+    () => (overview && courierId ? route(overview, courierId) : []),
+    [overview, courierId],
+  );
+  const select = useCallback((alert: Alert) => {
+    setCourierId(null);
+    setSelectedOrder(alert.parcel.order_id);
+  }, []);
+  const pickCourier = useCallback((id: string) => {
+    setSelectedOrder(null);
+    setCourierId(id);
+  }, []);
+  const road = useRoad(
+    selected
+      ? stops(selected.courier, selected.route, selected.parcel.position)
+      : courier
+        ? stops(courier, held)
+        : null,
+  );
 
   return (
     <>
       <Defs />
       <Nav page="dashboard" />
       <main className="dash">
-        <CityMap overview={overview} alerts={list} selected={selected} road={road} onSelect={select} />
+        <CityMap
+          overview={overview}
+          alerts={list}
+          selected={selected}
+          focus={selected?.parcel.courier_id ?? courier?.courier_id ?? null}
+          road={road}
+          onSelect={select}
+          onCourier={pickCourier}
+        />
         <TimeControl
           date={date}
           time={time}
@@ -109,6 +135,7 @@ export function Dashboard() {
             }}
           />
         )}
+        {courier && <CourierCard courier={courier} parcels={held} onClose={() => setCourierId(null)} />}
       </main>
     </>
   );

@@ -85,12 +85,18 @@ def courier_recent(live: pd.DataFrame, packages: pd.DataFrame) -> pd.DataFrame:
     per_day = days.groupby(["c", "day"]).agg(n=("t", "size"), first=("t", "min"), last=("t", "max"), duration=("duration", "median")).reset_index()
     per_day["pace"] = (per_day["last"] - per_day["first"]).dt.total_seconds() / 60 / (per_day["n"] - 1).clip(lower=1)
     per_day = per_day.sort_values(["c", "day"])
-    rolling = per_day.groupby("c")[["n", "pace", "duration"]].transform(lambda x: x.shift(1).rolling(3, min_periods=1).mean())
-    lookup = rolling.set_axis(per_day["c"] + "|" + per_day["day"].astype(str))
-    key = pd.Series(courier_key(live["courier_s"]), index=live.index) + "|" + pd.to_datetime(live["s"]).dt.normalize().astype(str)
+    per_day[["n", "pace", "duration"]] = per_day.groupby("c")[["n", "pace", "duration"]].transform(lambda x: x.rolling(3, min_periods=1).mean())
+    queries = pd.DataFrame({"c": courier_key(live["courier_s"]), "day": pd.to_datetime(live["s"]).dt.normalize(), "i": np.arange(len(live))})
+    last3 = (
+        pd.merge_asof(
+            queries.sort_values("day"), per_day[["c", "day", "n", "pace", "duration"]].sort_values("day"), on="day", by="c", allow_exact_matches=False
+        )
+        .set_index("i")
+        .reindex(np.arange(len(live)))
+    )
     out = pd.DataFrame(index=live.index)
     for source, name in (("n", "courier_3d_deliveries"), ("pace", "courier_3d_pace_min"), ("duration", "courier_3d_package_min")):
-        out[name] = key.map(lookup[source]).astype("float32").to_numpy()
+        out[name] = last3[source].astype("float32").to_numpy()
     out["pace_vs_3d"] = (live["pace_today_min"] / out["courier_3d_pace_min"]).astype("float32")
     return out
 

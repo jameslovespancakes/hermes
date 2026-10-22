@@ -1,6 +1,6 @@
 // The whole dashboard canvas: a city map with every parcel and courier, and an icon on each alert.
 // MapLibre needs a browser, so it is imported when the component mounts (pre-rendering skips it).
-import type { Map as MapLibre, Marker } from 'maplibre-gl';
+import type { MapLayerMouseEvent, Map as MapLibre, Marker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { ISSUES, type Alert } from '../alerts';
 import type { Overview } from '../api';
@@ -14,9 +14,12 @@ interface Props {
   overview: Overview | null;
   alerts: Alert[];
   selected: Alert | null;
-  /** The selected courier's road path, once loaded. */
+  /** The courier in focus (selected alert's or clicked courier); others fade. */
+  focus: string | null;
+  /** The focused courier's road path, once loaded. */
   road: [number, number][] | null;
   onSelect: (alert: Alert) => void;
+  onCourier: (courierId: string) => void;
 }
 
 // Frame where most parcels are: the 5th-95th percentile box, so a few far-off drops don't zoom the city out.
@@ -34,7 +37,7 @@ function core(overview: Overview): [[number, number], [number, number]] {
 // The card sits bottom-right, so a focused alert is framed left of centre.
 const FOCUS_OFFSET: [number, number] = [-170, -60];
 
-export function CityMap({ overview, alerts, selected, road, onSelect }: Props) {
+export function CityMap({ overview, alerts, selected, focus, road, onSelect, onCourier }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<{ map: MapLibre; lib: MapLibreModule } | null>(null);
   const framed = useRef(false);
@@ -72,7 +75,7 @@ export function CityMap({ overview, alerts, selected, road, onSelect }: Props) {
   // Data layers follow the overview and the selection.
   useEffect(() => {
     if (!map || !overview) return;
-    drawOverview(map.map, overview, selected, road);
+    drawOverview(map.map, overview, focus, road);
     if (!framed.current && overview.parcels.length) {
       framed.current = true;
       map.map.fitBounds(core(overview), {
@@ -80,7 +83,26 @@ export function CityMap({ overview, alerts, selected, road, onSelect }: Props) {
         duration: 0,
       });
     }
-  }, [map, overview, selected, road]);
+  }, [map, overview, focus, road]);
+
+  // Clicking a courier opens their card.
+  useEffect(() => {
+    if (!map) return;
+    const click = (event: MapLayerMouseEvent) => {
+      const id: unknown = event.features?.[0]?.properties.courier_id;
+      if (typeof id === 'string') onCourier(id);
+    };
+    const pointer = () => (map.map.getCanvas().style.cursor = 'pointer');
+    const plain = () => (map.map.getCanvas().style.cursor = '');
+    map.map.on('click', 'couriers', click);
+    map.map.on('mouseenter', 'couriers', pointer);
+    map.map.on('mouseleave', 'couriers', plain);
+    return () => {
+      map.map.off('click', 'couriers', click);
+      map.map.off('mouseenter', 'couriers', pointer);
+      map.map.off('mouseleave', 'couriers', plain);
+    };
+  }, [map, onCourier]);
 
   // One icon per alert.
   useEffect(() => {
@@ -112,19 +134,17 @@ export function CityMap({ overview, alerts, selected, road, onSelect }: Props) {
     };
   }, [map, alerts, selected, onSelect]);
 
-  // Fly to a newly selected alert.
-  const focus = selected?.parcel.order_id;
+  // Fly to a newly selected alert or courier.
+  const parcelId = selected?.parcel.order_id;
   useEffect(() => {
-    if (!map || !selected) return;
-    map.map.flyTo({
-      center: [selected.parcel.lng, selected.parcel.lat],
-      zoom: 15.5,
-      offset: FOCUS_OFFSET,
-      duration: 1200,
-    });
-    // Only a change of parcel should move the camera, not a refresh of the same alert.
+    if (!map) return;
+    const courier = overview?.couriers.find((c) => c.courier_id === focus);
+    const target = selected ? selected.parcel : courier;
+    if (!target) return;
+    map.map.flyTo({ center: [target.lng, target.lat], zoom: 15.5, offset: FOCUS_OFFSET, duration: 1200 });
+    // Only a change of parcel or courier should move the camera, not a refresh of the same one.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, focus]);
+  }, [map, parcelId, focus]);
 
   return <div className="dash-map" ref={container} aria-label="City map" />;
 }

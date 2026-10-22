@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { alerts, route } from '../../src/pages/dashboard/alerts';
+import { alerts, route, stops } from '../../src/pages/dashboard/alerts';
 import { clock, moment, type Overview, type Parcel } from '../../src/pages/dashboard/api';
 import { iconSvg } from '../../src/pages/dashboard/icons';
 import { PackageIcon } from '@hugeicons/core-free-icons';
@@ -25,6 +25,7 @@ const parcel = (over: Partial<Parcel>): Parcel => ({
   lat: 37.5,
   lng: 121.4,
   position: 1,
+  accepted_at: '09-20 08:10:00',
   eta: '09-20 11:00:00',
   minutes_remaining: 30,
   baseline_eta: '09-20 10:55:00',
@@ -47,7 +48,7 @@ const overview = (parcels: Parcel[]): Overview => ({
 test('one alert per courier: guard flags first, then the biggest slip', () => {
   const view = overview([
     parcel({ order_id: 1, issue: 'late', slip_min: 120, position: 2 }),
-    parcel({ order_id: 2, issue: 'data', slip_min: 10, position: 3 }),
+    parcel({ order_id: 2, issue: 'silent', slip_min: 10, position: 3 }),
     parcel({ order_id: 3, position: 1 }),
     parcel({ order_id: 4, courier_id: 'b', issue: 'late', slip_min: 95 }),
     parcel({ order_id: 5, courier_id: 'b', issue: 'late', slip_min: 140 }),
@@ -58,6 +59,19 @@ test('one alert per courier: guard flags first, then the biggest slip', () => {
   expect(list[0]?.courier?.packages_held).toBe(3);
   expect(alerts(view, new Set(['a'])).map((a) => a.parcel.order_id)).toEqual([5]);
   expect(route(view, 'b')).toHaveLength(2);
+});
+
+test('stops start at the courier and stop at the flagged parcel', () => {
+  const view = overview([
+    parcel({ order_id: 1, position: 1 }),
+    parcel({ order_id: 2, position: 2, lng: 121.5 }),
+  ]);
+  const courier = view.couriers[0];
+  expect(stops(courier, route(view, 'a'))).toHaveLength(3);
+  expect(stops(courier, route(view, 'a'), 1)).toEqual([
+    [121.4, 37.5],
+    [121.4, 37.5],
+  ]);
 });
 
 test('icons render as standalone SVG', () => {
