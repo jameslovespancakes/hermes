@@ -16,10 +16,11 @@ from server.serving.predictor import LiveETAPredictor, at_moment
 from server.serving.roads import RoadGraph
 
 GRID = {pd.Timedelta(minutes=m) for m in range(6 * 60, 21 * 60 + 1, 15)}
+OPENING = pd.Timestamp("2000-09-20 10:30")  # the dashboard's first view, prepared at startup
 
 
 class LruCache:
-    """Thread-safe least-recently-used cache."""
+    """Thread-safe least-recently-used cache; a value is built once even when asked for twice at the same time."""
 
     def __init__(self, size: int):
         self.size, self.lock = size, threading.Lock()
@@ -30,12 +31,10 @@ class LruCache:
             if key in self.items:
                 self.items.move_to_end(key)
                 return self.items[key]
-        value = build()
-        with self.lock:
-            self.items[key] = value
+            value = self.items[key] = build()
             while len(self.items) > self.size:
                 self.items.popitem(last=False)
-        return value
+            return value
 
 
 @dataclass
@@ -43,27 +42,31 @@ class CityService:
     predictor: LiveETAPredictor
     records: pd.DataFrame
     roads: RoadGraph
-    days: LruCache = field(default_factory=lambda: LruCache(2))
+    table: pd.DataFrame = field(init=False)
     grids: LruCache = field(default_factory=lambda: LruCache(2))
     moments: LruCache = field(default_factory=lambda: LruCache(24))
+    reports: LruCache = field(default_factory=lambda: LruCache(24))
+
+    def __post_init__(self):
+        self.table = self.predictor.package_table(self.records)
 
     @classmethod
     def load(cls, predictor: LiveETAPredictor) -> "CityService":
         return cls(predictor, load_city(predictor.city)[0], RoadGraph.load(predictor.city))
 
-    def day_table(self, day: pd.Timestamp) -> pd.DataFrame:
-        return self.days.get(day, lambda: self.predictor.prepare_day(self.records, day))
-
     def prepared(self, at: pd.Timestamp) -> pd.DataFrame:
-        return at_moment(self.day_table(at.normalize()), at)
+        return at_moment(self.table, at)
+
+    def health(self, at: pd.Timestamp) -> dict:
+        return self.reports.get(at, lambda: self.predictor.data_health(self.records, self.table, at))
 
     def predictions(self, at: pd.Timestamp) -> pd.DataFrame:
         """City predictions at `at`; the dashboard's 15-minute grid is computed for the whole day in one batch."""
         day = at.normalize()
         if at - day in GRID:
-            grid = self.grids.get(day, lambda: city_predictions(self.predictor, self.day_table(day), [day + g for g in sorted(GRID)]))
+            grid = self.grids.get(day, lambda: city_predictions(self.predictor, self.table, [day + g for g in sorted(GRID)]))
             return grid.loc[grid["s"] == at]
-        return self.moments.get(at, lambda: city_predictions(self.predictor, self.day_table(day), [at]))
+        return self.moments.get(at, lambda: city_predictions(self.predictor, self.table, [at]))
 
     def overview(self, at: pd.Timestamp) -> dict:
         return build_overview(self.predictions, self.records, at)
@@ -87,6 +90,11 @@ class Cities:
             self.predictors = {c: s.predictor for c, s in services.items()}
             self.services = dict(services)
         self.locks = {c: threading.Lock() for c in self.predictors}
+
+    def warm(self, at: pd.Timestamp = OPENING) -> None:
+        """Load every city and prepare the view at `at` in the background, so the first visitor does not wait."""
+        for city in self.predictors:
+            threading.Thread(target=lambda c=city: (self[c].overview(at), self[c].health(at)), daemon=True).start()
 
     def __contains__(self, city: str) -> bool:
         return city in self.predictors

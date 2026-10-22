@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from server.config import MODEL_STORE
+from server.features.live import build_live_queries
 from server.models.bundle import ModelBundle
 from server.pipeline.features import checkpoints, live_table, package_table
 from server.quality.config import QUALITY, CleanMode, QualityConfig
@@ -145,11 +146,11 @@ class LiveETAPredictor:
 
     def prepare(self, records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
         """Package table as known at `at`."""
-        return at_moment(self.prepare_day(records, at.normalize()), at)
+        return at_moment(self.package_table(records), at)
 
-    def prepare_day(self, records: pd.DataFrame, day: pd.Timestamp) -> pd.DataFrame:
-        """Package table as known at the end of `day` (the expensive step; one per day serves every moment)."""
-        return package_table(self.clean(known_at(records, day + pd.Timedelta(days=1) - pd.Timedelta(seconds=1))), self.city)
+    def package_table(self, records: pd.DataFrame) -> pd.DataFrame:
+        """Package table for the whole log (the expensive step); every input built from it is causal per moment."""
+        return package_table(self.clean(records), self.city)
 
     def predict_couriers(self, packages: pd.DataFrame, courier_ids, at: pd.Timestamp, diagnostics: bool = False) -> pd.DataFrame:
         """ETAs for every package the given couriers (raw ids) hold at `at`, in predicted stop order."""
@@ -169,7 +170,7 @@ class LiveETAPredictor:
         batch = batch.loc[batch["delivered_at"] > at - pd.Timedelta(days=1)]
         events = checkpoints(batch, self.city, at - pd.Timedelta(days=1), at)
         events = events.sample(n=min(HEALTH_EVENTS, len(events)), random_state=0)
-        live = live_table(packages, at.normalize(), events)
+        live = build_live_queries(packages, events)
         report = data_health(self.bundle.monitor, batch, live[DRIFT_FEATURES], self.config)
         report["records_checked"] = len(batch)
         return report

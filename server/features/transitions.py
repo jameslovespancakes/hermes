@@ -9,6 +9,12 @@ def _lookup(series: pd.Series, *keys) -> np.ndarray:
     return series.reindex(index).fillna(0).to_numpy()
 
 
+def _day_labels(times: pd.Series) -> np.ndarray:
+    """'MM-DD' per timestamp, formatting each distinct day once."""
+    codes, days = pd.factorize(times.dt.normalize())
+    return days.strftime("%m-%d").to_numpy()[codes]
+
+
 def add_transitions(live: pd.DataFrame, packages: pd.DataFrame, cutoff: pd.Timestamp) -> pd.DataFrame:
     """Add p_courier_next_area, p_all_next_area, support, and within-event ranks to `live` (returns a copy)."""
     live = live.copy()
@@ -23,7 +29,7 @@ def add_transitions(live: pd.DataFrame, packages: pd.DataFrame, cutoff: pd.Times
             "c": done["courier_id"].astype(str),
             "a": prev["aoi_id"].astype(str),
             "b": done["aoi_id"].astype(str),
-            "day": done["_delivered_at"].dt.strftime("%m-%d"),
+            "day": _day_labels(done["_delivered_at"]),
         }
     ).loc[same_day]
     cab, ca = moves.groupby(["c", "a", "b"]).size(), moves.groupby(["c", "a"]).size()

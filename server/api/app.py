@@ -37,6 +37,8 @@ def create_app(services: dict[str, CityService] | None = None, frontend: Path | 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         state["cities"] = Cities(services)
+        if services is None:
+            state["cities"].warm()
         yield
         state.clear()
 
@@ -118,7 +120,7 @@ def create_app(services: dict[str, CityService] | None = None, frontend: Path | 
     @api.get("/data-health", response_model=DataHealth)
     def data_health(city_id: CityQuery, at: MomentQuery) -> DataHealth:
         service, moment = city(city_id), parse_moment(at)
-        report = service.predictor.data_health(service.records, service.prepared(moment), moment)
+        report = service.health(moment)
         drift = report["drift"]
         return DataHealth(
             at=at,
