@@ -1,7 +1,8 @@
-@import './site.css';
-@import './flow.css';
-@import './chapters.css';
-@import './hygiene.css';
-@import './palette.css';
-@import './nav.css';
-@import './scroll.css';
+@import './shared/tokens.css';
+@import './shared/chrome.css';
+@import './methodology/flow.css';
+@import './methodology/chapters.css';
+@import './methodology/hygiene.css';
+@import './shared/palette.css';
+@import './shared/nav.css';
+@import './shared/scroll.css';

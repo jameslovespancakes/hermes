@@ -1,0 +1,181 @@
+/* Original, dependency-free motion treatments for the Hermes concept. */
+.reveal-word {
+  display: inline-block;
+  transform-origin: 50% 100%;
+}
+.motion-ready .navbar {
+  transition:
+    box-shadow 0.35s,
+    translate 0.35s;
+}
+.motion-ready .nav-wrap.scrolled .navbar {
+  translate: 0 -7px;
+  box-shadow: 0 8px 30px #152e1810;
+}
+.motion-ready .button {
+  transition:
+    background 0.2s,
+    transform 0.25s,
+    translate 0.25s;
+}
+.motion-ready .cities {
+  display: block;
+  overflow: hidden;
+  max-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.city-track {
+  display: flex;
+  width: max-content;
+  animation: city-marquee 28s linear infinite;
+}
+.city-set {
+  display: flex;
+  align-items: center;
+  gap: 66px;
+  padding-right: 66px;
+  flex-shrink: 0;
+}
+.cities:hover .city-track {
+  animation-play-state: paused;
+}
+@keyframes city-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.pin-story .dark-foundation {
+  overflow: clip;
+}
+.pin-story .comparison {
+  overflow: visible;
+}
+.pin-story .comparison-scroll {
+  height: calc(var(--compare-height) + 65vh);
+  position: relative;
+}
+.pin-story .time-comparison {
+  position: sticky;
+  top: 120px;
+  height: var(--compare-height);
+}
+body.motion-paused .navbar {
+  transition: none;
+}
+@media (max-width: 1100px) {
+  .city-set {
+    gap: 45px;
+    padding-right: 45px;
+  }
+}
+@media (max-width: 900px) {
+  .city-set {
+    gap: 35px;
+    padding-right: 35px;
+  }
+}
+@media (max-width: 680px) {
+  .city-set {
+    gap: 35px;
+    padding-right: 35px;
+  }
+  .motion-ready .nav-wrap.scrolled .navbar {
+    translate: 0 -3px;
+  }
+}
+
+/* The larger, continuous scroll sequences. Native scroll, reversible scenes. */
+.cinema-ready .dark-foundation {
+  overflow: clip;
+}
+.cinema-ready .comparison {
+  overflow: visible;
+}
+.cinema-ready.pin-story .comparison-scroll {
+  height: calc(clamp(500px, 100svh - 190px, 760px) + 290svh);
+}
+.cinema-ready.pin-story .time-comparison {
+  height: clamp(500px, 100svh - 190px, 760px);
+  min-height: 0;
+}
+.cinema-ready.pin-story .research {
+  overflow: clip;
+}
+.cinema-mobile .comparison-scroll {
+  height: calc(420px + 150svh);
+}
+.cinema-mobile .time-comparison {
+  position: sticky;
+  top: 90px;
+  height: 420px;
+  min-height: 420px;
+}
+
+/* Alignment and full scroll phases. The ribbon and messenger seal share one coordinate system. */
+.hero {
+  overflow: clip;
+}
+.city-strip {
+  position: relative;
+  z-index: 3;
+  isolation: isolate;
+}
+.city-strip:before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  background: var(--ink);
+  z-index: -1;
+}
+.pin-story {
+  --film-top: 120px;
+}
+.cinema-mobile {
+  --film-top: 90px;
+}
+.film-curtain {
+  display: none;
+}
+.cinema-ready.pin-story .comparison,
+.cinema-mobile .comparison {
+  background: var(--cream);
+}
+.cinema-ready.pin-story .comparison-scroll {
+  height: calc(100svh - var(--film-top) - 20px + max(4400px, 520svh));
+}
+.cinema-mobile .comparison-scroll {
+  height: calc(100svh - var(--film-top) - 20px + 260svh);
+}
+.cinema-ready.pin-story .time-comparison,
+.cinema-mobile .time-comparison {
+  top: var(--film-top);
+  height: calc(100svh - var(--film-top) - 20px);
+  min-height: 0;
+  display: block;
+  isolation: isolate;
+}
+.pin-story .film-curtain,
+.cinema-mobile .film-curtain {
+  display: block;
+  position: absolute;
+  left: calc(50% - 50vw);
+  top: -450px;
+  width: 100vw;
+  height: calc(100% + 650px);
+  background: var(--green);
+  z-index: -4;
+  pointer-events: none;
+  will-change: transform;
+}
+@media (max-height: 719px) {
+  .pin-story {
+    --film-top: 96px;
+  }
+  .cinema-mobile {
+    --film-top: 80px;
+  }
+}
+
+/* Hermes interface details: crisp local SVGs, restrained surfaces, readable hierarchy. */

@@ -13,10 +13,10 @@ test('published and matched scores stay separate', () => {
   expect($('#comparison-story').text()).not.toContain('58.64');
 });
 
-test('rescores', () => {
-  const rows = $('.notes-table tbody tr')
-    .map((_, row) => $(row).find('td').text())
-    .get();
-  expect(rows).toEqual(['12.4722.19', '12.0923.27']);
-  expect($('#study-notes').text()).toContain('149,263 matched');
+test('rescoring and the closing card', () => {
+  expect($('#parcel-scoring').text()).toContain('12.47 to 22.19');
+  expect($('.b-voice video').attr('src')).toBe('/assets/video/accuracy.mp4');
+  expect($('.scribbles').length).toBe(1);
+  expect($('.b-hero .eyebrow').length).toBe(0);
+  expect($('.float').length).toBe(0);
 });

@@ -45,10 +45,21 @@ class FrontendTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health").json(), {"status": "ok"})
         self.assertEqual(self.client.get("/unknown").status_code, 404)
 
-    def test_without_build(self):
-        app = FastAPI()
-        mount_frontend(app, Path("missing"))
-        self.assertEqual(TestClient(app).get("/").status_code, 404)
+
+class ContractTests(unittest.TestCase):
+    """The dashboard's TypeScript types must match the API's response models field for field."""
+
+    def test_dashboard_types_match_api(self):
+        import re
+
+        from server.api.schemas import CourierPosition, DataHealth, Overview, ParcelStatus
+
+        source = (Path(__file__).resolve().parents[2] / "app/src/pages/dashboard/api.ts").read_text(encoding="utf-8")
+        interfaces = {name: body for name, body in re.findall(r"export interface (\w+) \{(.*?)\n\}", source, re.S)}
+        for name, model in (("Parcel", ParcelStatus), ("Courier", CourierPosition), ("Overview", Overview)):
+            fields = set(re.findall(r"^\s+(\w+):", interfaces[name], re.M))
+            self.assertEqual(fields, set(model.model_fields), name)
+        self.assertLessEqual(set(re.findall(r"^\s+(\w+):", interfaces["DataHealth"], re.M)), set(DataHealth.model_fields))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,39 @@
+/* Shared page colours: scrollbar, page background and the nav bar. */
+html {
+  scrollbar-color: #000 var(--cream);
+  scrollbar-width: thin;
+}
+html::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+html::-webkit-scrollbar-track {
+  background: var(--cream);
+}
+html::-webkit-scrollbar-thumb {
+  background: #000;
+  border: 2px solid var(--cream);
+  border-radius: 20px;
+}
+body {
+  background: var(--cream);
+  color: var(--ink);
+}
+.navbar,
+.research-page .navbar {
+  background: var(--cream);
+  border-color: #e4e4d0;
+  box-shadow: none;
+}
+.nav-links a {
+  color: var(--ink);
+}
+.hermes-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.brand svg {
+  color: var(--green);
+}

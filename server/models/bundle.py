@@ -14,7 +14,7 @@ from server.models.eta import EtaModel, Regressor
 from server.models.later import LaterDay
 from server.models.risk import RiskModel
 from server.models.route import add_route_outputs, predict_route
-from server.models.zone import add_zone_outputs, predict_zone
+from server.models.zone import Classifier, add_zone_outputs, predict_zone
 from server.quality.guard import DataGuard
 from server.quality.monitor import MonitorBaseline
 
@@ -22,30 +22,27 @@ from server.quality.monitor import MonitorBaseline
 @dataclass
 class ModelBundle:
     city: str
+    trained_through: str
+    habit_columns: list[str]
+    zones: Zones
+    zone_model: Classifier
     route_model: Regressor
     eta: EtaModel
-    habit_columns: list[str]
-    trained_through: str
-    zones: Zones | None = None
-    zone_model: Regressor | None = None
-    later: LaterDay | None = None
-    risk: RiskModel | None = None
+    later: LaterDay
+    risk: RiskModel
+    monitor: MonitorBaseline
     staleness: EtaModel | None = None
     guard: DataGuard | None = None
-    monitor: MonitorBaseline | None = None
     info: dict = field(default_factory=dict)
 
     def prepare(self, live: pd.DataFrame, packages: pd.DataFrame) -> pd.DataFrame:
         """Zone inputs, next-zone probability, and route order for live rows."""
-        if self.zones is not None:
-            live = pd.concat([live, zone_features(live, packages, self.zones)], axis=1)
-        if self.zone_model is not None:
-            live = add_zone_outputs(live, predict_zone(self.zone_model, live))
+        live = pd.concat([live, zone_features(live, packages, self.zones)], axis=1)
+        live = add_zone_outputs(live, predict_zone(self.zone_model, live))
         return add_route_outputs(live, predict_route(self.route_model, live))
 
     def minutes(self, live: pd.DataFrame) -> np.ndarray:
-        minutes = self.eta.predict(live)
-        return self.later.blend(live, minutes) if self.later is not None else minutes
+        return self.later.blend(live, self.eta.predict(live))
 
     def save(self, path: Path) -> str:
         path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,191 @@
+/* Hermes: image-led delivery story and winged-messenger identity. */
+.navbar {
+  max-width: 960px;
+  border-width: 1px;
+  background: #f7f4ebf5;
+  box-shadow: 0 3px 15px #17332f08;
+  padding-right: 22px;
+}
+.brand {
+  letter-spacing: -1px;
+}
+.brand svg {
+  color: var(--green);
+}
+.brand .hermes-logo {
+  width: 34px;
+  height: 34px;
+}
+.brand-definitions {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wall-mark .hermes-logo {
+  width: 39px;
+  height: 39px;
+}
+.button {
+  border-width: 1px;
+  border-radius: 9px;
+  background: var(--peach);
+  box-shadow: 0 2px 0 #17332f0a;
+}
+.button:hover {
+  background: #efbc91;
+}
+.city-strip {
+  padding: 55px 0;
+}
+.center-head h2,
+.comparison h2 {
+  font-family: var(--sans);
+  font-weight: 500;
+  letter-spacing: -2.7px;
+  line-height: 1.08;
+}
+.center-head h2 {
+  font-size: clamp(42px, 5vw, 70px);
+}
+.center-head h2 em,
+.comparison h2 em {
+  font-style: normal;
+  font-weight: 400;
+}
+.perspectives .center-head h2 {
+  font-size: clamp(42px, 5vw, 70px);
+}
+.wall-card.landscape {
+  background: #ead5c1;
+}
+.wall-card.landscape.green {
+  background: #294c40;
+}
+.wall-photo-copy {
+  background: #dfae81;
+}
+.wall-card.landscape .wall-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.wall-card.landscape .wall-copy blockquote {
+  margin: 0;
+}
+.dialog .small {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 680px) {
+  .navbar {
+    width: calc(100% - 32px);
+    padding: 7px 14px;
+  }
+  .brand .hermes-logo {
+    width: 28px;
+    height: 28px;
+  }
+  .hero {
+    height: 420px;
+    padding-top: 49px;
+  }
+  .hero-backdrop:before {
+    background-position: 44% 54%;
+    filter: blur(5px) saturate(0.5);
+  }
+  .hero h1 {
+    font-size: 44px;
+    letter-spacing: -2.2px;
+    line-height: 1.09;
+  }
+  .city-strip {
+    padding: 38px 0;
+  }
+  .center-head h2,
+  .perspectives .center-head h2 {
+    font-size: 39px;
+    letter-spacing: -1.8px;
+  }
+}
+@media (max-width: 370px) {
+  .brand .hermes-logo {
+    width: 25px;
+    height: 25px;
+  }
+  .hero {
+    height: 410px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    letter-spacing: -1.8px;
+  }
+}
+
+/* Full-bleed delivery video behind the headline. */
+.hero {
+  position: relative;
+  display: grid;
+  align-items: end;
+  height: max(640px, 100svh);
+  padding: 0;
+  text-align: left;
+  isolation: isolate;
+  margin-top: -92px;
+  background: var(--ink);
+  color: var(--cream);
+}
+.hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% 50%;
+}
+.hero-backdrop:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, var(--ink) 0%, #1a1a1ae6 12%, #1a1a1a66 45%, #1a1a1a1a 75%),
+    linear-gradient(90deg, #1a1a1a99, transparent 65%);
+}
+.hero .hero-copy {
+  width: min(1200px, calc(100% - 96px));
+  margin: 0 auto;
+  padding: 0 0 clamp(64px, 10vh, 120px);
+  text-align: left;
+}
+.hero h1 {
+  max-width: 12ch;
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(48px, 7vw, 104px);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  color: var(--cream);
+}
+.hero h1 em {
+  font: italic 400 1.08em/1 var(--serif);
+  letter-spacing: -0.02em;
+  color: var(--peach);
+}
+@media (max-width: 680px) {
+  .hero {
+    margin-top: -72px;
+  }
+  .hero .hero-copy {
+    width: calc(100% - 48px);
+  }
+  .hero h1 {
+    font-size: clamp(40px, 12vw, 56px);
+  }
+}
+.dark-foundation {
+  border-radius: 0;
+}

@@ -3,7 +3,7 @@ import * as cinema from './cinema';
 import * as quality from './quality';
 import { $, $$, clamp, ease, frames, isPaused, onLink, onPause, range } from './util';
 
-export interface Metrics {
+interface Metrics {
   core: number;
   quality: number;
   qualityEntrance: number;

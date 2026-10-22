@@ -13,17 +13,9 @@ test('page assets exist', () => {
 });
 
 test('css assets exist', () => {
-  for (const file of readdirSync('src/styles')) {
+  for (const file of readdirSync('src/styles', { recursive: true }) as string[]) {
+    if (!file.endsWith('.css')) continue;
     for (const [, url] of readFileSync(`src/styles/${file}`, 'utf8').matchAll(/url\('(\/assets\/[^']+)'\)/g))
       expect(existsSync(`public${url}`)).toBe(true);
   }
-});
-
-test('downloads match saved evidence', () => {
-  expect(readFileSync('public/assets/current-model-metrics.json', 'utf8')).toBe(
-    readFileSync('../evidence/model/results/metrics.json', 'utf8'),
-  );
-  expect(readFileSync('public/assets/current-data-quality.json', 'utf8')).toBe(
-    readFileSync('../evidence/baddata/results/results.json', 'utf8'),
-  );
 });

@@ -20,7 +20,7 @@ def bulk(recs: pd.DataFrame, courier=1) -> pd.DataFrame:
 class QualityTests(unittest.TestCase):
     def test_clean_data_triggers_nothing(self):
         recs = records(days=3)
-        guard = DataGuard().fit(recs)
+        guard = DataGuard.fit(recs)
         cleaned, report = guard.clean(recs, mode=CleanMode.TRAIN)
         self.assertEqual(report["duplicates_dropped"], 0)
         self.assertEqual(report["coordinates_repaired"], 0)
@@ -34,7 +34,7 @@ class QualityTests(unittest.TestCase):
 
     def test_far_coordinates_repaired_to_area_point(self):
         recs = records(days=2)
-        guard = DataGuard().fit(recs)
+        guard = DataGuard.fit(recs)
         bad = recs.copy()
         bad.loc[0, "lat"] += 0.05  # ~5.5 km off
         cleaned, report = guard.clean(bad, mode=CleanMode.TRAIN)
@@ -44,7 +44,7 @@ class QualityTests(unittest.TestCase):
     def test_bulk_scans_quarantined_in_training_flagged_in_serving(self):
         recs = bulk(records(days=2, per_day=8))
         self.assertTrue(bulk_scanned_courier_days(recs, 0.3)[recs["courier_id"] == 1].all())
-        guard = DataGuard().fit(recs)
+        guard = DataGuard.fit(recs)
         train, report = guard.clean(recs, mode=CleanMode.TRAIN)
         self.assertFalse((train["courier_id"] == 1).any())
         serve, _ = guard.clean(recs, mode=CleanMode.SERVE)

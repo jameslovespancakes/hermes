@@ -45,7 +45,7 @@ def fit_route_folds(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarra
 
 def predict_route(model, live: pd.DataFrame) -> np.ndarray:
     with threadpool_limits(limits=THREADS):
-        return model.predict(live.reindex(columns=ROUTE_INPUT_COLS))
+        return model.predict(live[ROUTE_INPUT_COLS])
 
 
 def add_route_outputs(live: pd.DataFrame, scores: np.ndarray) -> pd.DataFrame:

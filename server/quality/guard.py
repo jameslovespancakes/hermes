@@ -17,17 +17,15 @@ from server.quality.detectors import (
 
 @dataclass
 class DataGuard:
+    reference: pd.DataFrame
     config: QualityConfig = field(default_factory=lambda: QUALITY)
-    reference: pd.DataFrame | None = None
 
-    def fit(self, records: pd.DataFrame) -> "DataGuard":
-        """Learn per-area reference points (robust medians) from historical records."""
-        self.reference = area_reference(records)
-        return self
+    @classmethod
+    def fit(cls, records: pd.DataFrame, config: QualityConfig = QUALITY) -> "DataGuard":
+        """Per-area reference points (robust medians) from historical records."""
+        return cls(area_reference(records), config)
 
     def clean(self, records: pd.DataFrame, mode: CleanMode) -> tuple[pd.DataFrame, dict]:
-        if self.reference is None:
-            raise RuntimeError("DataGuard.fit must be called first")
         mode = CleanMode(mode)
         out = records.copy()
         duplicate = duplicate_records(out)

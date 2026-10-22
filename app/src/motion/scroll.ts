@@ -23,7 +23,7 @@ let duration = 0;
 let done: (() => void) | undefined;
 let paused = false;
 
-export function stop() {
+function stop() {
   cancelAnimationFrame(frame);
   frame = 0;
   kind = '';

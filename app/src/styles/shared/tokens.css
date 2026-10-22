@@ -1,0 +1,55 @@
+/* Shared fonts and palette for every page. */
+@font-face {
+  font-family: Caveat;
+  src: url('/assets/fonts/caveat.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: Figtree;
+  src: url('/assets/fonts/figtree-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Figtree;
+  src: url('/assets/fonts/figtree-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: Figtree;
+  src: url('/assets/fonts/figtree-semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: Figtree;
+  src: url('/assets/fonts/figtree-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('/assets/fonts/eb-garamond-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('/assets/fonts/eb-garamond-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+:root {
+  --cream: #ffffeb;
+  --ink: #1a1a1a;
+  --green: #034f46;
+  --olive: #e4e4d0;
+  --peach: #ffe1b5;
+  --orange: #ffa946;
+  --signal: #ff6c4c;
+  --serif: 'EB Garamond', Georgia, serif;
+  --sans: Figtree, Arial, sans-serif;
+}

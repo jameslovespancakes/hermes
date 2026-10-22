@@ -31,7 +31,7 @@ def package_features(records: pd.DataFrame, city: str) -> pd.DataFrame:
     for source, target in META.items():
         f[target] = records[source].to_numpy()
     for source, target in (("delivery_gps_lat", "_gps_lat"), ("delivery_gps_lng", "_gps_lng")):
-        values = pd.to_numeric(records[source], errors="coerce") if source in records else pd.Series(np.nan, index=records.index)
+        values = pd.to_numeric(records[source], errors="coerce")
         f[target] = values.where(values.between(-180, 180) & (values != 0)).to_numpy(dtype="float32")
     if "received_at" in records:
         f["_received_at"] = records["received_at"].to_numpy()

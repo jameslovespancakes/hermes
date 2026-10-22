@@ -66,7 +66,7 @@ def area_now(live: pd.DataFrame, packages: pd.DataFrame) -> pd.DataFrame:
         out[f"{level}_accepted_60m"] = taken["n_60"]
         out[f"{level}_pending_now"] = taken["n_all"] - delivered["n_all"]
     frame = pd.DataFrame(out, index=live.index)
-    usual = live["hab_ca_typical_duration"].replace(0, np.nan) if "hab_ca_typical_duration" in live else np.nan
+    usual = live["hab_ca_typical_duration"].replace(0, np.nan)
     frame["aoi_recent_vs_usual"] = (frame["aoi_recent_duration_180m"] / usual).astype("float32")
     return frame
 

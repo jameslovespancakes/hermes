@@ -1,0 +1,410 @@
+/* Benchmarks: hero with handwritten sums, dark statement over a network, sticky tour, video card. */
+.bench {
+  --width: min(1180px, calc(100% - 64px));
+  color: var(--ink);
+  overflow-x: clip;
+}
+.bench section {
+  position: relative;
+}
+.bench h1,
+.bench h2,
+.bench h3 {
+  margin: 0;
+  font-weight: 400;
+  font-family: var(--serif);
+  letter-spacing: -0.02em;
+}
+.bench h1 em,
+.bench h2 em,
+.bench h3 em {
+  font-style: italic;
+}
+
+/* Hero */
+.b-hero {
+  overflow: hidden;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  min-height: 92svh;
+  padding: 136px 24px 96px;
+  text-align: center;
+}
+.b-hero > :not(.scribbles) {
+  position: relative;
+}
+.b-hero h1 {
+  max-width: 11ch;
+  font-size: clamp(56px, 7.6vw, 116px);
+  line-height: 1;
+}
+.b-hero h1 em {
+  color: var(--green);
+}
+/* Handwritten sums: a pen sweep reveals each line, answers in orange, then the ink fades. */
+.scribbles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.scribble {
+  position: absolute;
+  font-family: Caveat, cursive;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--green);
+  opacity: 0.7;
+  text-align: left;
+  transition: opacity 0.9s;
+}
+.scribble.central {
+  opacity: 0.24;
+}
+.scribble.out {
+  opacity: 0;
+}
+.scribble p {
+  width: max-content;
+  margin: 0;
+  clip-path: inset(0 100% 0 0);
+}
+.scribble .answer {
+  margin-left: 0.8em;
+  color: var(--orange);
+}
+.scribble .pen {
+  animation: pen ease-in-out forwards;
+}
+@keyframes pen {
+  to {
+    clip-path: inset(0 -4px 0 0);
+  }
+}
+
+/* Statement: a dark rounded slab over a faded bar chart; it widens to full bleed on scroll. */
+.b-statement {
+  display: grid;
+  place-items: center;
+  min-height: 92svh;
+  padding: 120px 24px;
+  border-radius: 48px;
+  background: var(--ink);
+  color: var(--cream);
+  text-align: center;
+  overflow: hidden;
+}
+.b-statement h2 {
+  max-width: 15ch;
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: 1.04;
+}
+.b-statement h2 em {
+  color: var(--peach);
+}
+.b-statement h2 {
+  position: relative;
+}
+.bars {
+  position: absolute;
+  inset: 12% 4% 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.2%;
+  mask-image: linear-gradient(180deg, transparent, #000 70%);
+  opacity: 0.12;
+}
+.bars span {
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+  background: var(--cream);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.bars.on span {
+  transform: none;
+}
+.motion-paused .bars span {
+  transition: none;
+}
+
+/* Tour: a cream sheet that rises over the statement; index left, card middle, copy right. */
+.b-tour {
+  margin-top: -48px;
+  padding: 96px 0;
+  border-radius: 48px 48px 0 0;
+  background: var(--cream);
+}
+.bench {
+  font-size: 16px;
+}
+.squiggle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  height: 100%;
+  translate: -50% 0;
+  pointer-events: none;
+}
+.squiggle path {
+  fill: none;
+  stroke: var(--olive);
+  stroke-width: 48;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  opacity: 0.7;
+}
+.tour-stage > :not(.squiggle) {
+  position: relative;
+  z-index: 1;
+}
+.tour-stage {
+  position: relative;
+  display: grid;
+  gap: 72px;
+  width: var(--width);
+  margin: 0 auto;
+}
+.tour-nav {
+  display: none;
+}
+.tour-step {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: 56px;
+  scroll-margin-top: 120px;
+}
+.tour-card {
+  margin: 0;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--olive);
+  color: var(--green);
+}
+.tour-card svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.tour-card text {
+  font: 400 15px var(--sans);
+  fill: currentColor;
+}
+.tour-card .middle {
+  text-anchor: middle;
+}
+.tour-card .big {
+  font: 400 34px var(--serif);
+}
+.tour-card .value {
+  font-weight: 600;
+}
+.tour-card .muted {
+  font-size: 12px;
+  opacity: 0.6;
+}
+.tour-card .line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+.tour-card .lead .line,
+.tour-card .line.accent {
+  stroke: var(--orange);
+  stroke-width: 5;
+  opacity: 1;
+}
+.tour-card .faint {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  opacity: 0.25;
+}
+.tour-card use {
+  color: currentColor;
+}
+.tour-card .dropped {
+  opacity: 0.35;
+}
+.tour-card .rod {
+  stroke: currentColor;
+  stroke-width: 28;
+  opacity: 0.35;
+}
+.tour-card .lead .rod {
+  stroke: var(--green);
+  opacity: 1;
+}
+.tour-copy h3 {
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.08;
+}
+.tour-copy h3 em {
+  color: var(--green);
+}
+.tour-copy p {
+  max-width: 360px;
+  margin: 16px 0 24px;
+  color: #4b574f;
+}
+.tour-number {
+  font: 400 clamp(40px, 4.4vw, 64px) / 1 var(--serif);
+  color: var(--green);
+}
+
+/* Desktop tour: one sticky stage; steps cross-fade and slide as the index advances. */
+.tour-enhanced {
+  height: calc(var(--steps) * 90svh + 100svh);
+  padding: 0;
+}
+.tour-enhanced .tour-stage {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  align-items: center;
+  height: 100svh;
+  padding-top: 72px;
+}
+.tour-enhanced .tour-nav {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 0 16px;
+  list-style: none;
+  border-left: 1px solid #034f4626;
+}
+.tour-nav a {
+  position: relative;
+  display: block;
+  color: #034f4673;
+  font: 400 17px var(--serif);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.tour-nav a[aria-current='step'] {
+  color: var(--ink);
+}
+.tour-nav a[aria-current='step']:before {
+  content: '';
+  position: absolute;
+  left: -18px;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--signal);
+}
+.tour-enhanced .tour-step {
+  grid-column: 2;
+  grid-row: 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(24px);
+  transition:
+    opacity 0.5s,
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
+    visibility 0.5s;
+}
+.tour-enhanced .tour-step.on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.tour-enhanced .tour-card {
+  max-width: 520px;
+}
+.motion-paused .tour-step {
+  transition: none;
+}
+
+/* Closing card: a speaker on video, with the quote laid over a dark fade. */
+.b-voice {
+  width: var(--width);
+  margin: 0 auto;
+  padding: 40px 0 120px;
+}
+.voice-card {
+  position: relative;
+  display: grid;
+  align-items: end;
+  min-height: min(680px, 86svh);
+  border-radius: 32px;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--cream);
+}
+.voice-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.voice-card:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #1a1a1ae6 0%, #1a1a1a99 45%, #1a1a1a1a 100%);
+}
+.voice-card blockquote {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+  margin: 0;
+  padding: 56px;
+}
+.voice-card h2 {
+  font-size: clamp(36px, 4.4vw, 60px);
+  line-height: 1.04;
+}
+.voice-card h2 em {
+  color: var(--peach);
+}
+.voice-card p {
+  max-width: 460px;
+  margin: 20px 0 28px;
+  color: #ffffebcc;
+}
+
+@media (max-width: 899px) {
+  .tour-step {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+@media (max-width: 760px) {
+  .bench {
+    --width: calc(100% - 40px);
+  }
+  .b-hero {
+    padding: 120px 20px 150px;
+  }
+  .b-statement {
+    min-height: 0;
+    padding: 170px 20px;
+    border-radius: 32px 32px 0 0;
+  }
+  .b-tour {
+    border-radius: 32px 32px 0 0;
+    padding: 72px 0;
+  }
+  .voice-card {
+    min-height: 620px;
+    border-radius: 24px;
+  }
+  .voice-card blockquote {
+    padding: 28px;
+  }
+}
+@media (max-width: 760px) {
+  .b-tour:not(.tour-enhanced) .squiggle {
+    display: none;
+  }
+}

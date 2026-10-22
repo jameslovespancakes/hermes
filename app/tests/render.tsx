@@ -1,6 +1,15 @@
 import { load } from 'cheerio';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { StaticRouter } from 'react-router';
 import { App } from '../src/app';
-import type { Page } from '../src/routes';
+import { pages, type Page } from '../src/routes';
+import { views } from '../src/views';
 
-export const render = (page: Page) => load(renderToStaticMarkup(<App page={page} />));
+export const render = (page: Page) =>
+  load(
+    renderToStaticMarkup(
+      <StaticRouter location={pages[page].path}>
+        <App views={views} />
+      </StaticRouter>,
+    ),
+  );

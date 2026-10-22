@@ -16,7 +16,7 @@ test('content', () => {
 
 test('navigation', () => {
   expect($('input[value=deliver]').is('[checked]')).toBe(true);
-  expect($('a[aria-current=page]').attr('href')).toBe('/');
+  expect($('a[href="/dashboard"]').text()).toBe('Overview');
 });
 
 test('svg references resolve', () => {

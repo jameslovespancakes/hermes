@@ -6,7 +6,6 @@ import { Dataset } from './dataset';
 import { Models } from './models';
 import { Hygiene } from './hygiene';
 import { Results } from './results';
-import { Notes } from './notes';
 
 export function Page() {
   return (
@@ -26,7 +25,6 @@ export function Page() {
           <Models />
           <Results />
         </div>
-        <Notes />
       </main>
     </>
   );

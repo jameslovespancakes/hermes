@@ -1,0 +1,231 @@
+/* Dispatcher map: the map is the page; one control, one card, icons only where something needs a person. */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #f2f0ea;
+  color: var(--ink);
+  font: 400 14px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+.dash,
+.dash-map {
+  position: fixed;
+  inset: 0;
+}
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+  background: #ffffffa6 !important;
+}
+
+/* Floating surfaces share one look. */
+.time-control,
+.alert-card,
+.dash-error {
+  position: fixed;
+  z-index: 2;
+  background: #fff;
+  box-shadow:
+    0 24px 60px -24px #0005,
+    0 2px 8px #0001;
+}
+
+/* Moment */
+.time-control {
+  left: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-radius: 999px;
+}
+.time-control input[type='date'] {
+  border: 0;
+  background: none;
+  color: #6b7370;
+  font-size: 13px;
+}
+.time-control input[type='range'] {
+  width: 160px;
+  accent-color: var(--ink);
+}
+.time-control .time {
+  font-weight: 600;
+  min-width: 42px;
+}
+.status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #35b57f;
+}
+.status.unusual {
+  background: #7c5cff;
+}
+.status.loading {
+  background: #b9bdb9;
+  animation: blink 0.9s ease-in-out infinite alternate;
+}
+@keyframes blink {
+  to {
+    opacity: 0.3;
+  }
+}
+
+/* Alert icons on the map */
+.alert-pin {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.alert-pin svg {
+  display: block;
+  filter: drop-shadow(0 3px 5px #0002);
+  transform-origin: 50% 100%;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.alert-pin:hover svg {
+  transform: translateY(-3px) scale(1.08);
+}
+.alert-pin.on svg {
+  transform: scale(1.25);
+}
+
+/* Alert card */
+.alert-card {
+  right: 24px;
+  bottom: 24px;
+  width: 344px;
+  padding: 20px 22px 18px;
+  border-radius: 24px;
+  animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.alert-card header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.alert-kind {
+  display: grid;
+}
+.alert-eta {
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -2px;
+  line-height: 1;
+  color: var(--c);
+}
+.alert-slip {
+  margin-left: auto;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+}
+.alert-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #8c9592;
+  cursor: pointer;
+}
+.alert-eta + .alert-close {
+  margin-left: auto;
+}
+.alert-close:hover {
+  background: #f4f3ef;
+  color: var(--ink);
+}
+.route-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+}
+.route-strip svg {
+  overflow: visible;
+}
+.alert-card footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+.act {
+  position: relative;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: #f4f3ef;
+  color: #4f5a57;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.act:hover {
+  background: #ecebe5;
+  color: var(--ink);
+}
+.act:active {
+  transform: scale(0.96);
+}
+.act.primary {
+  background: var(--ink);
+  color: #fff;
+}
+.act::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.15s;
+}
+.act:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.dash-error {
+  top: 110px; /* below the site header */
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  color: #b3261e;
+}

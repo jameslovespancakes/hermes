@@ -6,12 +6,14 @@ test('routes', () => {
   expect(route('/')).toBe('home');
   expect(route('/benchmarks/')).toBe('benchmarks');
   expect(route('/methodology.html')).toBe('methodology');
+  expect(route('/dashboard')).toBe('dashboard');
+  expect(route('/unknown')).toBe('home');
 });
 
-test('every page renders', () => {
+test('every page renders through the router', () => {
   for (const page of Object.keys(pages) as (keyof typeof pages)[]) {
     const $ = render(page);
-    expect($('main#main')).toHaveLength(1);
+    expect($('main')).toHaveLength(1);
     expect($('a[aria-label="Hermes home"]')).toHaveLength(1);
   }
 });

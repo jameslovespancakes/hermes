@@ -97,8 +97,7 @@ class LiveETAPredictor:
                 minutes = np.where(stale, self.bundle.staleness.predict(live), minutes)
                 model_used[stale] = "staleness"
         flags = review_flags(live, packages, self.config)
-        risk = self.bundle.risk.predict(live, minutes) if self.bundle.risk is not None else np.full(len(live), np.nan)
-        threshold = self.bundle.risk.threshold if self.bundle.risk is not None else np.inf
+        risk = self.bundle.risk.predict(live, minutes)
         out = pd.DataFrame(
             {
                 "order_id": live["_order_id"].to_numpy(),
@@ -113,7 +112,7 @@ class LiveETAPredictor:
                 "needs_review": flags["needs_review"].to_numpy(),
                 "review_reasons": _reasons(flags),
                 "risk_min": risk,
-                "uncertain": risk > threshold,
+                "uncertain": risk > self.bundle.risk.threshold,
             }
         )
         if diagnostics:
@@ -126,36 +125,33 @@ class LiveETAPredictor:
         """Batch predictions at many (courier_id 'city:id', s) events; every feature is causal per event."""
         packages = package_table(self.clean(records), self.city)
         live = live_table(packages, transition_cutoff, events)
-        return self.score(live, packages, diagnostics) if not live.empty else pd.DataFrame(columns=OUTPUT_COLUMNS)
+        if live.empty:
+            return pd.DataFrame(columns=OUTPUT_COLUMNS)
+        return self.score(live, packages, diagnostics)
 
     def prepare(self, records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
         """Package table as known at `at` (the expensive, cacheable step)."""
         return package_table(self.clean(known_at(records, at)), self.city)
 
-    def predict_prepared(self, packages: pd.DataFrame, courier_id, at: pd.Timestamp) -> pd.DataFrame:
-        return self.predict_couriers(packages, [courier_id], at)
-
     def predict_couriers(self, packages: pd.DataFrame, courier_ids, at: pd.Timestamp, diagnostics: bool = False) -> pd.DataFrame:
         """ETAs for every package the given couriers (raw ids) hold at `at`, in predicted stop order."""
         events = pd.DataFrame({"courier_id": [f"{self.city}:{c}" for c in courier_ids], "s": at})
-        live = live_table(packages, transition_cutoff=at.normalize(), events=events) if len(events) else pd.DataFrame()
+        live = live_table(packages, at.normalize(), events)
         if live.empty:
             return pd.DataFrame(columns=OUTPUT_COLUMNS)
         return self.score(live, packages, diagnostics).sort_values("predicted_position", kind="stable").reset_index(drop=True)
 
     def predict(self, records: pd.DataFrame, courier_id, at: pd.Timestamp) -> pd.DataFrame:
         """ETAs for every package `courier_id` (raw id) holds at time `at`."""
-        return self.predict_prepared(self.prepare(records, at), courier_id, at)
+        return self.predict_couriers(self.prepare(records, at), [courier_id], at)
 
     def data_health(self, records: pd.DataFrame, packages: pd.DataFrame, at: pd.Timestamp) -> dict:
         """Data contract and input drift over the 24 h before `at`."""
-        if self.bundle.monitor is None:
-            raise RuntimeError("this model bundle has no monitoring baseline")
         batch = known_at(records, at)
         batch = batch.loc[batch["delivered_at"] > at - pd.Timedelta(days=1)]
         events = checkpoints(batch, self.city, at - pd.Timedelta(days=1), at)
         events = events.sample(n=min(HEALTH_EVENTS, len(events)), random_state=0)
-        live = live_table(packages, at.normalize(), events) if len(events) else pd.DataFrame(columns=DRIFT_FEATURES)
+        live = live_table(packages, at.normalize(), events)
         report = data_health(self.bundle.monitor, batch, live[DRIFT_FEATURES], self.config)
         report["records_checked"] = len(batch)
         return report

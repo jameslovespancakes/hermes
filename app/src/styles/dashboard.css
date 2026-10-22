@@ -1,0 +1,6 @@
+@import 'maplibre-gl/dist/maplibre-gl.css';
+@import './shared/tokens.css';
+@import './shared/chrome.css';
+@import './shared/palette.css';
+@import './shared/nav.css';
+@import './dashboard/page.css';

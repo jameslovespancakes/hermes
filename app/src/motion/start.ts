@@ -1,40 +1,23 @@
 // Start the scroll engines for one page, once per document.
 import type { Page } from '../routes';
-import * as cinema from './cinema';
-import * as flow from './flow';
-import * as hero from './hero';
-import * as reel from './reel';
-import * as quality from './quality';
-import * as reveal from './reveal';
 import * as scroll from './scroll';
-import * as split from './split';
-import * as wall from './wall';
 import { frames } from './util';
 
 let started = false;
 
-function home() {
-  reveal.init();
-  cinema.init();
-  split.init();
-  wall.init();
-  quality.init();
-  hero.init();
-  return () => {
-    cinema.openHash();
-    wall.openHash();
-    quality.openHash();
-  };
-}
+// Each page's motion loads with it, so other pages' engines are never downloaded.
+const pages: Record<Exclude<Page, 'dashboard'>, () => Promise<{ init: () => () => void }>> = {
+  home: () => import('./home'),
+  benchmarks: () => import('./benchmarks'),
+  methodology: () => import('./flow'),
+};
 
-const pages: Record<Page, () => () => void> = { home, benchmarks: reel.init, methodology: flow.init };
-
-export async function start(page: Page) {
+export async function start(page: Exclude<Page, 'dashboard'>) {
   if (started) return;
   started = true;
   scroll.init();
-  await document.fonts.ready;
-  const openHash = pages[page]();
+  const [motion] = await Promise.all([pages[page](), document.fonts.ready]);
+  const openHash = motion.init();
   dispatchEvent(new Event('resize'));
   await frames(2);
   openHash();

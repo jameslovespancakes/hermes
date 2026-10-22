@@ -10,8 +10,9 @@ import pandas as pd
 from server.config import ROUTE_INPUT_COLS
 from server.models.bundle import ModelBundle
 from server.models.encoding import encode, fit_schema
-from server.models.eta import EtaModel, fit_eta
+from server.models.eta import fit_eta
 from server.models.route import _fit, add_route_outputs, courier_day_folds, trainable_events
+from server.tests.helpers import constant_bundle
 
 
 class EncodingTests(unittest.TestCase):
@@ -77,12 +78,12 @@ class FitTests(unittest.TestCase):
 
 class BundleTests(unittest.TestCase):
     def test_round_trip_and_type_check(self):
-        bundle = ModelBundle(city="yt", route_model=None, eta=EtaModel([], ["x"], {}), habit_columns=[], trained_through="09-01")
+        bundle = constant_bundle()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "model.pkl"
             digest = bundle.save(path)
             self.assertEqual(len(digest), 64)
-            self.assertEqual(ModelBundle.load(path).eta.columns, ["x"])
+            self.assertEqual(ModelBundle.load(path).eta.columns, ["n_pending"])
             path.write_bytes(gzip.compress(pickle.dumps({"not": "a bundle"})))
             with self.assertRaises(TypeError):
                 ModelBundle.load(path)

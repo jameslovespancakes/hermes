@@ -1,8 +1,6 @@
-@import './site.css';
-@import './research.css';
-@import './editorial.css';
-@import './cover.css';
-@import './reel.css';
-@import './palette.css';
-@import './nav.css';
-@import './scroll.css';
+@import './shared/tokens.css';
+@import './shared/chrome.css';
+@import './shared/palette.css';
+@import './shared/nav.css';
+@import './shared/scroll.css';
+@import './benchmarks/page.css';

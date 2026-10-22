@@ -1,9 +1,9 @@
 """Request/response models for the HTTP API. Times use the source format 'MM-DD HH:MM:SS' (no year)."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
 import pandas as pd
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, BeforeValidator, Field, StringConstraints
 
 from server.config import PARSE_YEAR
 
@@ -18,23 +18,17 @@ def format_moment(moment: pd.Timestamp) -> str:
     return moment.strftime("%m-%d %H:%M:%S")
 
 
+def _valid(text: str) -> str:
+    parse_moment(text)
+    return text
+
+
+Moment = Annotated[str, StringConstraints(pattern=TIME_PATTERN), AfterValidator(_valid)]
+
+
 class PredictRequest(BaseModel):
-    courier_id: str = Field(description="Raw courier id from the source data", examples=["2136"])
-    at: str = Field(pattern=TIME_PATTERN, description="Moment to predict at, 'MM-DD HH:MM:SS'", examples=["09-20 10:30:00"])
-
-    @field_validator("courier_id", mode="before")
-    @classmethod
-    def _as_text(cls, value):
-        return str(value)
-
-    @field_validator("at")
-    @classmethod
-    def _valid_moment(cls, value: str) -> str:
-        try:
-            parse_moment(value)
-        except ValueError as error:
-            raise ValueError(f"not a valid date/time: {value}") from error
-        return value
+    courier_id: Annotated[str, BeforeValidator(str)] = Field(examples=["2136"])
+    at: Moment = Field(examples=["09-20 10:30:00"])
 
 
 class PackageETA(BaseModel):
@@ -49,8 +43,8 @@ class PackageETA(BaseModel):
     model_used: str = Field(description="'standard', or 'staleness' when the courier's feed is stale")
     needs_review: bool = Field(description="True when a dispatcher should check this ETA")
     review_reasons: list[str]
-    risk_min: float | None = Field(None, description="Expected size of this ETA's error, in minutes")
-    uncertain: bool = Field(False, description="True for the riskiest 10% of estimates")
+    risk_min: float = Field(description="Expected size of this ETA's error, in minutes")
+    uncertain: bool = Field(description="True for the riskiest 10% of estimates")
 
 
 class PredictResponse(BaseModel):
@@ -58,11 +52,6 @@ class PredictResponse(BaseModel):
     courier_id: str
     at: str
     packages: list[PackageETA]
-
-
-class CourierLoad(BaseModel):
-    courier_id: str
-    packages_held: int
 
 
 class ContractCheck(BaseModel):

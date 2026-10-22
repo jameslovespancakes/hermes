@@ -1,0 +1,108 @@
+/* Native-scroll card deck. The reading card has no transform or raster filter. */
+.steps {
+  display: grid;
+  gap: 24px;
+  isolation: isolate;
+}
+.step {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  color: var(--green);
+}
+.step .step-chart {
+  position: absolute;
+  inset: 45% 0 auto;
+  width: 100%;
+  height: 55%;
+  max-height: none;
+}
+.step-art {
+  color: var(--green);
+}
+.step-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--draw, 1));
+  opacity: 0.8;
+}
+.step-bar,
+.step-dot {
+  fill: currentColor;
+  opacity: calc(var(--draw, 1) * 0.55);
+}
+.step-stem {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: calc(var(--draw, 1) * 0.4);
+}
+.step-fill {
+  fill: currentColor;
+  opacity: calc(var(--draw, 1) * 0.12);
+}
+.step-copy {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding: 8px 4px;
+}
+.step-number {
+  font: 400 clamp(84px, 9vw, 144px) / 0.95 var(--serif);
+  letter-spacing: -0.04em;
+}
+.step-label {
+  max-width: 300px;
+  font: 400 17px/1.4 var(--sans);
+  color: var(--ink);
+}
+.deck-enhanced .step-copy {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.method-sticky .stepped .method-heading {
+  position: sticky;
+  align-self: start;
+  top: calc(var(--method-top) + (var(--stage-height) - var(--heading-height, 280px)) / 2);
+  margin-top: calc((var(--chapter-distance) - var(--heading-height, 280px)) / 2);
+}
+.method-sticky .steps {
+  width: min(100%, calc((var(--stage-height) - 300px) * 1.454545));
+  max-height: none;
+  transform: none;
+  margin: 0 auto;
+}
+.steps.deck-enhanced {
+  display: block;
+  position: relative;
+  aspect-ratio: 640/440;
+}
+.deck-enhanced .step {
+  position: absolute;
+  inset: 0;
+}
+@media (max-width: 600px) {
+  .step {
+    min-height: 260px;
+  }
+}
+.deck-enhanced .step {
+  overflow: visible;
+}
+.deck-enhanced .step .step-chart {
+  inset: 12% -12vw auto -4%;
+  width: calc(104% + 12vw);
+  height: calc(100% + 8vh);
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 10%),
+    linear-gradient(180deg, transparent, #000 8%, #000 80%, transparent);
+  mask-image:
+    linear-gradient(90deg, transparent, #000 10%),
+    linear-gradient(180deg, transparent, #000 8%, #000 80%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}

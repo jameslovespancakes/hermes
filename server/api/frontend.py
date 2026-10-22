@@ -16,9 +16,6 @@ PAGES = {
 
 
 def mount_frontend(app: FastAPI, dist: Path = DIST) -> None:
-    """Add the pages and their assets; skipped when the frontend is not built."""
-    if not (dist / "index.html").exists():
-        return
     for folder in ("assets", "licenses"):
         app.mount(f"/{folder}", StaticFiles(directory=dist / folder), name=folder)
     for route, file in PAGES.items():

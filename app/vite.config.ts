@@ -19,7 +19,7 @@ export default defineConfig({
       name: 'pages',
       configurePreviewServer(server) {
         server.middlewares.use((request, _response, next) => {
-          const page = /^\/(benchmarks|methodology)\/?(\?.*)?$/.exec(request.url ?? '')?.[1];
+          const page = /^\/(benchmarks|methodology|dashboard)\/?(\?.*)?$/.exec(request.url ?? '')?.[1];
           if (page) request.url = `/${page}/index.html`;
           next();
         });
@@ -27,6 +27,7 @@ export default defineConfig({
     },
   ],
   build: { target: 'es2022', manifest: true },
-  server: { port: 5173, strictPort: true },
+  // The dashboard calls the API, which runs on port 8000 in development.
+  server: { port: 5173, strictPort: true, proxy: { '/api': 'http://127.0.0.1:8000' } },
   preview: { port: 4173, strictPort: true },
 });

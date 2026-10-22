@@ -33,10 +33,8 @@ class LaterDay:
         return (1 - p) * minutes + p * self.specialist.predict(rows)
 
 
-def fit_later_day(fit_rows: pd.DataFrame, stop_rows: pd.DataFrame, columns: list[str]) -> LaterDay | None:
+def fit_later_day(fit_rows: pd.DataFrame, stop_rows: pd.DataFrame, columns: list[str]) -> LaterDay:
     fit_late, stop_late = fit_rows.loc[later_day(fit_rows) == 1], stop_rows.loc[later_day(stop_rows) == 1]
-    if len(fit_late) < 200 or len(stop_late) < 50:
-        return None
     schema = fit_schema(fit_rows, columns)
     classifier = lgb.LGBMClassifier(**PARAMS, random_state=SEED, n_jobs=THREADS, verbosity=-1)
     with threadpool_limits(limits=THREADS):

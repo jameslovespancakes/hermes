@@ -1,8 +1,8 @@
-// Hero video plays only while visible and motion is not paused.
+// A background video plays only while visible and motion is not paused.
 import { $, isPaused, onPause } from './util';
 
-export function init() {
-  const video = $<HTMLVideoElement>('.hero-video');
+export function init(selector = '.hero-video') {
+  const video = $<HTMLVideoElement>(selector);
   let paused = isPaused();
   let visible = true;
   const sync = () => {

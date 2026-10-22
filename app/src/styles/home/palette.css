@@ -1,0 +1,44 @@
+/* Home colour assignments for the story sections and cards. */
+.dark-foundation,
+.city-strip:before,
+.perspectives,
+.perspectives-background {
+  background-color: var(--green);
+}
+.wall-card.landscape.green {
+  background: var(--green);
+}
+.wall-card.landscape:not(.green) {
+  background: var(--peach);
+}
+.wall-photo-copy {
+  background: var(--orange);
+}
+.wall-controls button {
+  background: var(--green);
+  border-color: #ffffeb66;
+}
+.split-reflections:after {
+  background:
+    linear-gradient(180deg, var(--cream), #ffffeb80 22%, #ffffeb33 46%, #ffffeb80 76%, var(--cream)),
+    radial-gradient(ellipse 43% 64% at 50% 48%, #ffffebf5 10%, #ffffebc2 52%, #ffffeb00);
+}
+@media (max-width: 759px) {
+  .split-reflections:after {
+    background:
+      linear-gradient(180deg, var(--cream), #ffffeb99 20%, #ffffeb73 56%, #ffffeb9e 78%, var(--cream)),
+      radial-gradient(ellipse 75% 65% at 50% 42%, #ffffebd9, #ffffeb00);
+  }
+}
+.quality-feed {
+  --card-color: var(--peach);
+}
+.quality-missing {
+  --card-color: var(--olive);
+}
+.quality-future {
+  --card-color: var(--cream);
+}
+.quality-poster .quality-copy {
+  color: var(--cream);
+}

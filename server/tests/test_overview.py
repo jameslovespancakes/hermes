@@ -85,8 +85,8 @@ class OverviewApiTests(unittest.TestCase):
     def test_overview_lists_couriers_and_parcels(self):
         recs = records(days=2, couriers=(1, 2), per_day=6)
         at = recs.loc[recs["courier_id"] == 1, "delivered_at"].iloc[8] + pd.Timedelta(minutes=1)
-        with TestClient(create_app(predictor=LiveETAPredictor(constant_bundle(eta=30.0)), records=recs)) as c:
-            body = c.get("/overview", params={"at": at.strftime("%m-%d %H:%M:%S")}).json()
+        with TestClient(create_app(predictor=LiveETAPredictor(constant_bundle(eta=30.0)), records=recs, frontend=None)) as c:
+            body = c.get("/api/overview", params={"at": at.strftime("%m-%d %H:%M:%S")}).json()
         self.assertEqual(body["baseline_at"], (at - pd.Timedelta(hours=1)).strftime("%m-%d %H:%M:%S"))
         self.assertGreater(len(body["parcels"]), 0)
         self.assertEqual({c["courier_id"] for c in body["couriers"]}, {p["courier_id"] for p in body["parcels"]})

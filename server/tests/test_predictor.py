@@ -68,7 +68,7 @@ class PredictorTests(unittest.TestCase):
         copy = pending.assign(order_id=recs["order_id"].max() + 1)
         dirty = pd.concat([recs, copy], ignore_index=True)
         unguarded = predictor().predict(dirty, 1, at)
-        guarded = LiveETAPredictor(constant_bundle(eta=25.0, guard=DataGuard().fit(recs))).predict(dirty, 1, at)
+        guarded = LiveETAPredictor(constant_bundle(eta=25.0, guard=DataGuard.fit(recs))).predict(dirty, 1, at)
         self.assertIn(copy["order_id"].iloc[0], set(unguarded["order_id"]))
         self.assertNotIn(copy["order_id"].iloc[0], set(guarded["order_id"]))
         self.assertEqual(guarded["packages_held"].iloc[0], unguarded["packages_held"].iloc[0] - 1)

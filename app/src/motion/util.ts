@@ -11,7 +11,6 @@ export const $$ = <T extends Element = HTMLElement>(selector: string, root: Pare
   ...root.querySelectorAll<T>(selector),
 ];
 
-export const px = (v: number) => `${String(v)}px`;
 export const isPaused = () => document.body.classList.contains('motion-paused');
 
 // Programmatic pause: dispatch `arrival:motion` with `{ paused }`.

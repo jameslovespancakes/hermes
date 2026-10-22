@@ -1,20 +1,29 @@
-export type Page = 'home' | 'benchmarks' | 'methodology';
+export type Page = 'home' | 'benchmarks' | 'methodology' | 'dashboard';
 
-export const pages: Record<Page, { title: string; body: string; description: string }> = {
+export const pages: Record<Page, { path: string; title: string; body: string; description: string }> = {
   home: {
+    path: '/',
     title: 'Hermes',
     body: '',
     description: 'Route-aware delivery estimates, informed by recorded delivery history.',
   },
   benchmarks: {
+    path: '/benchmarks',
     title: 'Benchmarks | Hermes',
     body: 'research-page benchmark-page',
     description: 'Published results, input audits and matched model comparisons.',
   },
   methodology: {
+    path: '/methodology',
     title: 'Methodology | Hermes',
     body: 'research-page methodology-page journey-page',
     description: 'Delivery data, prediction models, data hygiene and saved research results.',
+  },
+  dashboard: {
+    path: '/dashboard',
+    title: 'Overview | Hermes',
+    body: 'app-page',
+    description: 'Live courier workloads and model ETAs for dispatchers.',
   },
 };
 
@@ -24,5 +33,5 @@ export function route(path: string): Page {
     .replace(/\/$/, '')
     .replace(/\.html$/, '')
     .slice(1);
-  return name === 'benchmarks' || name === 'methodology' ? name : 'home';
+  return name in pages && name !== 'home' ? (name as Page) : 'home';
 }

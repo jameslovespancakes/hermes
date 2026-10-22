@@ -101,24 +101,27 @@ Source: [`evidence/baddata`](evidence/baddata/results/REPORT.md).
 
 ## Quick start
 
-Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/).
+Requires Python 3.10+, [uv](https://docs.astral.sh/uv/) and [Bun](https://bun.sh) 1.4.2.
 
 ```sh
 uv sync
 uv run python -m server.cli download --city yt     # pinned, checksum-verified data
 uv run python -m server.cli train --city yt        # about 20 min on 16 threads
-uv run python -m server.cli predict --city yt --courier 2136 --at "09-20 10:30:00"
-uv run uvicorn server.api.app:app                  # API docs at http://localhost:8000/docs
-uv run python -m unittest discover -s server/tests -t .
+(cd app && bun install --frozen-lockfile && bun run build)
+uv run uvicorn server.api.app:create_app --factory # site and API on http://localhost:8000 (API under /api, docs at /docs)
 ```
 
-Frontend (requires [Bun](https://bun.sh) 1.4.2), run inside `app/`:
+Develop the frontend with live reload (`/api` is proxied to the server on port 8000):
 
 ```sh
-bun install --frozen-lockfile
-bun run dev                                         # http://localhost:5173, API proxied to :8000
-bun run lint && bun run typecheck && bun test tests
-bun run build                                       # dist/, served by the API on port 8000
+cd app && bun run dev                              # http://localhost:5173
+```
+
+Checks (the same as CI):
+
+```sh
+uv run ruff check server evidence && uv run python -m unittest discover -s server/tests -t .
+cd app && bun run lint && bun run typecheck && bun test tests
 ```
 
 Reproduce the evidence:

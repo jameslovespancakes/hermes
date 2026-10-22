@@ -1,5 +1,7 @@
 """Next-zone model: which pending zone the courier visits next (out-of-fold by courier-day in training)."""
 
+from typing import Protocol
+
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
@@ -7,6 +9,11 @@ from threadpoolctl import threadpool_limits
 
 from server.config import ROUTE_FOLDS, SEED, THREADS
 from server.models.route import courier_day_folds
+
+
+class Classifier(Protocol):
+    def predict_proba(self, X) -> np.ndarray: ...
+
 
 ZONE_INPUTS = [
     "dist_from_courier_gps_km",
@@ -34,13 +41,10 @@ def zone_table(live: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
     """One row per (moment, pending zone) and the zone-row index of every live row."""
     key = pd.factorize(live["event"].astype(np.int64) * 100_000 + live["zone_id"].astype(np.int64))[0]
     agg = {c: ("min" if c in NEAREST else "first") for c in ZONE_INPUTS}
-    agg.update({"event": "first", "s": "first", "courier_s": "first", "day": "first"})
-    if "_delivered_at" in live:
-        agg["_delivered_at"] = "max"
+    agg.update({"event": "first", "s": "first", "courier_s": "first", "day": "first", "_delivered_at": "max"})
     table = live.assign(_zk=key).groupby("_zk").agg(agg)
-    if "true_pos" in live:
-        table["label"] = 0
-        table.loc[np.unique(key[(live["true_pos"] == 0).to_numpy()]), "label"] = 1
+    table["label"] = 0
+    table.loc[np.unique(key[(live["true_pos"] == 0).to_numpy()]), "label"] = 1
     return table, key
 
 

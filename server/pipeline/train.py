@@ -2,7 +2,6 @@
 
 import importlib.metadata
 import json
-import pickle
 import time
 from datetime import datetime, timezone
 
@@ -46,7 +45,7 @@ def train_bundle(
     info: dict = {}
     guard = None
     if use_guard:
-        guard = DataGuard(config).fit(records.loc[records["accepted_at"] < split.fit_cutoff])
+        guard = DataGuard.fit(records.loc[records["accepted_at"] < split.fit_cutoff], config)
         records, info["guard"] = guard.clean(records, CleanMode.TRAIN)
     packages = package_table(records, city)
     zones = Zones.fit(packages, split.fit_cutoff)
@@ -106,13 +105,8 @@ def score_events(predictor: LiveETAPredictor, records: pd.DataFrame, events: pd.
 
 
 def _load_champion(city: str) -> ModelBundle | None:
-    """The stored model, or None if there is none or it uses an older format."""
     path = MODEL_STORE / city / "model.pkl"
-    try:
-        champion = ModelBundle.load(path)
-    except (OSError, TypeError, AttributeError, pickle.UnpicklingError):
-        return None
-    return champion if vars(champion).get("zones") is not None else None
+    return ModelBundle.load(path) if path.exists() else None
 
 
 def train_city(city: str, split: Split = DEFAULT_SPLIT, force: bool = False, log=print) -> dict:
