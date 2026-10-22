@@ -14,11 +14,7 @@ def parse_time(values: pd.Series) -> pd.Series:
 
 
 def clean_records(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
-    """Drop records with undefined labels (not merely unusual ones); sort chronologically.
-
-    Removed, in order: missing order id, duplicated order ids (all copies), unparseable times, negative
-    durations. Long and zero durations are kept.
-    """
+    """Drop records with undefined labels (not merely unusual ones); sort chronologically."""
     frame = raw.rename(columns={"package_id": "order_id"}) if "order_id" not in raw and "package_id" in raw else raw.copy()
     missing = set(
         CATEGORICAL + ["order_id", "accept_time", "delivery_time", "accept_gps_time", "lng", "lat", "accept_gps_lng", "accept_gps_lat"]

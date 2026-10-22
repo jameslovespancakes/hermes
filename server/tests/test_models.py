@@ -1,3 +1,4 @@
+import gzip
 import pickle
 import tempfile
 import unittest
@@ -7,9 +8,9 @@ import numpy as np
 import pandas as pd
 
 from server.config import ROUTE_INPUT_COLS
-from server.models.bundle import EtaModel, ModelBundle
+from server.models.bundle import ModelBundle
 from server.models.encoding import encode, fit_schema
-from server.models.eta import fit_eta, predict_eta
+from server.models.eta import EtaModel, fit_eta
 from server.models.route import _fit, add_route_outputs, courier_day_folds, trainable_events
 
 
@@ -63,8 +64,7 @@ class FitTests(unittest.TestCase):
         rng = np.random.default_rng(0)
         rows = pd.DataFrame({"courier_id": pd.Categorical(rng.choice(["yt:1", "yt:2"], 400)), "x": rng.uniform(0, 10, 400)})
         rows["remaining_min"] = rows["x"] * 6 + rng.uniform(0, 5, 400)
-        model, schema = fit_eta(rows.iloc[:300], rows.iloc[300:], ["courier_id", "x"])
-        predicted = predict_eta(model, schema, rows.iloc[300:], ["courier_id", "x"])
+        predicted = fit_eta(rows.iloc[:300], rows.iloc[300:], ["courier_id", "x"], seeds=(1, 2)).predict(rows.iloc[300:])
         self.assertTrue((predicted >= 0).all())
         self.assertLess(np.abs(predicted - rows["remaining_min"].iloc[300:]).mean(), 10)
 
@@ -77,13 +77,13 @@ class FitTests(unittest.TestCase):
 
 class BundleTests(unittest.TestCase):
     def test_round_trip_and_type_check(self):
-        bundle = ModelBundle(city="yt", route_model=None, eta=EtaModel(None, ["x"], {}), habit_columns=[], trained_through="09-01")
+        bundle = ModelBundle(city="yt", route_model=None, eta=EtaModel([], ["x"], {}), habit_columns=[], trained_through="09-01")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "model.pkl"
             digest = bundle.save(path)
             self.assertEqual(len(digest), 64)
             self.assertEqual(ModelBundle.load(path).eta.columns, ["x"])
-            path.write_bytes(pickle.dumps({"not": "a bundle"}))
+            path.write_bytes(gzip.compress(pickle.dumps({"not": "a bundle"})))
             with self.assertRaises(TypeError):
                 ModelBundle.load(path)
 

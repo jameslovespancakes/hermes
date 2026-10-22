@@ -1,13 +1,4 @@
-"""Live queries: at a courier event time s, one row per package that courier still holds.
-
-Causality: a package is pending at s if accepted at or before s and its delivery was not RECEIVED at or before s.
-Only deliveries received at or before s shape any feature; unknown deliveries (NaT) are treated as still pending.
-The courier's location is the destination of their most recent known delivery.
-
-Event time vs arrival time: if packages carry `_received_at` (server receive time) next to `_delivered_at`
-(the scanner's own event time), visibility follows the receive time while timing features use event time,
-and `upload_lag_min` reports how far the courier's feed runs behind. Without it, both are the same.
-"""
+"""Live queries: each pending package at each courier moment, with causal live inputs."""
 
 import numpy as np
 import pandas as pd
@@ -20,11 +11,11 @@ _ROUTE_SHAPE = ("greedy_pos", "greedy_pos_frac", "greedy_km", "aoi_greedy_pos_fr
 
 
 def _event_rows(s, idx, a, d, r, d_known_sorted, lat, lng, aoi, usual_ca, usual_end, usual_pace):
-    received = r <= s  # NaT compares False -> not yet known
+    received = r <= s
     pending_mask = (a <= s) & ~received
     if not pending_mask.any():
         return None
-    if d_known_sorted is None:  # event-time mode: the known set depends on s
+    if d_known_sorted is None:
         known_times = d[received]
         d_known_sorted = np.sort(known_times[~np.isnat(known_times)])
     pend = idx[pending_mask]
@@ -43,7 +34,7 @@ def _event_rows(s, idx, a, d, r, d_known_sorted, lat, lng, aoi, usual_ca, usual_
     pace = since_first / (n_today - 1) if n_today >= 2 else np.nan
     clock_s = (s - day) / MINUTE
     plat, plng = lat[pend], lng[pend]
-    feed_age = (s - last) / MINUTE if last is not None else np.nan  # minutes since the last visible delivery
+    feed_age = (s - last) / MINUTE if last is not None else np.nan
     q = {
         "row": pend,
         "s": np.full(n, s),
@@ -85,15 +76,12 @@ def _event_rows(s, idx, a, d, r, d_known_sorted, lat, lng, aoi, usual_ca, usual_
     q["hab_shift_end_rel_now"] = usual_end[pend] - clock_s
     pace_used = pace if np.isfinite(pace) else np.nanmean(usual_pace[pend])
     q["est_stops_x_pace"] = (q["greedy_pos"] + 1) * pace_used
-    q["remaining_min"] = (d[pending_mask] - s) / MINUTE  # NaN when the outcome is unknown
+    q["remaining_min"] = (d[pending_mask] - s) / MINUTE
     return pd.DataFrame(q)
 
 
 def build_live_queries(packages: pd.DataFrame, events: pd.DataFrame | None = None) -> pd.DataFrame:
-    """Live query rows. `packages` needs package + habit columns.
-
-    events: optional (courier_id, s) pairs; by default every recorded delivery time of every courier.
-    """
+    """Live query rows for every recorded delivery moment, or for the given (courier, moment) events."""
     acc = packages["_accepted_at"].to_numpy()
     dlv = packages["_delivered_at"].to_numpy()
     event_time_mode = "_received_at" in packages

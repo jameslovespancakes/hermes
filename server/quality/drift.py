@@ -1,12 +1,4 @@
-"""Input drift monitoring with the Population Stability Index (PSI), as used by common model monitors.
-
-PSI = sum over bins of (current% - reference%) * ln(current% / reference%). Bins come from reference deciles,
-plus an overflow bin above the reference maximum and a bin for missing values, so drift is detectable even
-when the reference is concentrated on one value (e.g. feed age 0 on a healthy feed).
-
-Thresholds: the conventional 0.10 (watch) / 0.25 (act), raised per input to its natural month-to-month drift
-measured on clean history (`calibrate`), so business seasonality does not page anyone.
-"""
+"""Input drift monitoring with the Population Stability Index (PSI), as used by common model monitors."""
 
 import numpy as np
 import pandas as pd
@@ -26,7 +18,7 @@ def _edges(reference: np.ndarray, bins: int) -> np.ndarray:
 def _shares(values: np.ndarray, edges: np.ndarray) -> np.ndarray:
     finite = np.isfinite(values)
     counts = np.bincount(np.digitize(values[finite], edges, right=True), minlength=len(edges) + 1).astype(float)
-    counts = np.append(counts, (~finite).sum())  # last bin: missing values
+    counts = np.append(counts, (~finite).sum())
     return np.maximum(counts / max(len(values), 1), EPSILON)
 
 
@@ -38,8 +30,7 @@ def psi(reference, current, bins: int = 10) -> float:
 
 
 def calibrate(reference: pd.DataFrame, earlier: pd.DataFrame, features: list[str], config: QualityConfig = QUALITY) -> dict:
-    """Per-input thresholds: at least the conventional ones, and a margin above the natural drift between two
-    clean historical periods (e.g. June vs May)."""
+    """Per-input thresholds: conventional levels, raised above each input's natural drift in clean history."""
     natural = {f: psi(reference[f], earlier[f]) for f in features}
     margin = config.drift_margin
     return {

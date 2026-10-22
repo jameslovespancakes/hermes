@@ -1,0 +1,116 @@
+"""The whole city at one moment, for the dispatcher map.
+
+Every pending parcel gets its current ETA and the ETA the model gave an hour earlier ("before" and "after"), plus
+at most one issue for a dispatcher:
+
+- data:    the data guards flagged the inputs (stale courier feed, bulk-synced scans)
+- suspect: the inputs passed every guard but the picture is implausible
+- late:    the estimate slipped far in the last hour
+
+Both moments are replayed from the log as it was known then, so neither estimate uses later information.
+Coordinates are returned in WGS-84 for web maps.
+"""
+
+from collections.abc import Callable
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+
+from server.features.geometry import gcj02_to_wgs84
+from server.serving.predictor import LiveETAPredictor, courier_positions, couriers_holding
+
+
+@dataclass(frozen=True)
+class IssueRules:
+    """Thresholds, set from clean held-out days (Sept 18, 20, 25 at 10:30, 14:00 and 17:00 in Yantai)."""
+
+    lookback_min: float = 60.0  # the "before" estimate is the one made this long ago
+    late_slip_min: float = 90.0  # median hourly slip is +14..55 min; >= 90 min hits ~5-10% of parcels
+    early_jump_min: float = 60.0  # an estimate rarely moves an hour earlier when nothing was flagged
+    far_from_courier_km: float = 15.0  # ~1% of parcels sit this far from their courier's last position
+
+
+RULES = IssueRules()
+ISSUE_ORDER = ("data", "suspect", "late")  # when several apply, the first one is reported
+
+
+def city_predictions(predictor: LiveETAPredictor, packages: pd.DataFrame, records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
+    """ETAs with diagnostics for every package held at `at`, plus its destination and raw courier id."""
+    couriers = couriers_holding(records, at).index
+    out = predictor.predict_couriers(packages, couriers, at, diagnostics=True)
+    if out.empty:
+        return out
+    where = packages.set_index("_order_id")[["lat", "lng"]]
+    out = out.join(where, on="order_id")
+    out["courier_id"] = out["courier"].str.split(":", n=1).str[1]
+    return out
+
+
+def classify(now: pd.DataFrame, before: pd.DataFrame, rules: IssueRules = RULES) -> pd.DataFrame:
+    """Adds baseline_eta, slip_min (minutes the ETA moved since the baseline), issue and reasons to `now`."""
+    out = now.merge(
+        before[["order_id", "predicted_delivery_at"]].rename(columns={"predicted_delivery_at": "baseline_eta"}),
+        on="order_id",
+        how="left",
+    )
+    out["baseline_eta"] = pd.to_datetime(out["baseline_eta"])  # all-missing when nothing was held at the baseline
+    out["slip_min"] = (pd.to_datetime(out["predicted_delivery_at"]) - out["baseline_eta"]).dt.total_seconds() / 60
+    slip = np.nan_to_num(out["slip_min"].to_numpy(dtype=float))
+
+    checks = {
+        "data": [(out["needs_review"].to_numpy(dtype=bool), None)],
+        "suspect": [
+            (slip <= -rules.early_jump_min, lambda r: f"estimate moved {-r.slip_min:.0f} min earlier in an hour"),
+            (
+                out["dist_from_courier_km"].to_numpy(dtype=float) >= rules.far_from_courier_km,
+                lambda r: f"{r.dist_from_courier_km:.0f} km from the courier",
+            ),
+        ],
+        "late": [(slip >= rules.late_slip_min, lambda r: f"estimate moved {r.slip_min:.0f} min later in an hour")],
+    }
+    issues, reasons = [], []
+    for i, row in enumerate(out.itertuples(index=False)):
+        kind, why = None, []
+        for name in ISSUE_ORDER:
+            hits = [describe for mask, describe in checks[name] if mask[i]]
+            if hits:
+                kind = name
+                why = list(row.review_reasons) if name == "data" else [describe(row) for describe in hits]
+                break
+        issues.append(kind)
+        reasons.append(why)
+    out["issue"], out["reasons"] = issues, reasons
+    return out
+
+
+def build_overview(
+    predictor: LiveETAPredictor,
+    prepared: Callable[[pd.Timestamp], pd.DataFrame],
+    records: pd.DataFrame,
+    at: pd.Timestamp,
+    rules: IssueRules = RULES,
+) -> dict:
+    """Couriers (last known positions) and parcels (ETA now vs an hour ago, issue) at `at`.
+
+    `prepared(moment)` returns the package table known at that moment (cached by the caller)."""
+    baseline_at = at - pd.Timedelta(minutes=rules.lookback_min)
+    now = city_predictions(predictor, prepared(at), records, at)
+    if now.empty:
+        return {"baseline_at": baseline_at, "couriers": pd.DataFrame(), "parcels": now}
+    before = predictor.predict_couriers(prepared(baseline_at), couriers_holding(records, baseline_at).index, baseline_at)
+    parcels = classify(now, before, rules)
+
+    positions = courier_positions(records, at)
+    per_courier = parcels.groupby("courier_id").agg(
+        packages_held=("order_id", "size"), feed_age_min=("feed_age_min", "first"), model_used=("model_used", "first")
+    )
+    couriers = per_courier.join(positions.set_axis(positions.index.astype(str)), how="inner").reset_index()
+    return {"baseline_at": baseline_at, "couriers": _on_map(couriers), "parcels": _on_map(parcels)}
+
+
+def _on_map(frame: pd.DataFrame) -> pd.DataFrame:
+    """LaDe coordinates are GCJ-02; web maps use WGS-84."""
+    frame = frame.copy()
+    frame["lat"], frame["lng"] = gcj02_to_wgs84(frame["lat"], frame["lng"])
+    return frame

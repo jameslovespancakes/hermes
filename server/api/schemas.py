@@ -1,5 +1,7 @@
 """Request/response models for the HTTP API. Times use the source format 'MM-DD HH:MM:SS' (no year)."""
 
+from typing import Literal
+
 import pandas as pd
 from pydantic import BaseModel, Field, field_validator
 
@@ -47,6 +49,8 @@ class PackageETA(BaseModel):
     model_used: str = Field(description="'standard', or 'staleness' when the courier's feed is stale")
     needs_review: bool = Field(description="True when a dispatcher should check this ETA")
     review_reasons: list[str]
+    risk_min: float | None = Field(None, description="Expected size of this ETA's error, in minutes")
+    uncertain: bool = Field(False, description="True for the riskiest 10% of estimates")
 
 
 class PredictResponse(BaseModel):
@@ -76,6 +80,37 @@ class DataHealth(BaseModel):
     contract: list[ContractCheck]
     drift_psi: dict[str, float] | None
     drift_levels: dict[str, str] | None
+
+
+class CourierPosition(BaseModel):
+    courier_id: str
+    lat: float
+    lng: float
+    packages_held: int
+    feed_age_min: float
+    model_used: str
+
+
+class ParcelStatus(BaseModel):
+    order_id: int
+    courier_id: str
+    lat: float
+    lng: float
+    position: int = Field(description="Predicted stop number on the courier's route (1 = next)")
+    eta: str
+    minutes_remaining: float
+    baseline_eta: str | None = Field(description="The ETA the model gave at `baseline_at` (none if not yet held then)")
+    slip_min: float | None = Field(description="Minutes the ETA moved since `baseline_at` (positive = later)")
+    issue: Literal["data", "suspect", "late"] | None
+    reasons: list[str]
+
+
+class Overview(BaseModel):
+    city: str
+    at: str
+    baseline_at: str
+    couriers: list[CourierPosition]
+    parcels: list[ParcelStatus]
 
 
 class Health(BaseModel):

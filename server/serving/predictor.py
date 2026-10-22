@@ -1,13 +1,4 @@
-"""Protected live-ETA prediction: the one prediction path used by the API, training evaluation, and experiments.
-
-Steps: (1) the bundle's DataGuard cleans records in SERVE mode (causal checks only); (2) causal live features are
-built (event time drives timing, receive time drives visibility); (3) route model -> standard ETA model; the
-staleness-aware model takes over when a courier's feed age or upload lag exceeds the configured limits;
-(4) review flags mark predictions a dispatcher should check.
-
-Batch mode (`predict_events`) scores many (courier, moment) events at once; single mode (`predict`) answers
-"what does courier X hold at time t" after hiding everything recorded after t.
-"""
+"""Live ETA prediction: the one path used by the API, training evaluation, and experiments."""
 
 from dataclasses import dataclass, field
 
@@ -16,7 +7,6 @@ import pandas as pd
 
 from server.config import MODEL_STORE
 from server.models.bundle import ModelBundle
-from server.models.route import add_route_outputs, predict_route
 from server.pipeline.features import checkpoints, live_table, package_table
 from server.quality.config import QUALITY, CleanMode, QualityConfig
 from server.quality.guard import feed_is_stale, review_flags
@@ -34,8 +24,10 @@ OUTPUT_COLUMNS = [
     "model_used",
     "needs_review",
     "review_reasons",
+    "risk_min",
+    "uncertain",
 ]
-HEALTH_EVENTS = 2000   # delivery checkpoints sampled for the drift check
+HEALTH_EVENTS = 2000
 DIAGNOSTIC_COLUMNS = ["s", "courier", "n_pending", "dist_from_courier_km", "pace_today_min", "route_ahead"]
 
 
@@ -56,6 +48,18 @@ def couriers_holding(records: pd.DataFrame, at: pd.Timestamp) -> pd.Series:
     arrived = records["received_at"] if "received_at" in records else records["delivered_at"]
     held = records.loc[(records["accepted_at"] <= at) & ~(arrived <= at)]
     return held.groupby("courier_id").size().sort_values(ascending=False)
+
+
+def courier_positions(records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
+    """Last known position of each courier at `at` (raw ids)."""
+    known = known_at(records, at)
+    today = at.normalize()
+    delivered = known.loc[known["delivered_at"].between(today, at)].sort_values("delivered_at")
+    last_drop = delivered.groupby("courier_id")[["lat", "lng"]].last()
+    accepted = known.loc[known["accepted_at"].between(today, at)].sort_values("accepted_at")
+    last_accept = accepted.groupby("courier_id")[["accept_gps_lat", "accept_gps_lng"]].last()
+    last_accept.columns = ["lat", "lng"]
+    return last_drop.combine_first(last_accept).dropna()
 
 
 def _reasons(flags: pd.DataFrame) -> list[list[str]]:
@@ -83,9 +87,9 @@ class LiveETAPredictor:
         return cleaned
 
     def score(self, live: pd.DataFrame, packages: pd.DataFrame, diagnostics: bool = False) -> pd.DataFrame:
-        """Predictions for live rows (route model -> standard or staleness-aware ETA -> review flags)."""
-        live = add_route_outputs(live, predict_route(self.bundle.route_model, live))
-        minutes = self.bundle.eta.predict(live)
+        """Predictions for live rows: zones and route -> ETA (staleness-aware when the feed is stale) -> flags."""
+        live = self.bundle.prepare(live, packages)
+        minutes = self.bundle.minutes(live)
         model_used = np.full(len(live), "standard", dtype=object)
         if self.bundle.staleness is not None:
             stale = feed_is_stale(live, self.config.fresh_max_feed_age_min, self.config.fresh_max_upload_lag_min)
@@ -93,6 +97,8 @@ class LiveETAPredictor:
                 minutes = np.where(stale, self.bundle.staleness.predict(live), minutes)
                 model_used[stale] = "staleness"
         flags = review_flags(live, packages, self.config)
+        risk = self.bundle.risk.predict(live, minutes) if self.bundle.risk is not None else np.full(len(live), np.nan)
+        threshold = self.bundle.risk.threshold if self.bundle.risk is not None else np.inf
         out = pd.DataFrame(
             {
                 "order_id": live["_order_id"].to_numpy(),
@@ -106,6 +112,8 @@ class LiveETAPredictor:
                 "model_used": model_used,
                 "needs_review": flags["needs_review"].to_numpy(),
                 "review_reasons": _reasons(flags),
+                "risk_min": risk,
+                "uncertain": risk > threshold,
             }
         )
         if diagnostics:
@@ -125,19 +133,22 @@ class LiveETAPredictor:
         return package_table(self.clean(known_at(records, at)), self.city)
 
     def predict_prepared(self, packages: pd.DataFrame, courier_id, at: pd.Timestamp) -> pd.DataFrame:
-        events = pd.DataFrame({"courier_id": [f"{self.city}:{courier_id}"], "s": [at]})
-        live = live_table(packages, transition_cutoff=at.normalize(), events=events)
+        return self.predict_couriers(packages, [courier_id], at)
+
+    def predict_couriers(self, packages: pd.DataFrame, courier_ids, at: pd.Timestamp, diagnostics: bool = False) -> pd.DataFrame:
+        """ETAs for every package the given couriers (raw ids) hold at `at`, in predicted stop order."""
+        events = pd.DataFrame({"courier_id": [f"{self.city}:{c}" for c in courier_ids], "s": at})
+        live = live_table(packages, transition_cutoff=at.normalize(), events=events) if len(events) else pd.DataFrame()
         if live.empty:
             return pd.DataFrame(columns=OUTPUT_COLUMNS)
-        return self.score(live, packages).sort_values("predicted_position").reset_index(drop=True)
+        return self.score(live, packages, diagnostics).sort_values("predicted_position", kind="stable").reset_index(drop=True)
 
     def predict(self, records: pd.DataFrame, courier_id, at: pd.Timestamp) -> pd.DataFrame:
         """ETAs for every package `courier_id` (raw id) holds at time `at`."""
         return self.predict_prepared(self.prepare(records, at), courier_id, at)
 
     def data_health(self, records: pd.DataFrame, packages: pd.DataFrame, at: pd.Timestamp) -> dict:
-        """Data contract and input drift over the 24 h before `at`, measured at delivery checkpoints like the
-        training reference (a sample of them, for speed)."""
+        """Data contract and input drift over the 24 h before `at`."""
         if self.bundle.monitor is None:
             raise RuntimeError("this model bundle has no monitoring baseline")
         batch = known_at(records, at)

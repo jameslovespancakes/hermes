@@ -1,9 +1,4 @@
-"""Route-order model: predicts each pending package's position in the courier's upcoming delivery order.
-
-Training targets are true positions within each event (known only afterwards). For training-period events
-the predictions are out-of-fold by courier-day, so the ETA model never learns from a route prediction that
-saw its own label. Other events use a model fitted on all eligible training events.
-"""
+"""Route-order model: each pending package's position in the courier's upcoming order (out-of-fold in training)."""
 
 import lightgbm as lgb
 import numpy as np
@@ -50,7 +45,7 @@ def fit_route_folds(live: pd.DataFrame, cutoff: pd.Timestamp) -> tuple[np.ndarra
 
 def predict_route(model, live: pd.DataFrame) -> np.ndarray:
     with threadpool_limits(limits=THREADS):
-        return model.predict(live[ROUTE_INPUT_COLS])
+        return model.predict(live.reindex(columns=ROUTE_INPUT_COLS))
 
 
 def add_route_outputs(live: pd.DataFrame, scores: np.ndarray) -> pd.DataFrame:

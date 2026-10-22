@@ -13,7 +13,14 @@ class FrontendTests(unittest.TestCase):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         dist = Path(folder.name)
-        for file in ("index.html", "benchmarks/index.html", "methodology/index.html", "assets/app.js", "licenses/icons.txt"):
+        for file in (
+            "index.html",
+            "benchmarks/index.html",
+            "methodology/index.html",
+            "dashboard/index.html",
+            "assets/app.js",
+            "licenses/icons.txt",
+        ):
             (dist / file).parent.mkdir(parents=True, exist_ok=True)
             (dist / file).write_text(file, encoding="utf-8")
         app = FastAPI()
@@ -22,7 +29,12 @@ class FrontendTests(unittest.TestCase):
         self.client = TestClient(app)
 
     def test_pages(self):
-        for route, file in (("/", "index.html"), ("/benchmarks", "benchmarks/index.html"), ("/methodology", "methodology/index.html")):
+        for route, file in (
+            ("/", "index.html"),
+            ("/benchmarks", "benchmarks/index.html"),
+            ("/methodology", "methodology/index.html"),
+            ("/dashboard", "dashboard/index.html"),
+        ):
             self.assertEqual(self.client.get(route).text, file)
 
     def test_assets(self):

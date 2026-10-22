@@ -1,10 +1,4 @@
-"""DataGuard: clean delivery records before training and before serving, and flag what cannot be fixed.
-
-TRAIN mode drops re-sent duplicates, repairs implausible coordinates, and quarantines bulk-synced courier-days
-(their delivery times are not real event times, so they would teach wrong durations).
-SERVE mode drops duplicates and repairs coordinates but keeps bulk-synced records, marking them with
-`guard_bulk_scan` using only data recorded so far, so predictions can be flagged for review.
-"""
+"""DataGuard: de-duplicate, repair coordinates, and quarantine or flag bulk-synced records."""
 
 from dataclasses import dataclass, field
 
@@ -63,8 +57,7 @@ class DataGuard:
 
 
 def feed_is_stale(live: pd.DataFrame, max_feed_age_min: float, max_upload_lag_min: float) -> np.ndarray:
-    """Stale = uploads running late, or no new delivery for a while since the courier's first delivery today
-    (the overnight gap before a shift starts is not staleness)."""
+    """Uploads running late, or no new delivery for a while since the first one today."""
     age = live["feed_age_min"].where(live["n_done_today"] > 0).to_numpy()
     return (age > max_feed_age_min) | (live["upload_lag_min"].to_numpy() > max_upload_lag_min)
 

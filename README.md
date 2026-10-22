@@ -35,12 +35,12 @@ recorded after its own moment.
 
 | Measure | Result |
 |---|---:|
-| Average error | **58.5 min** |
-| Typical (median) error | **29.1 min** |
-| Packages due within 30 min / 30 to 60 min / 1 to 3 h | 33.0 / 33.5 / 35.7 min |
-| Packages due in 3 to 24 h | 107.1 min |
-| Predictions within 30 min of the truth | 51.0% |
-| Next stop predicted first / true next 3 stops in the top 3 | 44.9% / 68.8% |
+| Average error | **55.9 min** |
+| Typical (median) error | **27.0 min** |
+| Packages due within 30 min / 30 to 60 min / 1 to 3 h | 28.9 / 30.5 / 34.1 min |
+| Packages due in 3 to 24 h | 105.2 min |
+| Predictions within 30 min of the truth | 53.5% |
+| Next stop predicted first / true next 3 stops in the top 3 | 49.1% / 70.8% |
 
 155,296 live predictions on 14,234 packages. Source: [`evidence/model`](evidence/model/results/metrics.json).
 
@@ -62,7 +62,8 @@ Source: [`evidence/leaks`](evidence/leaks).
 ### 3. Bad data, with and without the safeguards
 
 A simulated low-quality scanner app (bulk-synced timestamps, GPS jitter, re-sent records) spreads to 60% of couriers,
-and delayed uploads hit 60% of couriers during the test window.
+and delayed uploads hit 60% of couriers during the test window. Measured with the previous model version (58.5 min on
+clean data).
 
 | Condition | No fix | With safeguards | Damage recovered |
 |---|---:|---:|---:|
@@ -81,11 +82,13 @@ Source: [`evidence/baddata`](evidence/baddata/results/REPORT.md).
 
 ## How it works
 
-1. **Route order.** A LightGBM model scores how soon each pending package will be delivered, from distances, the
-   courier's habits, and area-to-area movement patterns.
-2. **Time.** A second LightGBM model turns that order and the courier's live pace into minutes remaining.
+1. **Route order, in two levels.** A model picks the courier's next zone (a group of nearby buildings), then a
+   second model orders every pending package, using the courier's real GPS position, depot, habits, and movement
+   patterns.
+2. **Time.** Three averaged LightGBM models turn that order, live area conditions and the courier's recent pace into
+   minutes remaining; a specialist takes over for packages likely to slip to a later day.
 3. **Safeguards.** Records are de-duplicated and repaired before use, late uploads switch to a staleness-aware model,
-   doubtful ETAs are flagged for a dispatcher, and a daily data contract and drift check watch the inputs.
+   a risk model marks the 10% least certain ETAs, and a daily data contract and drift check watch the inputs.
 
 ## Repository
 
@@ -94,7 +97,7 @@ Source: [`evidence/baddata`](evidence/baddata/results/REPORT.md).
 | [`server/`](server) | Data, features, models, training, safeguards, FastAPI service, tests |
 | [`evidence/`](evidence) | One folder per claim: `model`, `leaks`, `baddata`, each with code to reproduce it |
 | [`research.md`](research.md) | Plain-language findings and limits |
-| `app/` | React frontend served at tryhermes.org |
+| [`app/`](app) | React + TypeScript frontend (Bun), served by the API at tryhermes.org |
 
 ## Quick start
 
@@ -103,10 +106,19 @@ Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/).
 ```sh
 uv sync
 uv run python -m server.cli download --city yt     # pinned, checksum-verified data
-uv run python -m server.cli train --city yt        # about 15 min on 16 threads
+uv run python -m server.cli train --city yt        # about 20 min on 16 threads
 uv run python -m server.cli predict --city yt --courier 2136 --at "09-20 10:30:00"
 uv run uvicorn server.api.app:app                  # API docs at http://localhost:8000/docs
 uv run python -m unittest discover -s server/tests -t .
+```
+
+Frontend (requires [Bun](https://bun.sh) 1.4.2), run inside `app/`:
+
+```sh
+bun install --frozen-lockfile
+bun run dev                                         # http://localhost:5173, API proxied to :8000
+bun run lint && bun run typecheck && bun test tests
+bun run build                                       # dist/, served by the API on port 8000
 ```
 
 Reproduce the evidence:

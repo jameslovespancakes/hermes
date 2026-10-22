@@ -1,8 +1,20 @@
-"""Feature assembly shared by training and serving: packages -> habits -> live queries -> transitions."""
+"""Feature assembly shared by training and serving."""
 
 import pandas as pd
 
-from server.config import PACKAGE_COLS
+from server.config import (
+    AREA_COLS,
+    COURIER_RECENT_COLS,
+    DEPOT_COLS,
+    GPS_COLS,
+    LIVE_COLS,
+    PACKAGE_COLS,
+    ROUTE_OUTPUT_COLS,
+    TRANSITION_COLS,
+    ZONE_COLS,
+    ZONE_MODEL_COLS,
+)
+from server.features.context import context_features
 from server.features.habits import habit_features
 from server.features.live import annotate_events, build_live_queries
 from server.features.package import package_features
@@ -20,12 +32,18 @@ def habit_columns(packages: pd.DataFrame) -> list[str]:
 
 
 def live_table(packages: pd.DataFrame, transition_cutoff: pd.Timestamp, events: pd.DataFrame | None = None) -> pd.DataFrame:
-    """Live query rows with package, habit, and transition inputs (route outputs are added by the model step)."""
+    """Live rows: package, habit, transition and context inputs (zones and model outputs come from the bundle)."""
     live = build_live_queries(packages, events)
     if live.empty:
         return live
     live = annotate_events(live, packages, PACKAGE_COLS + habit_columns(packages))
-    return add_transitions(live, packages, transition_cutoff)
+    live = add_transitions(live, packages, transition_cutoff)
+    return pd.concat([live, context_features(live, packages)], axis=1)
+
+
+def eta_columns(habit_cols: list[str]) -> list[str]:
+    context = AREA_COLS + COURIER_RECENT_COLS + GPS_COLS + DEPOT_COLS + ZONE_COLS + ZONE_MODEL_COLS
+    return PACKAGE_COLS + habit_cols + LIVE_COLS + TRANSITION_COLS + context + ROUTE_OUTPUT_COLS
 
 
 def checkpoints(records: pd.DataFrame, city: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:

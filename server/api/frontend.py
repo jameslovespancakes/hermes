@@ -7,7 +7,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 DIST = Path(__file__).resolve().parents[2] / "app" / "dist"
-PAGES = {"/": "index.html", "/benchmarks": "benchmarks/index.html", "/methodology": "methodology/index.html"}
+PAGES = {
+    "/": "index.html",
+    "/benchmarks": "benchmarks/index.html",
+    "/methodology": "methodology/index.html",
+    "/dashboard": "dashboard/index.html",
+}
 
 
 def mount_frontend(app: FastAPI, dist: Path = DIST) -> None:

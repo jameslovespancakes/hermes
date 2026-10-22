@@ -1,9 +1,4 @@
-"""Data contract: expectations every batch of delivery records must meet (Great Expectations / Deequ style).
-
-Thresholds are set from clean LaDe-D history: a courier never repeats a delivery timestamp, 1.7% of delivery
-times fall exactly on the hour (uniform), and order ids are unique. A failing batch is reported, and the
-guard quarantines the affected records instead of training on them.
-"""
+"""Data contract: expectations every batch of delivery records must meet."""
 
 from dataclasses import dataclass
 

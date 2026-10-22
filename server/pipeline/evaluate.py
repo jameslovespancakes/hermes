@@ -43,8 +43,7 @@ def route_order_agreement(rows: pd.DataFrame, score_col: str = "route_score", mi
 
 
 def evaluate_predictions(rows: pd.DataFrame) -> dict:
-    """Metrics for predictor output with diagnostics (`LiveETAPredictor.predict_events(..., diagnostics=True)`) and an
-    `actual` column of true remaining minutes."""
+    """Metrics for scored predictions (predictor output with diagnostics and an `actual` column)."""
     actual, predicted = rows["actual"].to_numpy(), rows["minutes_remaining"].to_numpy()
     ranked = pd.DataFrame(
         {

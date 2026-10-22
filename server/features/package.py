@@ -10,11 +10,7 @@ META = {"accepted_at": "_accepted_at", "delivered_at": "_delivered_at", "duratio
 
 
 def package_features(records: pd.DataFrame, city: str) -> pd.DataFrame:
-    """Model-ready package table. Outcome columns are kept only as underscore-prefixed metadata.
-
-    Acceptance GPS is used only if its timestamp is not after acceptance and coordinates are valid.
-    ID-like fields are prefixed with the city so IDs from different cities never collide.
-    """
+    """Model-ready package table; outcome columns are kept only as underscore-prefixed metadata."""
     f = records[CATEGORICAL + ["lng", "lat", "accept_gps_lng", "accept_gps_lat"]].copy()
     accepted = records["accepted_at"]
     f["accept_hour"] = accepted.dt.hour
@@ -34,6 +30,9 @@ def package_features(records: pd.DataFrame, city: str) -> pd.DataFrame:
         f[column] = f[column].astype("float32")
     for source, target in META.items():
         f[target] = records[source].to_numpy()
-    if "received_at" in records:  # event-time mode: server receive time kept next to the scanner's event time
+    for source, target in (("delivery_gps_lat", "_gps_lat"), ("delivery_gps_lng", "_gps_lng")):
+        values = pd.to_numeric(records[source], errors="coerce") if source in records else pd.Series(np.nan, index=records.index)
+        f[target] = values.where(values.between(-180, 180) & (values != 0)).to_numpy(dtype="float32")
+    if "received_at" in records:
         f["_received_at"] = records["received_at"].to_numpy()
     return f

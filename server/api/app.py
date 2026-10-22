@@ -20,9 +20,12 @@ from server.api.frontend import mount_frontend
 from server.api.schemas import (
     TIME_PATTERN,
     CourierLoad,
+    CourierPosition,
     DataHealth,
     Health,
+    Overview,
     PackageETA,
+    ParcelStatus,
     PredictRequest,
     PredictResponse,
     format_moment,
@@ -30,9 +33,10 @@ from server.api.schemas import (
 )
 from server.config import MODEL_STORE
 from server.data.loading import load_city
+from server.serving.overview import build_overview
 from server.serving.predictor import LiveETAPredictor, couriers_holding
 
-PREPARED_CACHE_SIZE = 4  # package tables kept for recently requested moments
+PREPARED_CACHE_SIZE = 8  # package tables kept for recently requested moments (overview uses two per request)
 
 
 class _PreparedCache:
@@ -124,10 +128,51 @@ def create_app(predictor: LiveETAPredictor | None = None, records: pd.DataFrame 
                 model_used=str(r.model_used),
                 needs_review=bool(r.needs_review),
                 review_reasons=list(r.review_reasons),
+                risk_min=None if pd.isna(r.risk_min) else round(float(r.risk_min), 1),
+                uncertain=bool(r.uncertain),
             )
             for r in result.itertuples(index=False)
         ]
         return PredictResponse(city=predictor_.city, courier_id=request.courier_id, at=request.at, packages=rows)
+
+    @app.get("/overview", response_model=Overview)
+    def overview(at: str = Query(pattern=TIME_PATTERN, examples=["09-20 10:30:00"])) -> Overview:
+        """Every pending parcel in the city: ETA now vs an hour earlier, and the ones a dispatcher should look at."""
+        moment = _moment(at)
+        predictor_ = state["predictor"]
+
+        def prepared(m: pd.Timestamp) -> pd.DataFrame:
+            return state["cache"].get(m, lambda: predictor_.prepare(state["records"], m))
+
+        view = build_overview(predictor_, prepared, state["records"], moment)
+        parcels = [
+            ParcelStatus(
+                order_id=int(r.order_id),
+                courier_id=str(r.courier_id),
+                lat=float(r.lat),
+                lng=float(r.lng),
+                position=int(r.predicted_position),
+                eta=format_moment(r.predicted_delivery_at),
+                minutes_remaining=round(float(r.minutes_remaining), 1),
+                baseline_eta=None if pd.isna(r.baseline_eta) else format_moment(r.baseline_eta),
+                slip_min=None if pd.isna(r.slip_min) else round(float(r.slip_min), 1),
+                issue=r.issue,
+                reasons=list(r.reasons),
+            )
+            for r in view["parcels"].itertuples(index=False)
+        ]
+        couriers = [
+            CourierPosition(
+                courier_id=str(r.courier_id),
+                lat=float(r.lat),
+                lng=float(r.lng),
+                packages_held=int(r.packages_held),
+                feed_age_min=float(r.feed_age_min),
+                model_used=str(r.model_used),
+            )
+            for r in view["couriers"].itertuples(index=False)
+        ]
+        return Overview(city=predictor_.city, at=at, baseline_at=format_moment(view["baseline_at"]), couriers=couriers, parcels=parcels)
 
     @app.get("/data-health", response_model=DataHealth)
     def data_health(at: str = Query(pattern=TIME_PATTERN, examples=["09-20 10:30:00"])) -> DataHealth:

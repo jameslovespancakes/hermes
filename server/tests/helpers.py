@@ -55,13 +55,14 @@ class Constant:
 
 def constant_bundle(eta: float = 25.0, staleness: float | None = None, **extra):
     """A ModelBundle whose route model ranks nothing and whose ETA models return constants."""
-    from server.models.bundle import EtaModel, ModelBundle
+    from server.models.bundle import ModelBundle
+    from server.models.eta import EtaModel
 
-    stale = EtaModel(Constant(staleness), ["n_pending"], {}) if staleness is not None else None
+    stale = EtaModel([Constant(staleness)], ["n_pending"], {}) if staleness is not None else None
     return ModelBundle(
         city="yt",
         route_model=Constant(0.0),
-        eta=EtaModel(Constant(eta), ["n_pending"], {}),
+        eta=EtaModel([Constant(eta)], ["n_pending"], {}),
         habit_columns=[],
         trained_through="09-01",
         staleness=stale,

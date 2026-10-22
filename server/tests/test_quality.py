@@ -61,11 +61,12 @@ class QualityTests(unittest.TestCase):
         np.testing.assert_allclose(share[early], running_bulk_share(later)[early])
 
     def test_oversight_flags(self):
-        live = pd.DataFrame({"feed_age_min": [10.0, 90.0, 5.0, 900.0], "upload_lag_min": [0.0, 0.0, 60.0, 0.0],
-                             "n_done_today": [3, 3, 3, 0], "cur_row": [0, 1, 0, 0]})
+        live = pd.DataFrame(
+            {"feed_age_min": [10.0, 90.0, 5.0, 900.0], "upload_lag_min": [0.0, 0.0, 60.0, 0.0], "n_done_today": [3, 3, 3, 0], "cur_row": [0, 1, 0, 0]}
+        )
         packages = pd.DataFrame({"guard_bulk_scan": [False, True]})
         flags = review_flags(live, packages)
-        self.assertEqual(flags["needs_review"].tolist(), [False, True, True, False])   # overnight gap is not staleness
+        self.assertEqual(flags["needs_review"].tolist(), [False, True, True, False])  # overnight gap is not staleness
         self.assertEqual(flags["flag_stale_feed"].tolist(), [False, True, True, False])
 
 

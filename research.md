@@ -7,8 +7,8 @@ it, and what our own experiments showed. The best model lives in `server/`; `evi
 
 ## 1. In one paragraph
 We predict **how many minutes until a courier delivers a package**, re-predicted after every delivery. Our best
-model (two chained LightGBM models: delivery **order**, then **time**) is off by **58 minutes on average and
-29 minutes typically**, about **33 minutes for packages due within two hours** (Yantai, late September). The
+model (chained LightGBM models: delivery **order**, then **time**) is off by **56 minutes on average and
+27 minutes typically**, about **30 minutes for packages due within two hours** (Yantai, late September). The
 published state of the art looks far better (12-17 minutes), but when we re-ran it ourselves we found its
 headline numbers depend on **information from the future** and a **scoring shortcut**. Tested fairly on the same
 packages, it scores **77 minutes; ours scores 58.6**.
@@ -78,12 +78,27 @@ but share the leaky inputs. We found no leak-free model in their benchmark.
 | Travel time along the predicted route | 0% | No |
 | Google TimesFM 3.0 pace forecasts | 0% (worse than a 7-day average at forecasting pace) | No |
 | Dropping weak features | 0% (20 features do the work of 51) | No |
+| Courier's real GPS at each delivery (never loaded at first) | next stop right 44 -> 46%; with the items below, -4.4% overall | Yes |
+| Live area conditions (deliveries and durations right now, all couriers) | about -0.6% | Yes |
+| Courier's last 3 days (pace, workload, typical package time) | about -0.6% | Yes |
+| Depot (acceptance GPS) and zones of ~10 nearby buildings with zone habits | about -0.9% each | Yes |
+| Two-level route: next zone first (right 78% of the time), then packages | about -0.5% | Yes |
+| 45% feature sampling + bagging, 3 averaged models | about -1.8% | Yes |
+| Later-day specialist (packages likely to slip to tomorrow) | about -0.7% | Yes |
+| Risk model (expected error) | flags the 10% least certain ETAs, which carry 21% of all error; correcting with it made things worse | Flag only |
+| Learning-to-rank route, bigger route model, CatBoost, clock-time target, ratio targets, batches, weekday, pickups | 0% or worse | No |
 
 Two lessons about *measurement*:
 - **Random 80/20 splits overstate accuracy** by 5-10 minutes compared with what happens the following month.
   Time order must be preserved.
-- **If the true delivery order were known**, error would fall about 38% (58 -> 37 min). Order is the main missing
-  information, but no model, ours or published, predicts it much better than ~70% for the next 3 stops.
+- **If the true delivery order were known**, error would fall about 40%. Order is the main missing information; the
+  best we reach is 49% for the next stop and 71% for the next 3.
+- **The big misses** are same-day packages the courier leaves until late: 11% of predictions miss by over 2 h and
+  carry about half of all error, mostly in the morning. Nothing in the data says which packages will be left.
+- **All data is used.** Every delivery column is used except the order ID (random), the city (constant) and the
+  delivery GPS time (equal to the delivery time). Pickup files do not link to delivery couriers. LaDe's 20-second
+  courier GPS covers other cities and dates (Hangzhou study): it lifted next-stop accuracy between deliveries
+  (37 -> 40%) but barely changed the ETA (142.2 -> 141.8 min).
 
 ## 6. The best model (in `server/`)
 After each courier delivery: build the courier's pending packages -> predict their delivery order -> predict
@@ -91,10 +106,10 @@ minutes remaining. Trained on May-August, early-stopped on September 1-15, teste
 
 | Yantai test (Sep 16-30) | Result |
 |---|---:|
-| Average error | **58.4 min** |
-| Typical error | **29.0 min** |
-| Due within 30 min / 30-60 min / 1-3 h / 3-24 h | 33.0 / 33.5 / 35.6 / 106.8 min |
-| Next 3 stops predicted correctly | 69% |
+| Average error | **55.9 min** |
+| Typical error | **27.0 min** |
+| Due within 30 min / 30-60 min / 1-3 h / 3-24 h | 28.9 / 30.5 / 34.1 / 105.2 min |
+| Next stop / next 3 stops predicted correctly | 49% / 71% |
 
 ## 7. Honest limits (baseline)
 - One city (Yantai), one test window, one random seed. September was inspected during development, so it is not
@@ -105,7 +120,7 @@ minutes remaining. Trained on May-August, early-stopped on September 1-15, teste
 
 ## 8. Bad data: how much it hurts, and what fixes it
 Full report: `evidence/baddata/results/REPORT.md` (simulated progression on real Yantai data; always scored against true
-delivery times, on the same real packages and moments for every condition).
+delivery times, on the same real packages and moments for every condition; measured with the previous model version).
 
 **What we broke** (the case's two failure types):
 - **Low-quality feed** ("a fast, low-quality feed adds more data"): a cheap scanner app on 0% -> 60% of couriers from
@@ -143,9 +158,9 @@ if a retrained one is better on an audited sample.
   from low-quality data remains.
 
 ## 9. Next steps
-1. Repeat the bad-data runs with other seeds to measure stability; compare the gate against a fixed clean holdout.
-2. Live area conditions (how long deliveries in this area are taking right now), the most promising missing signal.
-3. Confirm on Shanghai and October; add an uncertainty range for customer-facing promises.
+1. Rerun the bad-data experiment with the current model, and with other seeds.
+2. Confirm on Shanghai and October.
+3. The courier's planned route (from the courier app) is the one signal that could close the stop-order gap.
 
 ## Sources
 - Wu et al., *LaDe*, arXiv:2306.10675; dataset huggingface.co/datasets/Cainiao-AI/LaDe; code github.com/wenhaomin/LaDe (commit 9e5155a).

@@ -1,8 +1,4 @@
-"""Courier area-to-area movement habits ("after area X this courier usually goes to area Y").
-
-Counts come from consecutive same-day deliveries completed before `cutoff`. Events before the cutoff
-(training events) subtract their own courier-day's transitions, so no event learns from its own day.
-"""
+"""Courier area-to-area movement habits ("after area X this courier usually goes to area Y")."""
 
 import numpy as np
 import pandas as pd

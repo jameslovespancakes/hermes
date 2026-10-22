@@ -1,8 +1,4 @@
-"""Courier and area habits learned from PREVIOUS days only.
-
-For a package accepted on day d, every habit uses deliveries completed on days d-28 .. d-1. Packages whose
-delivery is unknown (NaT, e.g. still pending at prediction time) contribute nothing to history.
-"""
+"""Courier and area habits learned from PREVIOUS days only."""
 
 import numpy as np
 import pandas as pd
@@ -32,12 +28,7 @@ def _window_sums(daily: pd.DataFrame, queries: pd.DataFrame, value_cols: list[st
 
 
 def habit_features(packages: pd.DataFrame) -> pd.DataFrame:
-    """Habit columns (prefix 'hab_') aligned to `packages`.
-
-    Per key in HABIT_KEYS (courier/area/3-hour acceptance bucket combinations): count, typical duration,
-    same-day share, and minutes until the usual same-day delivery clock time. Per courier: usual shift end,
-    deliveries per day, and shift length.
-    """
+    """Habit columns (prefix 'hab_') aligned to `packages`."""
     accepted, delivered = packages["_accepted_at"], packages["_delivered_at"]
     acc_day, dlv_day = accepted.dt.normalize(), delivered.dt.normalize()
     acc_clock = ((accepted - acc_day).dt.total_seconds() / 60).to_numpy()

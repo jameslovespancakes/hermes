@@ -1,8 +1,4 @@
-"""Record-level data-quality checks. Each returns a boolean mask aligned to `records` (cleaned-record format).
-
-Thresholds come from clean LaDe-D data: a courier never records two deliveries at the identical timestamp
-(0.000% of clean rows), and destinations sit within 0.67 km of their area's median point for 99% of rows.
-"""
+"""Record-level data-quality checks."""
 
 import numpy as np
 import pandas as pd
@@ -11,11 +7,7 @@ from server.features.geometry import haversine_km
 
 
 def duplicate_records(records: pd.DataFrame) -> pd.Series:
-    """Re-sent copies: same courier, acceptance time, area, recorded delivery time, and coordinates (~10 m).
-
-    The lowest order id is kept. Clean data never repeats a courier's delivery timestamp, so this cannot
-    remove clean records; distinct real packages differ in GPS, so they are not merged either.
-    """
+    """Re-sent copies: same courier, acceptance, area, delivery time and coordinates (lowest id kept)."""
     keys = records[["courier_id", "accepted_at", "aoi_id", "delivered_at"]].copy()
     keys["lat"], keys["lng"] = records["lat"].round(4), records["lng"].round(4)
     order = records["order_id"].argsort(kind="stable")
@@ -32,8 +24,7 @@ def bulk_scanned_courier_days(records: pd.DataFrame, min_share: float) -> pd.Ser
 
 
 def running_bulk_share(records: pd.DataFrame) -> pd.Series:
-    """Causal version for serving: share of the courier's deliveries so far today (up to and including each
-    record's own timestamp) that share an identical timestamp. Records with the same timestamp arrive together."""
+    """Share of identical timestamps so far on each courier-day (uses only earlier records)."""
     day = records["delivered_at"].dt.normalize()
     shared = (records.duplicated(["courier_id", "delivered_at"], keep=False) & records["delivered_at"].notna()).astype(float)
     frame = pd.DataFrame({"c": records["courier_id"].astype(str), "day": day, "t": records["delivered_at"], "shared": shared})

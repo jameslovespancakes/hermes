@@ -1,9 +1,4 @@
-"""Gated retraining (champion vs challenger) on an audited sample with verified delivery times.
-
-A retrained model (challenger) replaces the deployed one (champion) only if its error on recent audited
-deliveries is lower by at least `min_improvement_min` minutes. Both are scored on the same audited
-predictions, with the same production inputs. Otherwise the champion stays and the rejection is reported.
-"""
+"""Gated retraining (champion vs challenger) on an audited sample with verified delivery times."""
 
 from dataclasses import dataclass
 
@@ -49,8 +44,7 @@ def gate(
 def audited_gate(
     champion: pd.DataFrame, challenger: pd.DataFrame, truth: pd.Series, outcomes_before: pd.Timestamp, config: QualityConfig = QUALITY
 ) -> GateDecision:
-    """Gate on scored predictions (columns s, order_id, minutes_remaining, actual) for audited packages whose
-    delivery was confirmed before `outcomes_before` (what is verifiable at decision time)."""
+    """Gate on audited packages whose delivery was confirmed before `outcomes_before`."""
     both = champion.merge(challenger, on=["s", "order_id"], suffixes=("_champ", "_chall"))
     audited = both.loc[audit_sample(both["order_id"], config.audit_rate) & (both["order_id"].map(truth) < outcomes_before)]
     return gate(
