@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Alert } from '../alerts';
 import { courierKey, parcelKey, type City, type Fleet } from '../api';
 import { CHINA, quietBasemap, STYLE_URL } from './basemap';
-import { addLayers, DETAIL_ZOOM, drawAlerts, drawOverview } from './layers';
+import { addLayers, drawAlerts, drawOverview } from './layers';
 
 type MapLibreModule = typeof import('maplibre-gl');
 
@@ -82,17 +82,28 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
   }, [map, cities]);
 
   // Data layers follow the fleet and the selection.
+  // Redrawn when the map stops moving, so only what is on screen is drawn.
+  const [view, setView] = useState(0);
+  useEffect(() => {
+    if (!map) return;
+    const moved = () => setView((n) => n + 1);
+    map.map.on('moveend', moved);
+    return () => {
+      map.map.off('moveend', moved);
+    };
+  }, [map]);
+
   useEffect(() => {
     if (map) drawOverview(map.map, fleet, focus, road);
-  }, [map, fleet, focus, road]);
+  }, [map, fleet, focus, road, view]);
 
-  // Alert icons and the zoomed-out city labels.
+  // Alert icons on screen.
   const selectedKey = selected ? parcelKey(selected.parcel) : null;
   useEffect(() => {
-    if (map) drawAlerts(map.map, cities, alerts, selectedKey);
-  }, [map, cities, alerts, selectedKey]);
+    if (map) drawAlerts(map.map, alerts, selectedKey);
+  }, [map, alerts, selectedKey, view]);
 
-  // Clicks: a courier opens their card, an alert its card, a city label zooms into that city.
+  // Clicks: a courier opens their card, an alert its card.
   useEffect(() => {
     if (!map) return;
     const property = (event: MapLayerMouseEvent, name: string) => {
@@ -109,10 +120,6 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
         const alert = alerts.find((a) => parcelKey(a.parcel) === key);
         if (alert) onSelect(alert);
       },
-      cities: (event: MapLayerMouseEvent) => {
-        const city = cities.find((c) => c.id === property(event, 'id'));
-        if (city) map.map.fitBounds(city.bounds, { padding: 60, maxZoom: DETAIL_ZOOM + 3 });
-      },
     };
     const pointer = () => (map.map.getCanvas().style.cursor = 'pointer');
     const plain = () => (map.map.getCanvas().style.cursor = '');
@@ -128,7 +135,7 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
         map.map.off('mouseleave', layer, plain);
       }
     };
-  }, [map, cities, alerts, onCourier, onSelect]);
+  }, [map, alerts, onCourier, onSelect]);
 
   // Hovering an alert shows a small tooltip: how far its estimate moved, or what is wrong.
   useEffect(() => {

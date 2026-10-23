@@ -48,22 +48,18 @@ export function AlertCard({ alert, onClose, onDismiss }: Props) {
   const { parcel, route } = alert;
   const issue = ISSUES[parcel.issue];
   const { from, to } = arrivalWindow(parcel);
-  const window = `${from}–${to}`;
+  const later = (days: number) => (days > 0 ? ` +${String(days)}d` : '');
+  const window = `${from.time}${later(from.days)}–${to.time}${later(to.days)}`;
   const before = parcel.baseline_eta
     ? `ETA ${clock(parcel.eta)}, was ${clock(parcel.baseline_eta)}`
     : `ETA ${clock(parcel.eta)}`;
   return (
     <aside className="alert-card" style={{ ['--c' as string]: issue.color }} aria-label={issue.label}>
       <header>
-        <span className="alert-kind" title={`${issue.label}: ${parcel.reasons.join(', ')}`}>
-          <HugeiconsIcon icon={issue.icon} size={30} color={issue.color} strokeWidth={1.8} />
+        <span className="alert-kind" title={parcel.reasons.join(', ')}>
+          <HugeiconsIcon icon={issue.icon} size={20} color={issue.color} strokeWidth={1.9} />
+          {issue.label}
         </span>
-        <strong className="alert-eta" title={before}>
-          <small>Arrives</small>
-          {from}
-          <span>–</span>
-          {to}
-        </strong>
         {parcel.slip_min !== null && (
           <span className="alert-slip" title={before}>
             {signed(parcel.slip_min)}
@@ -73,6 +69,14 @@ export function AlertCard({ alert, onClose, onDismiss }: Props) {
           <HugeiconsIcon icon={Cancel01Icon} size={18} />
         </button>
       </header>
+      <p className="alert-label">Arrives between</p>
+      <strong className="alert-eta" title={before}>
+        {from.time}
+        {from.days > 0 && <sup>+{from.days}</sup>}
+        <span>–</span>
+        {to.time}
+        {to.days > 0 && <sup>+{to.days}</sup>}
+      </strong>
       <p className="alert-why">{parcel.reasons[0]}</p>
       <RouteStrip route={route} parcel={parcel} color={issue.color} />
       <footer>

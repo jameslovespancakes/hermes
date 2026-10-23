@@ -1,5 +1,5 @@
 // The customer-facing arrival window: the ETA widened to where 80% of parcels really arrived, per city and by how
-// far away the estimate is. Set on Sep 1-15 (the tuning window) and checked once on Sep 16-30; see BANDS.
+// far away the estimate is. Set on Sep 1-15 (the tuning window) and checked once on Sep 16-30 (windows.json).
 import type { Parcel } from './api';
 import BANDS from './windows.json';
 
@@ -12,16 +12,14 @@ const shift = (at: string, minutes: number) => {
 };
 const hhmm = (d: Date) => d.toISOString().slice(11, 16);
 
-/** Earliest and latest likely arrival ('HH:MM'), with the day shown when it is not the ETA's day. */
-export function arrivalWindow(parcel: Parcel): { from: string; to: string } {
+/** Earliest and latest likely arrival ('HH:MM') and how many days after the ETA's day each falls. */
+export function arrivalWindow(parcel: Parcel) {
   const band = (BANDS as Record<string, Band>)[parcel.city];
   const i = EDGES.filter((edge) => parcel.minutes_remaining > edge).length;
-  const before = Math.min(0, band.before_min[i] ?? 0);
-  const after = Math.max(0, band.after_min[i] ?? 0);
-  const from = shift(parcel.eta, before);
-  const to = shift(parcel.eta, after);
-  const day = (d: Date) => d.toISOString().slice(5, 10);
-  const label = (d: Date) =>
-    day(d) === parcel.eta.slice(0, 5) ? hhmm(d) : `${hhmm(d)} (${d.toUTCString().slice(5, 11)})`;
-  return { from: label(from), to: label(to) };
+  const day = Date.parse(`2000-${parcel.eta.slice(0, 5)}T00:00Z`);
+  const at = (minutes: number) => {
+    const d = shift(parcel.eta, minutes);
+    return { time: hhmm(d), days: Math.floor((d.getTime() - day) / 86_400_000) };
+  };
+  return { from: at(Math.min(0, band.before_min[i] ?? 0)), to: at(Math.max(0, band.after_min[i] ?? 0)) };
 }
