@@ -398,11 +398,6 @@ input {
 .courier-card li button:hover {
   background: #f3f3dc;
 }
-.courier-card .eta small {
-  font-weight: 400;
-  font-size: 11px;
-  color: #4d6256;
-}
 .courier-card .stop {
   display: grid;
   place-items: center;

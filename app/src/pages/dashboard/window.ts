@@ -15,14 +15,6 @@ const hhmm = (d: Date) => d.toISOString().slice(11, 16);
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dayOf = (mmdd: string) => Date.parse(`2000-${mmdd}T00:00Z`);
 
-/** 'MM-DD HH:MM:SS' as 'HH:MM', with its date ('Sep 19') in front when it is not `today` ('MM-DD'). */
-export function when(at: string, today: string) {
-  const d = new Date(`2000-${at.replace(' ', 'T')}Z`);
-  return at.slice(0, 5) === today
-    ? hhmm(d)
-    : `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate())} ${hhmm(d)}`;
-}
-
 /** Earliest and latest likely arrival ('HH:MM', never before `now`, 'MM-DD HH:MM:SS'), each with its date ('Sep 22') and days ahead when not today. */
 export function arrivalWindow(parcel: Parcel, now: string) {
   const today = now.slice(0, 5);

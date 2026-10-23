@@ -2,8 +2,8 @@
 import { BikeIcon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ISSUES } from './alerts';
-import type { Courier, Parcel } from './api';
-import { arrivalWindow, when } from './window';
+import { clock, type Courier, type Parcel } from './api';
+import { arrivalWindow } from './window';
 
 /** Problems with the courier's feed, the same for every parcel they hold: shown once, under their name. */
 const COURIER_ISSUES = new Set(['lagging', 'silent', 'bulk']);
@@ -60,11 +60,9 @@ export function CourierCard({ courier, parcels, onClose, onParcel, now }: Props)
               >
                 <span className="stop">{p.position}</span>
                 <span className="eta">
-                  {from.date && <small>{from.date} </small>}
                   {from.time}–{to.time}
-                  {to.date && to.date !== from.date && <small> {to.date}</small>}
                 </span>
-                <span className="taken">taken {when(p.accepted_at, now.slice(0, 5))}</span>
+                <span className="taken">taken {clock(p.accepted_at)}</span>
                 {issue && <HugeiconsIcon icon={issue.icon} size={16} color={issue.color} strokeWidth={1.9} />}
               </button>
             </li>
