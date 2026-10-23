@@ -15,6 +15,8 @@ interface Props {
   alert: Alert;
   onClose: () => void;
   onDismiss: () => void;
+  /** The moment on screen ('MM-DD HH:MM:SS'). */
+  now: string;
 }
 
 export const signed = (minutes: number) =>
@@ -46,7 +48,7 @@ function Action({
 
 // A later day beside a time: the date, and on hover how many days after the ETA's day.
 function DayMark({ date, days }: { date: string; days: number }) {
-  const later = days === 1 ? 'Next day' : `${String(days)} days later`;
+  const later = days === 1 ? 'Tomorrow' : days > 1 ? `In ${String(days)} days` : 'Earlier day';
   return (
     <sup className="day-mark" data-tip={later} aria-label={`${date}, ${later.toLowerCase()}`}>
       {date}
@@ -54,10 +56,10 @@ function DayMark({ date, days }: { date: string; days: number }) {
   );
 }
 
-export function AlertCard({ alert, onClose, onDismiss }: Props) {
+export function AlertCard({ alert, onClose, onDismiss, now }: Props) {
   const { parcel, route } = alert;
   const issue = ISSUES[parcel.issue];
-  const { from, to } = arrivalWindow(parcel);
+  const { from, to } = arrivalWindow(parcel, now);
   const window = `${from.date} ${from.time}–${to.date} ${to.time}`.replace(/ +/g, ' ').trim();
   const before = parcel.baseline_eta
     ? `ETA ${clock(parcel.eta)}, was ${clock(parcel.baseline_eta)}`

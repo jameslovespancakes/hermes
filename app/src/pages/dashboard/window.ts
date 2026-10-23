@@ -13,19 +13,31 @@ const shift = (at: string, minutes: number) => {
 const hhmm = (d: Date) => d.toISOString().slice(11, 16);
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayOf = (mmdd: string) => Date.parse(`2000-${mmdd}T00:00Z`);
 
-/** Earliest and latest likely arrival ('HH:MM'), each with its date ('Sep 22') when it is not the ETA's day. */
-export function arrivalWindow(parcel: Parcel) {
+/** 'MM-DD HH:MM:SS' as 'HH:MM', with its date ('Sep 19') in front when it is not `today` ('MM-DD'). */
+export function when(at: string, today: string) {
+  const d = new Date(`2000-${at.replace(' ', 'T')}Z`);
+  return at.slice(0, 5) === today
+    ? hhmm(d)
+    : `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate())} ${hhmm(d)}`;
+}
+
+/** Earliest and latest likely arrival ('HH:MM', never before `now`, 'MM-DD HH:MM:SS'), each with its date ('Sep 22') and days ahead when not today. */
+export function arrivalWindow(parcel: Parcel, now: string) {
+  const today = now.slice(0, 5);
   const band = (BANDS as Record<string, Band>)[parcel.city];
   const i = EDGES.filter((edge) => parcel.minutes_remaining > edge).length;
-  const day = Date.parse(`2000-${parcel.eta.slice(0, 5)}T00:00Z`);
+  const day = dayOf(today);
+  const earliest = new Date(`2000-${now.replace(' ', 'T')}Z`);
   const at = (minutes: number) => {
-    const d = shift(parcel.eta, minutes);
+    const shifted = shift(parcel.eta, minutes);
+    const d = shifted < earliest ? earliest : shifted;
     const days = Math.floor((d.getTime() - day) / 86_400_000);
     return {
       time: hhmm(d),
       days,
-      date: days > 0 ? `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate())}` : '',
+      date: days !== 0 ? `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate())}` : '',
     };
   };
   return { from: at(Math.min(0, band.before_min[i] ?? 0)), to: at(Math.max(0, band.after_min[i] ?? 0)) };

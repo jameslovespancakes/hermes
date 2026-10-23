@@ -153,6 +153,7 @@ export function Dashboard() {
         )}
         {selected && (
           <AlertCard
+            now={moment(date, time)}
             alert={selected}
             onClose={() => setSelectedParcel(null)}
             onDismiss={() => {
@@ -163,6 +164,7 @@ export function Dashboard() {
         )}
         {courier && (
           <CourierCard
+            now={moment(date, time)}
             courier={courier}
             parcels={held}
             onClose={() => {

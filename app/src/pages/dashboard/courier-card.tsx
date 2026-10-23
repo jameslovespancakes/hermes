@@ -2,8 +2,11 @@
 import { BikeIcon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ISSUES } from './alerts';
-import { clock, type Courier, type Parcel } from './api';
-import { arrivalWindow } from './window';
+import type { Courier, Parcel } from './api';
+import { arrivalWindow, when } from './window';
+
+/** Problems with the courier's feed, the same for every parcel they hold: shown once, under their name. */
+const COURIER_ISSUES = new Set(['lagging', 'silent', 'bulk']);
 
 const ago = (minutes: number) => {
   const m = Math.round(minutes);
@@ -18,9 +21,14 @@ interface Props {
   parcels: Parcel[];
   onClose: () => void;
   onParcel: (parcel: Parcel) => void;
+  /** The moment on screen ('MM-DD HH:MM:SS'). */
+  now: string;
 }
 
-export function CourierCard({ courier, parcels, onClose, onParcel }: Props) {
+export function CourierCard({ courier, parcels, onClose, onParcel, now }: Props) {
+  const feed = parcels.map((p) => p.issue).find((i) => i !== null && COURIER_ISSUES.has(i));
+  const feedIssue = feed ? ISSUES[feed] : null;
+  const feedReason = parcels.find((p) => p.issue === feed)?.reasons[0];
   return (
     <aside className="courier-card" aria-label={`Courier ${courier.courier_id}`}>
       <header>
@@ -28,6 +36,12 @@ export function CourierCard({ courier, parcels, onClose, onParcel }: Props) {
         <div>
           <strong>Courier #{courier.courier_id}</strong>
           <span>Last scan: {ago(courier.feed_age_min)}</span>
+          {feedIssue && (
+            <span className="feed-issue" style={{ color: feedIssue.color }} title={feedReason}>
+              <HugeiconsIcon icon={feedIssue.icon} size={14} color={feedIssue.color} strokeWidth={2} />
+              {feedIssue.label}
+            </span>
+          )}
         </div>
         <button type="button" className="alert-close" aria-label="Close" onClick={onClose}>
           <HugeiconsIcon icon={Cancel01Icon} size={18} />
@@ -35,8 +49,8 @@ export function CourierCard({ courier, parcels, onClose, onParcel }: Props) {
       </header>
       <ol>
         {parcels.map((p) => {
-          const issue = p.issue ? ISSUES[p.issue] : null;
-          const { from, to } = arrivalWindow(p);
+          const issue = p.issue && !COURIER_ISSUES.has(p.issue) ? ISSUES[p.issue] : null;
+          const { from, to } = arrivalWindow(p, now);
           return (
             <li key={p.order_id}>
               <button
@@ -46,10 +60,11 @@ export function CourierCard({ courier, parcels, onClose, onParcel }: Props) {
               >
                 <span className="stop">{p.position}</span>
                 <span className="eta">
+                  {from.date && <small>{from.date} </small>}
                   {from.time}–{to.time}
-                  {to.date && <small> {to.date}</small>}
+                  {to.date && to.date !== from.date && <small> {to.date}</small>}
                 </span>
-                <span className="taken">taken {clock(p.accepted_at)}</span>
+                <span className="taken">taken {when(p.accepted_at, now.slice(0, 5))}</span>
                 {issue && <HugeiconsIcon icon={issue.icon} size={16} color={issue.color} strokeWidth={1.9} />}
               </button>
             </li>
