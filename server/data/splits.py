@@ -18,9 +18,3 @@ def stop_rows(live: pd.DataFrame, split: Split) -> pd.DataFrame:
     """Early-stopping window: events fit_end..stop_end with outcomes known before stop_end."""
     s = live["s"]
     return live.loc[(s >= split.fit_cutoff) & (s < split.stop_cutoff) & (live["_delivered_at"] < split.stop_cutoff)]
-
-
-def test_rows(live: pd.DataFrame, split: Split) -> pd.DataFrame:
-    """Held-out window: events stop_end..test_end, every outcome kept."""
-    s = live["s"]
-    return live.loc[(s >= split.stop_cutoff) & (s < split.data_cutoff)]

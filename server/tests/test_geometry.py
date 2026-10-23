@@ -2,7 +2,8 @@ import unittest
 
 import numpy as np
 
-from server.features.geometry import gcj02_to_wgs84, greedy_tour, haversine_km, rank_fraction
+from server.features.geometry import gcj02_to_wgs84, haversine_km
+from server.features.live_kernel import _greedy, _rank_fraction
 
 
 class GeometryTests(unittest.TestCase):
@@ -19,12 +20,14 @@ class GeometryTests(unittest.TestCase):
     def test_greedy_tour_visits_nearest_first(self):
         lat = np.array([0.0, 0.0, 0.0])
         lng = np.array([0.03, 0.01, 0.02])
-        order, cumulative = greedy_tour(0.0, 0.0, lat, lng)
+        order, cumulative = np.empty(3, np.int64), np.empty(3)
+        _greedy(0.0, 0.0, lat, lng, order, cumulative)
         np.testing.assert_array_equal(order, [2, 0, 1])
         self.assertTrue(np.all(np.diff(cumulative[np.argsort(order)]) > 0))
 
     def test_rank_fraction_keeps_nan(self):
-        out = rank_fraction([3.0, np.nan, 1.0, 2.0])
+        out = np.empty(4)
+        _rank_fraction(np.array([3.0, np.nan, 1.0, 2.0]), out)
         np.testing.assert_allclose(out[[0, 2, 3]], [1.0, 0.0, 0.5])
         self.assertTrue(np.isnan(out[1]))
 

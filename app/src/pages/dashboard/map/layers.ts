@@ -13,7 +13,7 @@ import { iconSvg, MAP_IMAGES } from '../icons';
 
 const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 /** Below this zoom the map shows one label per city; at and above it, every parcel, courier and alert. */
-export const DETAIL_ZOOM = 8;
+const DETAIL_ZOOM = 8;
 const zoomed = (...stops: (number | unknown[])[]) =>
   ['interpolate', ['linear'], ['zoom'], ...stops] as ExpressionSpecification;
 const dimmed = (normal: number) => ['case', ['get', 'dim'], 0.25, normal];

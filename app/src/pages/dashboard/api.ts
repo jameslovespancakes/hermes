@@ -1,7 +1,7 @@
 // Typed client for the ETA API (server/api/app.py, under /api). Times use the source format 'MM-DD HH:MM:SS'.
 
 /** Data problems the safeguards caught (most urgent first). */
-export type DataIssue = 'lagging' | 'silent' | 'bulk' | 'moved' | 'resent';
+type DataIssue = 'lagging' | 'silent' | 'bulk' | 'moved' | 'resent';
 /** Why a parcel needs a person: a data problem, inputs that look wrong, or an ETA that slipped. */
 export type Issue = DataIssue | 'suspect' | 'late';
 
@@ -50,11 +50,6 @@ export const courierKey = (x: { city: string; courier_id: string }) => `${x.city
 export const parcelKey = (p: { city: string; order_id: number }) => `${p.city}:${String(p.order_id)}`;
 
 /** City-wide input check: 'watch' or 'act' means today's data passed the contract but looks unlike training. */
-export interface DataHealth {
-  at: string;
-  status: 'ok' | 'watch' | 'act';
-}
-
 /** A city with a trained model; bounds are the south-west and north-east (lng, lat) corners. */
 export interface City {
   id: string;
@@ -78,7 +73,6 @@ const query = (city: string, at: string) => `?city=${city}&at=${encodeURICompone
 export const api = {
   cities: () => json<City[]>('/api/cities'),
   overview: (city: string, at: string) => json<Overview>(`/api/overview${query(city, at)}`),
-  dataHealth: (city: string, at: string) => json<DataHealth>(`/api/data-health${query(city, at)}`),
   route: (city: string, points: [number, number][]) =>
     json<Route>('/api/route', {
       method: 'POST',

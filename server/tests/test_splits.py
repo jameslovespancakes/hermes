@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 
 from server.config import Split
-from server.data.splits import fit_rows, stop_rows, test_rows
+from server.data.splits import fit_rows, stop_rows
 
 SPLIT = Split(start="05-01", fit_end="05-03", stop_end="05-04", test_end="05-05")
 
@@ -21,13 +21,9 @@ class SplitTests(unittest.TestCase):
 
     def test_windows_are_disjoint_and_ordered(self):
         f = frame()
-        fit, stop, test = fit_rows(f, SPLIT, sample=None), stop_rows(f, SPLIT), test_rows(f, SPLIT)
-        self.assertTrue(fit["s"].max() < stop["s"].min() <= stop["s"].max() < test["s"].min())
+        fit, stop = fit_rows(f, SPLIT, sample=None), stop_rows(f, SPLIT)
+        self.assertTrue(fit["s"].max() < stop["s"].min() <= stop["s"].max() < SPLIT.stop_cutoff)
         self.assertTrue((stop["_delivered_at"] < SPLIT.stop_cutoff).all())
-
-    def test_test_window_keeps_late_outcomes(self):
-        test = test_rows(frame(), SPLIT)
-        self.assertTrue((test["_delivered_at"] >= SPLIT.data_cutoff).any())
 
 
 if __name__ == "__main__":

@@ -57,13 +57,6 @@ def at_moment(day_table: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
     return rows.reset_index(drop=True)
 
 
-def couriers_holding(records: pd.DataFrame, at: pd.Timestamp) -> pd.Series:
-    """Number of packages each courier (raw id) holds at `at`, largest first."""
-    arrived = records["received_at"] if "received_at" in records else records["delivered_at"]
-    held = records.loc[(records["accepted_at"] <= at) & ~(arrived <= at)]
-    return held.groupby("courier_id").size().sort_values(ascending=False)
-
-
 def courier_positions(records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
     """Last known position of each courier at `at` (raw ids)."""
     known = known_at(records, at)
