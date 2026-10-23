@@ -1,8 +1,8 @@
 """Bad-data experiment: stale and low-quality feeds vs the live ETA server, with and without its safeguards.
 
-    uv run python -m evidence.baddata.run [--smoke] [--reuse]     # ~3 h (smoke: 20 couriers); then report.py
+    uv run python -m evidence.baddata.run [--city yt] [--smoke] [--reuse]     # ~1.5 h for Yantai (smoke: 20 couriers); then report.py
 
-SIMULATED degradation on real Yantai data (labelled as such):
+SIMULATED degradation on real city data (Yantai by default; labelled as such):
   * low-quality scanner app: 0% -> 60% of couriers, Jul 1 -> Sep 30 (bulk-synced times, ~1 km GPS jitter, half of
     records re-sent); monthly retraining on Jul 1 / Aug 1 / Sep 1 learns from worse and worse records;
   * delayed uploads (60 min): 0% -> 60% of couriers across the Sep 16-30 test window.
@@ -199,8 +199,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke", action="store_true", help=f"{SMOKE_COURIERS} couriers, fast end-to-end check")
     parser.add_argument("--reuse", action="store_true", help="load trained systems from artifacts/ instead of training")
+    parser.add_argument("--city", default="yt", help="a city whose history starts by May (yt, jl)")
     args = parser.parse_args()
-    suffix = "_smoke" if args.smoke else ""
+    global CITY
+    CITY = args.city
+    suffix = ("" if CITY == "yt" else f"_{CITY}") + ("_smoke" if args.smoke else "")
     RESULTS.mkdir(parents=True, exist_ok=True)
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
 

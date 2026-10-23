@@ -82,7 +82,7 @@ class QualityTests(unittest.TestCase):
         bad.loc[0, "lat"] += 0.05
         copy = bad.iloc[[1]].assign(order_id=bad["order_id"].max() + 1)
         cleaned, _ = DataGuard.fit(recs).clean(pd.concat([bad, copy], ignore_index=True), mode=CleanMode.SERVE)
-        self.assertGreater(cleaned.loc[cleaned["order_id"] == recs.loc[0, "order_id"], "guard_moved_km"].iloc[0], 1.5)
+        self.assertGreater(cleaned.loc[cleaned["order_id"] == recs.loc[0, "order_id"], "guard_moved_km"].iloc[0], 5.0)
         self.assertTrue(cleaned.loc[cleaned["order_id"] == recs.loc[1, "order_id"], "guard_resent"].iloc[0])
         self.assertEqual(int(cleaned["guard_resent"].sum()), 1)
 

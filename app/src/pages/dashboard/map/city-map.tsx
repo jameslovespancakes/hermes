@@ -1,16 +1,15 @@
-// The whole dashboard canvas: a city map with every parcel and courier, and an icon on each alert.
+// The whole dashboard canvas: every city's parcels and couriers, and an icon on each alert (all drawn by the map).
 // MapLibre needs a browser, so it is imported when the component mounts (pre-rendering skips it).
-import type { MapLayerMouseEvent, Map as MapLibre, Marker } from 'maplibre-gl';
+import type { MapLayerMouseEvent, Map as MapLibre, Popup } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
-import { ISSUES, type Alert } from '../alerts';
-import { courierKey, type City, type Fleet } from '../api';
-import { iconSvg } from '../icons';
+import type { Alert } from '../alerts';
+import { courierKey, parcelKey, type City, type Fleet } from '../api';
 import { CHINA, quietBasemap, STYLE_URL } from './basemap';
-import { addLayers, drawOverview } from './layers';
+import { addLayers, DETAIL_ZOOM, drawAlerts, drawOverview } from './layers';
 
 type MapLibreModule = typeof import('maplibre-gl');
 
-const MARGIN = 4; // degrees of map kept around the cities
+const MARGIN = 10; // degrees of map kept around the cities (room to see them all at once)
 
 interface Props {
   /** Every city on the map; the first view frames them all. */
@@ -74,7 +73,7 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
         [west, south],
         [east, north],
       ],
-      { padding: 80, duration: 0 },
+      { padding: { top: 140, bottom: 110, left: 80, right: 80 }, duration: 0 },
     );
     map.map.setMaxBounds([
       [west - MARGIN, south - MARGIN],
@@ -87,54 +86,76 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
     if (map) drawOverview(map.map, fleet, focus, road);
   }, [map, fleet, focus, road]);
 
-  // Clicking a courier opens their card.
+  // Alert icons and the zoomed-out city labels.
+  const selectedKey = selected ? parcelKey(selected.parcel) : null;
+  useEffect(() => {
+    if (map) drawAlerts(map.map, cities, alerts, selectedKey);
+  }, [map, cities, alerts, selectedKey]);
+
+  // Clicks: a courier opens their card, an alert its card, a city label zooms into that city.
   useEffect(() => {
     if (!map) return;
-    const click = (event: MapLayerMouseEvent) => {
-      const key: unknown = event.features?.[0]?.properties.courier;
-      if (typeof key === 'string') onCourier(key);
+    const property = (event: MapLayerMouseEvent, name: string) => {
+      const value: unknown = event.features?.[0]?.properties[name];
+      return typeof value === 'string' ? value : null;
+    };
+    const handlers = {
+      couriers: (event: MapLayerMouseEvent) => {
+        const key = property(event, 'courier');
+        if (key) onCourier(key);
+      },
+      alerts: (event: MapLayerMouseEvent) => {
+        const key = property(event, 'key');
+        const alert = alerts.find((a) => parcelKey(a.parcel) === key);
+        if (alert) onSelect(alert);
+      },
+      cities: (event: MapLayerMouseEvent) => {
+        const city = cities.find((c) => c.id === property(event, 'id'));
+        if (city) map.map.fitBounds(city.bounds, { padding: 60, maxZoom: DETAIL_ZOOM + 3 });
+      },
     };
     const pointer = () => (map.map.getCanvas().style.cursor = 'pointer');
     const plain = () => (map.map.getCanvas().style.cursor = '');
-    map.map.on('click', 'couriers', click);
-    map.map.on('mouseenter', 'couriers', pointer);
-    map.map.on('mouseleave', 'couriers', plain);
+    for (const [layer, handler] of Object.entries(handlers)) {
+      map.map.on('click', layer, handler);
+      map.map.on('mouseenter', layer, pointer);
+      map.map.on('mouseleave', layer, plain);
+    }
     return () => {
-      map.map.off('click', 'couriers', click);
-      map.map.off('mouseenter', 'couriers', pointer);
-      map.map.off('mouseleave', 'couriers', plain);
+      for (const [layer, handler] of Object.entries(handlers)) {
+        map.map.off('click', layer, handler);
+        map.map.off('mouseenter', layer, pointer);
+        map.map.off('mouseleave', layer, plain);
+      }
     };
-  }, [map, onCourier]);
+  }, [map, cities, alerts, onCourier, onSelect]);
 
-  // One icon per alert.
+  // Hovering an alert shows a small tooltip: how far its estimate moved, or what is wrong.
   useEffect(() => {
     if (!map) return;
-    const markers: Marker[] = alerts.map((alert) => {
-      const issue = ISSUES[alert.parcel.issue];
-      const element = document.createElement('button');
-      element.type = 'button';
-      element.className = alert.parcel.order_id === selected?.parcel.order_id ? 'alert-pin on' : 'alert-pin';
-      element.title = `${issue.label} · ${alert.parcel.reasons.join(', ')}`;
-      element.innerHTML = iconSvg(issue.icon, {
-        color: issue.color,
-        size: 34,
-        halo: true,
-        fill: `${issue.color}22`,
-      });
-      element.addEventListener('click', (event) => {
-        event.stopPropagation();
-        onSelect(alert);
-      });
-      const marker = new map.lib.Marker({ element, anchor: 'bottom' })
-        .setLngLat([alert.parcel.lng, alert.parcel.lat])
+    let tip: Popup | null = null;
+    const show = (event: MapLayerMouseEvent) => {
+      const feature = event.features?.[0];
+      const text: unknown = feature?.properties.tip;
+      if (!feature || typeof text !== 'string' || feature.geometry.type !== 'Point') return;
+      tip?.remove();
+      tip = new map.lib.Popup({ closeButton: false, closeOnClick: false, offset: 38, className: 'map-tip' })
+        .setLngLat(feature.geometry.coordinates as [number, number])
+        .setText(text)
         .addTo(map.map);
-      element.setAttribute('aria-label', issue.label); // MapLibre sets a generic label when adding
-      return marker;
-    });
-    return () => {
-      for (const marker of markers) marker.remove();
     };
-  }, [map, alerts, selected, onSelect]);
+    const hide = () => {
+      tip?.remove();
+      tip = null;
+    };
+    map.map.on('mouseenter', 'alerts', show);
+    map.map.on('mouseleave', 'alerts', hide);
+    return () => {
+      hide();
+      map.map.off('mouseenter', 'alerts', show);
+      map.map.off('mouseleave', 'alerts', hide);
+    };
+  }, [map]);
 
   // Fly to a newly selected alert or courier.
   const parcelId = selected?.parcel.order_id;

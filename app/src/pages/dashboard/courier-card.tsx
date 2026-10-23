@@ -4,6 +4,14 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { ISSUES } from './alerts';
 import { clock, type Courier, type Parcel } from './api';
 
+const ago = (minutes: number) => {
+  const m = Math.round(minutes);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${String(m)} min ago`;
+  if (m < 1440) return `${String(Math.floor(m / 60))} h ${String(m % 60)} min ago`;
+  return `${String(Math.floor(m / 1440))} d ${String(Math.floor((m % 1440) / 60))} h ago`;
+};
+
 interface Props {
   courier: Courier;
   parcels: Parcel[];
@@ -14,12 +22,10 @@ export function CourierCard({ courier, parcels, onClose }: Props) {
   return (
     <aside className="courier-card" aria-label={`Courier ${courier.courier_id}`}>
       <header>
-        <HugeiconsIcon icon={BikeIcon} size={28} color="#2f6fed" strokeWidth={1.8} />
+        <HugeiconsIcon icon={BikeIcon} size={28} color="#034f46" strokeWidth={1.8} />
         <div>
           <strong>Courier #{courier.courier_id}</strong>
-          <span>
-            {parcels.length} parcels · last scan {Math.round(courier.feed_age_min)} min ago
-          </span>
+          <span>Last scan: {ago(courier.feed_age_min)}</span>
         </div>
         <button type="button" className="alert-close" aria-label="Close" onClick={onClose}>
           <HugeiconsIcon icon={Cancel01Icon} size={18} />

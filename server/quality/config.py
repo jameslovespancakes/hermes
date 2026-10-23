@@ -11,7 +11,9 @@ class CleanMode(str, Enum):
 
 @dataclass(frozen=True)
 class QualityConfig:
-    max_area_offset_km: float = 1.5
+    area_spread_quantile: float = 0.95
+    area_spread_factor: float = 2.0
+    min_area_offset_km: float = 0.1
     bulk_scan_share: float = 0.3
     stale_feed_minutes: float = 45.0
     fresh_max_feed_age_min: float = 20.0

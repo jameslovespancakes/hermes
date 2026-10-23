@@ -42,11 +42,15 @@ def running_bulk_share(records: pd.DataFrame) -> pd.Series:
     return pd.Series(merged["share"].to_numpy(), index=records.index).fillna(0.0)
 
 
-def area_reference(records: pd.DataFrame) -> pd.DataFrame:
-    """Robust per-area reference point (median destination coordinates)."""
-    return records.groupby("aoi_id")[["lat", "lng"]].median()
-
-
 def offset_from_area_km(records: pd.DataFrame, reference: pd.DataFrame) -> np.ndarray:
     ref = reference.reindex(records["aoi_id"].to_numpy())
     return haversine_km(records["lat"].to_numpy(), records["lng"].to_numpy(), ref["lat"].to_numpy(), ref["lng"].to_numpy())
+
+
+def area_reference(records: pd.DataFrame, quantile: float, factor: float, floor_km: float) -> pd.DataFrame:
+    """Per area: its median destination, and how far from it an address may sit (`factor` x the area's own
+    `quantile` distance, at least `floor_km`), learned from trusted history."""
+    reference = records.groupby("aoi_id")[["lat", "lng"]].median()
+    spread = pd.Series(offset_from_area_km(records, reference), index=records.index).groupby(records["aoi_id"]).quantile(quantile)
+    reference["limit_km"] = np.maximum(factor * spread.reindex(reference.index).to_numpy(), floor_km)
+    return reference

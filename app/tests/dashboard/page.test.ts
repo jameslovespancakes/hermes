@@ -14,7 +14,9 @@ test('moments use the service format', () => {
 
 test('dashboard shell is the map and one time control', () => {
   expect($('.dash-map')).toHaveLength(1);
-  expect($('input[type=date]').attr('value')).toBe('2000-09-20');
+  expect($('.calendar-toggle').text()).toBe('Sep 20');
+  expect($('.time-control a.home').attr('href')).toBe('/');
+  expect($('.navbar')).toHaveLength(0);
   expect($('input[type=range]').attr('value')).toBe(String(10 * 60 + 30));
   expect($('.alert-card')).toHaveLength(0);
 });

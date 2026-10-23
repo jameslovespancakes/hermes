@@ -1,10 +1,10 @@
-// The one control on the map: which recorded moment to replay. Also shows loading and city-wide input health.
+// The bar on the map: home, which recorded moment to replay, and the time (it pulses while loading).
+import { Calendar } from './calendar';
+
 interface Props {
   date: string;
   time: string;
   loading: boolean;
-  /** Cities whose inputs look unlike training at this moment. */
-  unusual: string[];
   onDate: (date: string) => void;
   onTime: (time: string) => void;
 }
@@ -16,19 +16,15 @@ const minutesOf = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.
 const timeOf = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
-export function TimeControl({ date, time, loading, unusual, onDate, onTime }: Props) {
+export function TimeControl({ date, time, loading, onDate, onTime }: Props) {
   return (
     <div className="time-control">
-      <input
-        type="date"
-        value={date}
-        min="2000-06-01"
-        max="2000-10-31"
-        aria-label="Date"
-        onChange={(e) => {
-          if (e.target.value) onDate(e.target.value);
-        }}
-      />
+      <a className="home" href="/" aria-label="Hermes home">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <use href="#hermes-boots" />
+        </svg>
+      </a>
+      <Calendar value={date} min="2000-06-01" max="2000-10-31" onChange={onDate} />
       <input
         type="range"
         min={FIRST}
@@ -40,17 +36,9 @@ export function TimeControl({ date, time, loading, unusual, onDate, onTime }: Pr
           onTime(timeOf(Number(e.target.value)));
         }}
       />
-      <strong className="time">{time}</strong>
-      <span
-        className={loading ? 'status loading' : unusual.length ? 'status unusual' : 'status'}
-        title={
-          loading
-            ? 'Updating'
-            : unusual.length
-              ? `${unusual.join(', ')}: data passed every check but looks unlike training; estimates may be less certain`
-              : 'Inputs look normal in every city'
-        }
-      />
+      <strong className={loading ? 'time loading' : 'time'} aria-busy={loading}>
+        {time}
+      </strong>
     </div>
   );
 }

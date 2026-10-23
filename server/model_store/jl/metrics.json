@@ -22,7 +22,7 @@
     "guard": {
       "input_rows": 30326,
       "duplicates_dropped": 0,
-      "coordinates_repaired": 15,
+      "coordinates_repaired": 59,
       "bulk_scanned_rows": 0,
       "quarantined_rows": 0,
       "output_rows": 30326
@@ -30,54 +30,54 @@
     "fit_rows": 199885,
     "stop_rows": 34949,
     "eta_rounds": [
-      247,
-      236,
-      272
+      318,
+      257,
+      248
     ],
     "staleness_fit_rows": 399770
   },
   "overall": {
     "n": 37291,
-    "mae": 45.853323473732935,
-    "median_ae": 24.937080926912643,
-    "within_30_pct": 56.753640288541476
+    "mae": 46.63287909739449,
+    "median_ae": 25.346142275416312,
+    "within_30_pct": 56.23608913678903
   },
   "by_time_remaining": {
     "under_30_min": {
       "n": 6984,
-      "mae": 26.420581935824266,
-      "median_ae": 15.244719743437814,
-      "within_30_pct": 73.09564719358534
+      "mae": 27.821421402295368,
+      "median_ae": 15.316589505217674,
+      "within_30_pct": 72.32245131729668
     },
     "30_to_60_min": {
       "n": 6750,
-      "mae": 28.827760202065303,
-      "median_ae": 18.852394056477173,
-      "within_30_pct": 69.74814814814815
+      "mae": 29.945621388376185,
+      "median_ae": 19.02990216313214,
+      "within_30_pct": 68.57777777777778
     },
     "1_to_3_hours": {
       "n": 16723,
-      "mae": 33.12288929350747,
-      "median_ae": 25.232037918949814,
-      "within_30_pct": 57.304311427375474
+      "mae": 33.66312411258964,
+      "median_ae": 25.544118029074312,
+      "within_30_pct": 56.99336243496981
     },
     "3_to_24_hours": {
       "n": 6834,
-      "mae": 113.68063833771026,
-      "median_ae": 68.24214267695456,
-      "within_30_pct": 25.870646766169152
+      "mae": 114.07675130830138,
+      "median_ae": 69.86299840571449,
+      "within_30_pct": 25.753585016095993
     }
   },
   "route": {
-    "next_stop_pct": 51.14503816793893,
-    "next3_pct": 72.50802079876092,
-    "order_agreement_spearman": 0.6862761482674927
+    "next_stop_pct": 51.642880849651505,
+    "next3_pct": 72.85097909060737,
+    "order_agreement_spearman": 0.6866869694129297
   },
   "review": {
     "flagged_pct": 0.0,
     "staleness_model_pct": 0.0,
     "mae_flagged": null,
-    "mae_not_flagged": 45.853323473732935
+    "mae_not_flagged": 46.63287909739449
   },
-  "seconds": 160.4212352000177
+  "seconds": 135.80960420001065
 }

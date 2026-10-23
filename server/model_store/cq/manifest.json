@@ -1,5 +1,5 @@
 {
-  "created_utc": "2026-10-22T19:12:27.458808+00:00",
+  "created_utc": "2026-10-23T00:59:54.867602+00:00",
   "city": "cq",
   "seed": 42,
   "fit_sample": 800000,
@@ -126,7 +126,9 @@
     2
   ],
   "quality_config": {
-    "max_area_offset_km": 1.5,
+    "area_spread_quantile": 0.95,
+    "area_spread_factor": 2.0,
+    "min_area_offset_km": 0.1,
     "bulk_scan_share": 0.3,
     "stale_feed_minutes": 45.0,
     "fresh_max_feed_age_min": 20.0,
@@ -149,7 +151,7 @@
     "augment_sample": 400000
   },
   "promoted": true,
-  "model_sha256": "84b0d607f9dd85214eb247821565a38d91f6a329ad8a8ff1b02d3b8c20eae248",
+  "model_sha256": "fbfbd3dd1dc9b9c27ee1a53475cc2a638b24cdbfeac0c6b7e8fcd6e0bcddd511",
   "source_manifest_sha256": "4a1811b6adad15f568ed4ed29b8d52924109b619f6dc70dd1e3f5b81b7d414d4",
   "versions": {
     "lightgbm": "4.6.0",
@@ -157,20 +159,20 @@
     "pandas": "2.3.3"
   },
   "top_features_by_gain_share": {
-    "route_ahead": 0.1883,
-    "aoi_id": 0.1816,
-    "route_score": 0.1304,
-    "courier_id": 0.1099,
-    "elapsed_min": 0.0434,
-    "route_ahead_x_pace": 0.0405,
-    "greedy_pos": 0.0397,
-    "n_pending": 0.0196,
-    "p_zone_model": 0.0193,
-    "dist_from_courier_gps_km": 0.0156,
-    "region_id": 0.0153,
-    "zone_usual_clock_rel_now": 0.0121,
-    "p_courier_next_area": 0.0109,
-    "hab_ca_rel_now": 0.0103,
-    "hab_a_same_day_frac": 0.0099
+    "aoi_id": 0.1866,
+    "route_ahead": 0.1846,
+    "route_score": 0.1277,
+    "courier_id": 0.1102,
+    "elapsed_min": 0.0433,
+    "route_ahead_x_pace": 0.039,
+    "greedy_pos": 0.0386,
+    "n_pending": 0.021,
+    "p_zone_model": 0.0191,
+    "dist_from_courier_gps_km": 0.0161,
+    "region_id": 0.0151,
+    "zone_usual_clock_rel_now": 0.0118,
+    "hab_ca_rel_now": 0.0105,
+    "p_courier_next_area": 0.01,
+    "hab_a_same_day_frac": 0.0098
   }
 }

@@ -17,7 +17,7 @@ export function RouteStrip({ route, parcel, color }: { route: Parcel[]; parcel: 
       className="route-strip"
       title={`${String(parcel.position - 1)} of ${String(stops)} other stops come first`}
     >
-      <HugeiconsIcon icon={BikeIcon} size={22} color="#2f6fed" strokeWidth={1.8} />
+      <HugeiconsIcon icon={BikeIcon} size={22} color="#034f46" strokeWidth={1.8} />
       <svg
         width={W}
         height={Y * 2}

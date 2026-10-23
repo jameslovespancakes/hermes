@@ -4,19 +4,21 @@ import numpy as np
 import pandas as pd
 
 
-def _lookup(series: pd.Series, *keys) -> np.ndarray:
-    index = pd.MultiIndex.from_arrays(list(keys)) if len(keys) > 1 else pd.Index(keys[0])
-    return series.reindex(index).fillna(0).to_numpy()
+def _day(times) -> np.ndarray:
+    return np.asarray(times, dtype="datetime64[ns]").astype("datetime64[D]").view(np.int64)
 
 
-def _day_labels(times: pd.Series) -> np.ndarray:
-    """'MM-DD' per timestamp, formatting each distinct day once."""
-    codes, days = pd.factorize(times.dt.normalize())
-    return days.strftime("%m-%d").to_numpy()[codes]
+def _before(move_keys: np.ndarray, move_days: np.ndarray, query_keys: np.ndarray, day: np.ndarray) -> np.ndarray:
+    """Per query row: moves with the same integer key on days strictly before its `day`."""
+    daily = pd.DataFrame({"k": move_keys, "d": move_days}).groupby(["k", "d"]).size().rename("n").reset_index()
+    daily["n"] = daily.groupby("k")["n"].cumsum()
+    q = pd.DataFrame({"k": query_keys, "d": day, "i": np.arange(len(day))}).sort_values("d", kind="stable")
+    merged = pd.merge_asof(q, daily.sort_values("d", kind="stable"), on="d", by="k", allow_exact_matches=False)
+    return merged.set_index("i")["n"].reindex(np.arange(len(day))).fillna(0).to_numpy()
 
 
 def add_transitions(live: pd.DataFrame, packages: pd.DataFrame, cutoff: pd.Timestamp) -> pd.DataFrame:
-    """Add p_courier_next_area, p_all_next_area, support, and within-event ranks to `live` (returns a copy)."""
+    """Add p_courier_next_area, p_all_next_area, support, and within-event ranks, from moves on earlier days before `cutoff` (returns a copy)."""
     live = live.copy()
     aoi = packages["aoi_id"].astype(str).to_numpy()
     cur_row = live["cur_row"].to_numpy()
@@ -24,24 +26,23 @@ def add_transitions(live: pd.DataFrame, packages: pd.DataFrame, cutoff: pd.Times
     done = packages.loc[packages["_delivered_at"] < cutoff].sort_values(["courier_id", "_delivered_at"])
     prev = done.groupby("courier_id", observed=True).shift()
     same_day = done["_delivered_at"].dt.normalize() == prev["_delivered_at"].dt.normalize()
-    moves = pd.DataFrame(
-        {
-            "c": done["courier_id"].astype(str),
-            "a": prev["aoi_id"].astype(str),
-            "b": done["aoi_id"].astype(str),
-            "day": _day_labels(done["_delivered_at"]),
-        }
-    ).loc[same_day]
-    cab, ca = moves.groupby(["c", "a", "b"]).size(), moves.groupby(["c", "a"]).size()
-    gab, ga = moves.groupby(["a", "b"]).size(), moves.groupby("a").size()
-    own_cab, own_ca = moves.groupby(["c", "day", "a", "b"]).size(), moves.groupby(["c", "day", "a"]).size()
-    own_gab, own_ga = own_cab.groupby(level=["day", "a", "b"]).sum(), own_ca.groupby(level=["day", "a"]).sum()
-    c, cur, item, day = live["courier_s"], live["cur_aoi"].astype(str), live["aoi_id"].astype(str), live["day"]
-    before = (live["s"] < cutoff.to_datetime64()).to_numpy()
-    n_cab = _lookup(cab, c, cur, item) - np.where(before, _lookup(own_cab, c, day, cur, item), 0)
-    n_ca = _lookup(ca, c, cur) - np.where(before, _lookup(own_ca, c, day, cur), 0)
-    n_gab = _lookup(gab, cur, item) - np.where(before, _lookup(own_gab, day, cur, item), 0)
-    n_ga = _lookup(ga, cur) - np.where(before, _lookup(own_ga, day, cur), 0)
+    moves = done.loc[same_day]
+    courier, couriers = pd.factorize(np.r_[moves["courier_id"].astype(str).to_numpy(), live["courier_s"].to_numpy()])
+    area, areas = pd.factorize(
+        np.r_[
+            prev.loc[same_day, "aoi_id"].astype(str).to_numpy(),
+            moves["aoi_id"].astype(str).to_numpy(),
+            live["cur_aoi"].astype(str).to_numpy(),
+            live["aoi_id"].astype(str).to_numpy(),
+        ]
+    )
+    m, q, n = len(moves), len(live), np.int64(len(areas))
+    a, b = area[:m].astype(np.int64), area[m : 2 * m].astype(np.int64)
+    qa, qb = area[2 * m : 2 * m + q].astype(np.int64), area[2 * m + q :].astype(np.int64)
+    c, qc = courier[:m].astype(np.int64) * n * n, courier[m:].astype(np.int64) * n * n
+    d, day = _day(moves["_delivered_at"]), np.minimum(_day(live["s"]), _day([cutoff])[0])
+    n_cab, n_ca = _before(c + a * n + b, d, qc + qa * n + qb, day), _before(c + a, d, qc + qa, day)
+    n_gab, n_ga = _before(a * n + b, d, qa * n + qb, day), _before(a, d, qa, day)
     live["p_courier_next_area"] = np.where(n_ca > 0, n_cab / np.maximum(n_ca, 1), np.nan).astype("float32")
     live["p_all_next_area"] = np.where(n_ga > 0, n_gab / np.maximum(n_ga, 1), np.nan).astype("float32")
     live["courier_transition_support"] = n_ca.astype("float32")

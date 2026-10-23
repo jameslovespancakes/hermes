@@ -47,5 +47,5 @@ export const MAP_IMAGES = {
     fill: 'url(#box)',
     defs: '<defs><linearGradient id="box" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3b47a"/><stop offset="1" stop-color="#c38b52"/></linearGradient></defs>',
   }),
-  courier: iconSvg(BikeIcon, { color: '#2f6fed', size: 60, halo: true, fill: '#2f6fed1f' }),
+  courier: iconSvg(BikeIcon, { color: '#034f46', size: 60, halo: true, fill: '#034f461f' }),
 };

@@ -1,8 +1,8 @@
 // Benchmarks, laid out as a product story: a hero with handwritten sums, a dark statement over
-// a faded bar chart, a sticky five-part tour and a closing video card.
+// a faded bar chart, a sticky four-part tour and a closing video card.
 import { Nav } from '../../nav';
 import { Defs } from './defs';
-import { Cities, Clock, Lanes, Rods, Swap } from './figures';
+import { Clock, Lanes, Rods, Swap } from './figures';
 
 // An unlabelled bar chart behind the statement, rising as it comes into view.
 const bars = Array.from({ length: 32 }, (_, i) =>
@@ -41,14 +41,6 @@ const tour = [
     text: 'Same 149,263 Yantai predictions, scored by parcel. Hermes has 24% lower error than M2G4RTP.',
     number: '24% lower',
     figure: <Rods />,
-  },
-  {
-    id: 'every-city',
-    nav: 'Every city',
-    title: ['Every city,', 'every parcel.'],
-    text: 'Our own test, Sep 16 to 30: every waiting parcel after every delivery, nothing filtered. Parcels held for days drive the big-city averages; the typical miss is 34.03 min.',
-    number: '277.68 min',
-    figure: <Cities />,
   },
 ];
 

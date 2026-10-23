@@ -22,7 +22,7 @@
     "guard": {
       "input_rows": 1462994,
       "duplicates_dropped": 0,
-      "coordinates_repaired": 13578,
+      "coordinates_repaired": 2185,
       "bulk_scanned_rows": 0,
       "quarantined_rows": 0,
       "output_rows": 1462994
@@ -30,60 +30,60 @@
     "fit_rows": 800000,
     "stop_rows": 1747181,
     "eta_rounds": [
-      91,
-      62,
-      101
+      85,
+      76,
+      105
     ],
     "staleness_fit_rows": 1200000
   },
   "overall": {
     "n": 1640476,
-    "mae": 610.8700729919132,
-    "median_ae": 26.48459782199579,
-    "within_30_pct": 53.798409729858896
+    "mae": 607.7977535139227,
+    "median_ae": 26.63806519444972,
+    "within_30_pct": 53.61059838729735
   },
   "by_time_remaining": {
     "under_30_min": {
       "n": 378565,
-      "mae": 41.475606743392305,
-      "median_ae": 15.15157340546466,
-      "within_30_pct": 73.04082522156037
+      "mae": 38.56498574502667,
+      "median_ae": 14.80581922370127,
+      "within_30_pct": 73.2772443305641
     },
     "30_to_60_min": {
       "n": 312255,
-      "mae": 45.9568079849401,
-      "median_ae": 16.542453923026926,
-      "within_30_pct": 72.41805575571247
+      "mae": 42.79981310504933,
+      "median_ae": 16.690314407718475,
+      "within_30_pct": 72.0910794062545
     },
     "1_to_3_hours": {
       "n": 593289,
-      "mae": 66.36757630270068,
-      "median_ae": 24.382542068270183,
-      "within_30_pct": 58.11400514757563
+      "mae": 61.50498533782701,
+      "median_ae": 24.726438924390294,
+      "within_30_pct": 57.5346921989115
     },
     "3_to_24_hours": {
       "n": 285293,
-      "mae": 362.0237664945228,
-      "median_ae": 162.1381170880549,
-      "within_30_pct": 12.200439548113694
+      "mae": 325.1447738166302,
+      "median_ae": 160.3187547771538,
+      "within_30_pct": 12.366584528887845
     },
     "over_24_hours": {
       "n": 71074,
-      "mae": 11669.643446629658,
-      "median_ae": 3516.4450070192547,
-      "within_30_pct": 0.4544559191828236
+      "mae": 11816.727056606649,
+      "median_ae": 3404.650616136308,
+      "within_30_pct": 0.46571179334215046
     }
   },
   "route": {
-    "next_stop_pct": 45.802834563004865,
-    "next3_pct": 66.65670292496574,
-    "order_agreement_spearman": 0.5150480770122574
+    "next_stop_pct": 45.85678457904406,
+    "next3_pct": 66.62122228378679,
+    "order_agreement_spearman": 0.5150130551087233
   },
   "review": {
     "flagged_pct": 0.0,
     "staleness_model_pct": 0.0,
     "mae_flagged": null,
-    "mae_not_flagged": 610.8700729919132
+    "mae_not_flagged": 607.7977535139227
   },
-  "seconds": 1302.2420650999993
+  "seconds": 1230.680943699961
 }

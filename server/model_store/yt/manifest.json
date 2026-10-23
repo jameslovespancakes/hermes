@@ -1,5 +1,5 @@
 {
-  "created_utc": "2026-10-22T18:58:12.452971+00:00",
+  "created_utc": "2026-10-23T00:46:44.457220+00:00",
   "city": "yt",
   "seed": 42,
   "fit_sample": 800000,
@@ -126,7 +126,9 @@
     2
   ],
   "quality_config": {
-    "max_area_offset_km": 1.5,
+    "area_spread_quantile": 0.95,
+    "area_spread_factor": 2.0,
+    "min_area_offset_km": 0.1,
     "bulk_scan_share": 0.3,
     "stale_feed_minutes": 45.0,
     "fresh_max_feed_age_min": 20.0,
@@ -149,7 +151,7 @@
     "augment_sample": 400000
   },
   "promoted": true,
-  "model_sha256": "3cff46e49045dbee1c3f881fca5d251dd384781a32d2ddafe98e56d23957431e",
+  "model_sha256": "f3a3fa4c6143cbb17a09c1373b4fb2bc775bb3d15978b964f4d424c9d8e14dcf",
   "source_manifest_sha256": "7de809005128954e46bc2e33c6bf6a48e53b44615a5ef975d45a7e0ce8052475",
   "versions": {
     "lightgbm": "4.6.0",
@@ -157,20 +159,20 @@
     "pandas": "2.3.3"
   },
   "top_features_by_gain_share": {
-    "aoi_id": 0.2514,
-    "route_ahead": 0.1885,
-    "route_score": 0.0787,
-    "route_ahead_x_pace": 0.069,
-    "courier_id": 0.0479,
-    "p_zone_model": 0.0361,
-    "greedy_pos": 0.0267,
-    "hab_ca_rel_now": 0.0213,
-    "n_pending": 0.0184,
-    "zone_usual_clock_rel_now": 0.0137,
-    "aoi_earlier_count": 0.0118,
-    "p_courier_next_area": 0.0108,
-    "courier_3d_package_min": 0.0099,
-    "dist_from_courier_gps_km": 0.0096,
-    "hab_shift_end_rel_now": 0.0089
+    "aoi_id": 0.2182,
+    "route_ahead": 0.2105,
+    "route_score": 0.0869,
+    "route_ahead_x_pace": 0.0764,
+    "courier_id": 0.0484,
+    "p_zone_model": 0.0405,
+    "greedy_pos": 0.0302,
+    "hab_ca_rel_now": 0.0228,
+    "n_pending": 0.0205,
+    "zone_usual_clock_rel_now": 0.0152,
+    "aoi_earlier_count": 0.0132,
+    "dist_from_courier_gps_km": 0.0107,
+    "hab_shift_end_rel_now": 0.0096,
+    "courier_3d_package_min": 0.009,
+    "p_zone_model_rank": 0.0078
   }
 }

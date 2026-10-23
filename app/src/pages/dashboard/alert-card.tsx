@@ -1,4 +1,4 @@
-// The card for one alert: what kind, the ETA and how far it moved, the courier's route, and three actions.
+// The card for one alert: what kind, when it should arrive (a window), how far it moved, the route, three actions.
 import {
   Call02Icon,
   Cancel01Icon,
@@ -9,6 +9,7 @@ import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import { ISSUES, type Alert } from './alerts';
 import { clock } from './api';
 import { RouteStrip } from './route-strip';
+import { arrivalWindow } from './window';
 
 interface Props {
   alert: Alert;
@@ -16,7 +17,8 @@ interface Props {
   onDismiss: () => void;
 }
 
-const signed = (minutes: number) => `${minutes > 0 ? '+' : '−'}${String(Math.round(Math.abs(minutes)))}m`;
+export const signed = (minutes: number) =>
+  `${minutes > 0 ? '+' : '−'}${String(Math.round(Math.abs(minutes)))} min`;
 
 function Action({
   icon,
@@ -45,8 +47,11 @@ function Action({
 export function AlertCard({ alert, onClose, onDismiss }: Props) {
   const { parcel, route } = alert;
   const issue = ISSUES[parcel.issue];
-  const eta = clock(parcel.eta);
-  const before = parcel.baseline_eta ? `was ${clock(parcel.baseline_eta)}` : 'new this hour';
+  const { from, to } = arrivalWindow(parcel);
+  const window = `${from}–${to}`;
+  const before = parcel.baseline_eta
+    ? `ETA ${clock(parcel.eta)}, was ${clock(parcel.baseline_eta)}`
+    : `ETA ${clock(parcel.eta)}`;
   return (
     <aside className="alert-card" style={{ ['--c' as string]: issue.color }} aria-label={issue.label}>
       <header>
@@ -54,8 +59,10 @@ export function AlertCard({ alert, onClose, onDismiss }: Props) {
           <HugeiconsIcon icon={issue.icon} size={30} color={issue.color} strokeWidth={1.8} />
         </span>
         <strong className="alert-eta" title={before}>
-          {parcel.issue === 'suspect' ? '~' : ''}
-          {eta}
+          <small>Arrives</small>
+          {from}
+          <span>–</span>
+          {to}
         </strong>
         {parcel.slip_min !== null && (
           <span className="alert-slip" title={before}>
@@ -69,7 +76,7 @@ export function AlertCard({ alert, onClose, onDismiss }: Props) {
       <p className="alert-why">{parcel.reasons[0]}</p>
       <RouteStrip route={route} parcel={parcel} color={issue.color} />
       <footer>
-        <Action icon={Notification01Icon} label={`Notify customer · ${eta}`} primary />
+        <Action icon={Notification01Icon} label={`Notify customer · ${window}`} primary />
         <Action icon={Call02Icon} label={`Call courier #${parcel.courier_id}`} />
         <Action icon={CheckmarkCircle02Icon} label="Dismiss" onClick={onDismiss} />
       </footer>

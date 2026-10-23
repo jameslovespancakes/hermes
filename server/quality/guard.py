@@ -23,8 +23,14 @@ class DataGuard:
 
     @classmethod
     def fit(cls, records: pd.DataFrame, config: QualityConfig = QUALITY) -> "DataGuard":
-        """Per-area reference points (robust medians) from historical records."""
-        return cls(area_reference(records), config)
+        """Per-area reference points and allowed spread from historical records."""
+        return cls(area_reference(records, config.area_spread_quantile, config.area_spread_factor, config.min_area_offset_km), config)
+
+    def misplaced(self, records: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+        """Each record's distance from its area's reference point, and whether that is beyond the area's normal spread."""
+        offset = offset_from_area_km(records, self.reference)
+        limit = self.reference["limit_km"].reindex(records["aoi_id"].to_numpy()).to_numpy()
+        return offset, np.isfinite(offset) & (offset > limit)
 
     def clean(self, records: pd.DataFrame, mode: CleanMode) -> tuple[pd.DataFrame, dict]:
         mode = CleanMode(mode)
@@ -32,8 +38,7 @@ class DataGuard:
         duplicate = duplicate_records(out)
         had_copy = record_keys(out).duplicated(keep=False) & out["delivered_at"].notna() & ~duplicate
         out = out.loc[~duplicate].copy()
-        offset = offset_from_area_km(out, self.reference)
-        repair = np.isfinite(offset) & (offset > self.config.max_area_offset_km)
+        offset, repair = self.misplaced(out)
         ref = self.reference.reindex(out["aoi_id"].to_numpy())
         out.loc[repair, "lat"] = ref["lat"].to_numpy()[repair]
         out.loc[repair, "lng"] = ref["lng"].to_numpy()[repair]

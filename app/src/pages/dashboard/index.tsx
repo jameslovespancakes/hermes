@@ -1,20 +1,10 @@
 // Dispatcher view: every city at a recorded moment, with an icon wherever a delivery needs a person.
 // The service replays each city's log as it stood at that moment, so nothing shown uses later information.
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Nav } from '../../nav';
 import { AlertCard } from './alert-card';
 import { alerts as findAlerts, route, stops, type Alert } from './alerts';
 import { CourierCard } from './courier-card';
-import {
-  api,
-  courierKey,
-  moment,
-  parcelKey,
-  type City,
-  type DataHealth,
-  type Fleet,
-  type Overview,
-} from './api';
+import { api, courierKey, moment, parcelKey, type City, type Fleet, type Overview } from './api';
 import { Defs } from './defs';
 import { CityMap } from './map/city-map';
 import { TimeControl } from './time-control';
@@ -29,10 +19,9 @@ function useCities() {
   return cities;
 }
 
-// Every city's overview and input health at `at`; each city shows its latest view until the new one arrives.
+// Every city's overview at `at`; each city shows its latest view until the new one arrives.
 function useMoment(cities: City[], at: string) {
   const [views, setViews] = useState<Partial<Record<string, Overview>>>({});
-  const [health, setHealth] = useState<Partial<Record<string, DataHealth>>>({});
   const [failed, setFailed] = useState<Partial<Record<string, string>>>({});
 
   useEffect(() => {
@@ -43,9 +32,6 @@ function useMoment(cities: City[], at: string) {
           (overview) => current && setViews((prev) => ({ ...prev, [city.id]: overview })),
           () => current && setFailed((prev) => ({ ...prev, [city.id]: at })),
         );
-        void api
-          .dataHealth(city.id, at)
-          .then((report) => current && setHealth((prev) => ({ ...prev, [city.id]: report })));
       }
     }, SETTLE_MS);
     return () => {
@@ -65,9 +51,6 @@ function useMoment(cities: City[], at: string) {
   return {
     fleet,
     loading: cities.some((c) => views[c.id]?.at !== at && failed[c.id] !== at),
-    unusual: cities
-      .filter((c) => health[c.id]?.at === at && health[c.id]?.status !== 'ok')
-      .map((c) => c.name),
     error: down.length
       ? `No data for ${down.map((c) => c.name).join(', ')}. Is the API running? uv run uvicorn server.api.app:create_app --factory`
       : '',
@@ -99,7 +82,7 @@ export function Dashboard() {
   const cities = useCities();
   const [date, setDate] = useState('2000-09-20');
   const [time, setTime] = useState('10:30');
-  const { fleet, loading, unusual, error } = useMoment(cities, moment(date, time));
+  const { fleet, loading, error } = useMoment(cities, moment(date, time));
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
   const [selectedParcel, setSelectedParcel] = useState<string | null>(null);
   const [selectedCourier, setSelectedCourier] = useState<string | null>(null);
@@ -132,7 +115,6 @@ export function Dashboard() {
   return (
     <>
       <Defs />
-      <Nav page="dashboard" />
       <main className="dash">
         <CityMap
           cities={cities}
@@ -144,14 +126,7 @@ export function Dashboard() {
           onSelect={select}
           onCourier={pickCourier}
         />
-        <TimeControl
-          date={date}
-          time={time}
-          loading={loading}
-          unusual={unusual}
-          onDate={setDate}
-          onTime={setTime}
-        />
+        <TimeControl date={date} time={time} loading={loading} onDate={setDate} onTime={setTime} />
         {error && (
           <p className="dash-error" role="alert">
             {error}

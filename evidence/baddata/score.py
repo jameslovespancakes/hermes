@@ -8,7 +8,7 @@ from server.features.live import build_live_queries
 from server.models.bundle import ModelBundle
 from server.pipeline.features import package_table
 from server.pipeline.train import score_events
-from server.quality.detectors import bulk_scanned_courier_days, duplicate_records, offset_from_area_km
+from server.quality.detectors import bulk_scanned_courier_days, duplicate_records
 from server.quality.drift import drift_report
 from server.quality.guard import DataGuard
 from server.quality.monitor import DRIFT_FEATURES, MonitorBaseline
@@ -77,8 +77,7 @@ def guard_quality(view: pd.DataFrame, guard: DataGuard) -> dict:
     duplicate = duplicate_records(view).to_numpy()
     fake = ~view["is_real"].to_numpy()
     deduped = view.loc[~duplicate]
-    offset = offset_from_area_km(deduped, guard.reference)
-    repaired = np.isfinite(offset) & (offset > guard.config.max_area_offset_km)
+    _, repaired = guard.misplaced(deduped)
     bulk = bulk_scanned_courier_days(deduped, guard.config.bulk_scan_share).to_numpy()
     bad, real = deduped["lq_feed"].to_numpy(), deduped["is_real"].to_numpy()
     return {"duplicates_found_pct_of_injected": _rate(duplicate, fake), "real_packages_wrongly_removed_as_duplicates": int((duplicate & ~fake).sum()),

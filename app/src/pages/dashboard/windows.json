@@ -1,0 +1,27 @@
+{
+  "yt": {
+    "before_min": [-13, -29, -59, -108, -1476],
+    "after_min": [51, 86, 124, 126, 50],
+    "test_coverage_pct": 82.1
+  },
+  "jl": {
+    "before_min": [-13, -27, -52, -79, null],
+    "after_min": [42, 64, 105, 127, null],
+    "test_coverage_pct": 79.7
+  },
+  "sh": {
+    "before_min": [-12, -26, -69, -544, -1369],
+    "after_min": [28, 55, 186, 2092, 812],
+    "test_coverage_pct": 79.8
+  },
+  "cq": {
+    "before_min": [-17, -33, -71, -660, -2631],
+    "after_min": [62, 111, 164, 1834, 2708],
+    "test_coverage_pct": 78.9
+  },
+  "hz": {
+    "before_min": [-14, -30, -56, -481, -1892],
+    "after_min": [34, 74, 132, 1323, 46677],
+    "test_coverage_pct": 80.2
+  }
+}

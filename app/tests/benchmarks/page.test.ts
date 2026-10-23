@@ -9,7 +9,6 @@ const values = (selector: string) =>
 
 test('published and matched scores stay separate', () => {
   expect(values('.paper-row')).toEqual(['21.59', '21.25', '20.16', '14.47']);
-  expect(values('.city-row')).toEqual(['45.85', '55.85', '156.57', '519.24', '610.87', '277.68']);
   expect(values('.matched-observation')).toEqual(['77.11', '58.64']);
   expect($('#comparison-story').text()).not.toContain('58.64');
 });
