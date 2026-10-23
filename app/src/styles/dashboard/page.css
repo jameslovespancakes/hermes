@@ -444,6 +444,7 @@ input {
 .search input {
   flex: 1;
   min-width: 0;
+  padding: 0;
   border: 0;
   outline: 0;
   background: none;
@@ -483,4 +484,48 @@ input {
 }
 .search li.none {
   padding: 8px 10px;
+}
+
+/* A later day beside a window time, with a small hover note */
+.day-mark {
+  position: relative;
+  cursor: default;
+}
+.day-mark::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: var(--green);
+  color: var(--cream);
+  font: 600 12px var(--sans);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.15s;
+}
+.day-mark:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.search li button.active {
+  background: var(--olive);
+}
+.search .ghost {
+  position: absolute;
+  left: 39px;
+  font: inherit;
+  pointer-events: none;
+  white-space: pre;
+  color: #4d625680;
+  font-size: 14px;
+}
+.search label {
+  position: relative;
+}
+.search .ghost .typed {
+  visibility: hidden;
 }

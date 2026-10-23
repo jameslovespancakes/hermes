@@ -4,7 +4,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { useMemo, useState } from 'react';
 import { courierKey, parcelKey, type City, type Fleet, type Parcel } from './api';
 
-const LIMIT = 8;
+const EACH = 4; // matches shown per kind
 const courier = (key: string): Found => ({ kind: 'courier', key });
 const parcel = (p: Parcel): Found => ({ kind: 'parcel', parcel: p });
 
@@ -18,6 +18,7 @@ interface Props {
 
 export function Search({ fleet, cities, onPick }: Props) {
   const [text, setText] = useState('');
+  const [active, setActive] = useState(0);
   const name = (id: string) => cities.find((c) => c.id === id)?.name ?? id;
   const matches = useMemo(() => {
     const q = text.trim().replace(/^#/, '');
@@ -38,13 +39,20 @@ export function Search({ fleet, cities, onPick }: Props) {
         city: name(p.city),
         found: parcel(p),
       }));
-    return [...couriers, ...parcels].slice(0, LIMIT);
+    return [...couriers.slice(0, EACH), ...parcels.slice(0, EACH)];
     // `name` reads `cities`, which is a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, fleet, cities]);
 
+  const top = matches.at(Math.min(active, matches.length - 1));
+  // The rest of the highlighted match's number, shown faintly after what was typed (Tab or Enter takes it).
+  const typed = text.trim().replace(/^#/, '');
+  const number = top ? top.label.replace(/^\D+/, '') : '';
+  const ghost = typed && number.startsWith(typed) ? number.slice(typed.length) : '';
+
   const pick = (found: Found) => {
     setText('');
+    setActive(0);
     onPick(found);
   };
 
@@ -57,19 +65,38 @@ export function Search({ fleet, cities, onPick }: Props) {
           placeholder="Courier or parcel"
           aria-label="Find a courier or parcel"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            setActive(0);
+          }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && matches[0]) pick(matches[0].found);
+            if (e.key === 'ArrowDown') setActive((i) => Math.min(i + 1, matches.length - 1));
+            if (e.key === 'ArrowUp') setActive((i) => Math.max(i - 1, 0));
+            if ((e.key === 'Enter' || (e.key === 'Tab' && ghost)) && top) {
+              e.preventDefault();
+              pick(top.found);
+            }
             if (e.key === 'Escape') setText('');
           }}
         />
+        {ghost && (
+          <span className="ghost" aria-hidden="true">
+            <span className="typed">{text}</span>
+            {ghost}
+          </span>
+        )}
       </label>
       {text.trim() && (
         <ul role="listbox">
           {matches.length ? (
-            matches.map((m) => (
+            matches.map((m, i) => (
               <li key={m.id}>
-                <button type="button" onClick={() => pick(m.found)}>
+                <button
+                  type="button"
+                  className={m === top ? 'active' : undefined}
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => pick(m.found)}
+                >
                   <strong>{m.label}</strong>
                   <span>{m.city}</span>
                 </button>

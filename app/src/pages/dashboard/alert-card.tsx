@@ -44,6 +44,16 @@ function Action({
   );
 }
 
+// A later day beside a time: the date, and on hover how many days after the ETA's day.
+function DayMark({ date, days }: { date: string; days: number }) {
+  const later = days === 1 ? 'Next day' : `${String(days)} days later`;
+  return (
+    <sup className="day-mark" data-tip={later} aria-label={`${date}, ${later.toLowerCase()}`}>
+      {date}
+    </sup>
+  );
+}
+
 export function AlertCard({ alert, onClose, onDismiss }: Props) {
   const { parcel, route } = alert;
   const issue = ISSUES[parcel.issue];
@@ -71,10 +81,10 @@ export function AlertCard({ alert, onClose, onDismiss }: Props) {
       <p className="alert-label">Arrives between</p>
       <strong className="alert-eta" title={before}>
         {from.time}
-        {from.date && <sup>{from.date}</sup>}
+        {from.date && <DayMark date={from.date} days={from.days} />}
         <span>–</span>
         {to.time}
-        {to.date && <sup>{to.date}</sup>}
+        {to.date && <DayMark date={to.date} days={to.days} />}
       </strong>
       <p className="alert-why">{parcel.reasons[0]}</p>
       <RouteStrip route={route} parcel={parcel} color={issue.color} />

@@ -21,8 +21,12 @@ export function arrivalWindow(parcel: Parcel) {
   const day = Date.parse(`2000-${parcel.eta.slice(0, 5)}T00:00Z`);
   const at = (minutes: number) => {
     const d = shift(parcel.eta, minutes);
-    const later = Math.floor((d.getTime() - day) / 86_400_000) > 0;
-    return { time: hhmm(d), date: later ? `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate())}` : '' };
+    const days = Math.floor((d.getTime() - day) / 86_400_000);
+    return {
+      time: hhmm(d),
+      days,
+      date: days > 0 ? `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate())}` : '',
+    };
   };
   return { from: at(Math.min(0, band.before_min[i] ?? 0)), to: at(Math.max(0, band.after_min[i] ?? 0)) };
 }
