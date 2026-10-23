@@ -48,8 +48,7 @@ export function AlertCard({ alert, onClose, onDismiss }: Props) {
   const { parcel, route } = alert;
   const issue = ISSUES[parcel.issue];
   const { from, to } = arrivalWindow(parcel);
-  const later = (days: number) => (days > 0 ? ` +${String(days)}d` : '');
-  const window = `${from.time}${later(from.days)}–${to.time}${later(to.days)}`;
+  const window = `${from.date} ${from.time}–${to.date} ${to.time}`.replace(/ +/g, ' ').trim();
   const before = parcel.baseline_eta
     ? `ETA ${clock(parcel.eta)}, was ${clock(parcel.baseline_eta)}`
     : `ETA ${clock(parcel.eta)}`;
@@ -72,10 +71,10 @@ export function AlertCard({ alert, onClose, onDismiss }: Props) {
       <p className="alert-label">Arrives between</p>
       <strong className="alert-eta" title={before}>
         {from.time}
-        {from.days > 0 && <sup>+{from.days}</sup>}
+        {from.date && <sup>{from.date}</sup>}
         <span>–</span>
         {to.time}
-        {to.days > 0 && <sup>+{to.days}</sup>}
+        {to.date && <sup>{to.date}</sup>}
       </strong>
       <p className="alert-why">{parcel.reasons[0]}</p>
       <RouteStrip route={route} parcel={parcel} color={issue.color} />

@@ -4,9 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCard } from './alert-card';
 import { alerts as findAlerts, route, stops, type Alert } from './alerts';
 import { CourierCard } from './courier-card';
-import { api, courierKey, moment, parcelKey, type City, type Fleet, type Overview } from './api';
+import { api, courierKey, moment, parcelKey, type City, type Fleet, type Overview, type Parcel } from './api';
 import { Defs } from './defs';
 import { CityMap } from './map/city-map';
+import { Search, type Found } from './search';
 import { TimeControl } from './time-control';
 
 const SETTLE_MS = 350; // wait for the slider to settle before asking the service
@@ -86,6 +87,7 @@ export function Dashboard() {
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
   const [selectedParcel, setSelectedParcel] = useState<string | null>(null);
   const [selectedCourier, setSelectedCourier] = useState<string | null>(null);
+  const [spot, setSpot] = useState<Parcel | null>(null);
 
   const list = useMemo(() => findAlerts(fleet, dismissed), [fleet, dismissed]);
   // Selections follow the parcel or courier across refreshes and disappear with them.
@@ -101,8 +103,23 @@ export function Dashboard() {
   }, []);
   const pickCourier = useCallback((key: string) => {
     setSelectedParcel(null);
+    setSpot(null);
     setSelectedCourier(key);
   }, []);
+  // A search result: a courier opens their card; a parcel opens its alert, or its courier's card with it marked.
+  const find = (found: Found) => {
+    if (found.kind === 'courier') {
+      pickCourier(found.key);
+      return;
+    }
+    const alert = list.find((a) => parcelKey(a.parcel) === parcelKey(found.parcel));
+    if (alert) {
+      select(alert);
+      return;
+    }
+    pickCourier(courierKey(found.parcel));
+    setSpot(found.parcel);
+  };
   const road = useRoad(
     selected?.parcel.city ?? courier?.city ?? null,
     selected
@@ -125,7 +142,9 @@ export function Dashboard() {
           road={road}
           onSelect={select}
           onCourier={pickCourier}
+          spot={spot}
         />
+        <Search fleet={fleet} cities={cities} onPick={find} />
         <TimeControl date={date} time={time} loading={loading} onDate={setDate} onTime={setTime} />
         {error && (
           <p className="dash-error" role="alert">
@@ -142,7 +161,17 @@ export function Dashboard() {
             }}
           />
         )}
-        {courier && <CourierCard courier={courier} parcels={held} onClose={() => setSelectedCourier(null)} />}
+        {courier && (
+          <CourierCard
+            courier={courier}
+            parcels={held}
+            onClose={() => {
+              setSelectedCourier(null);
+              setSpot(null);
+            }}
+            onParcel={setSpot}
+          />
+        )}
       </main>
     </>
   );

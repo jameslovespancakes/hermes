@@ -3,6 +3,7 @@ import { BikeIcon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ISSUES } from './alerts';
 import { clock, type Courier, type Parcel } from './api';
+import { arrivalWindow } from './window';
 
 const ago = (minutes: number) => {
   const m = Math.round(minutes);
@@ -16,9 +17,10 @@ interface Props {
   courier: Courier;
   parcels: Parcel[];
   onClose: () => void;
+  onParcel: (parcel: Parcel) => void;
 }
 
-export function CourierCard({ courier, parcels, onClose }: Props) {
+export function CourierCard({ courier, parcels, onClose, onParcel }: Props) {
   return (
     <aside className="courier-card" aria-label={`Courier ${courier.courier_id}`}>
       <header>
@@ -34,12 +36,22 @@ export function CourierCard({ courier, parcels, onClose }: Props) {
       <ol>
         {parcels.map((p) => {
           const issue = p.issue ? ISSUES[p.issue] : null;
+          const { from, to } = arrivalWindow(p);
           return (
-            <li key={p.order_id} title={p.reasons.join(' · ')}>
-              <span className="stop">{p.position}</span>
-              <span className="eta">{clock(p.eta)}</span>
-              <span className="taken">taken {clock(p.accepted_at)}</span>
-              {issue && <HugeiconsIcon icon={issue.icon} size={16} color={issue.color} strokeWidth={1.9} />}
+            <li key={p.order_id}>
+              <button
+                type="button"
+                title={p.reasons.join(' · ') || `Parcel ${String(p.order_id)}`}
+                onClick={() => onParcel(p)}
+              >
+                <span className="stop">{p.position}</span>
+                <span className="eta">
+                  {from.time}–{to.time}
+                  {to.date && <small> {to.date}</small>}
+                </span>
+                <span className="taken">taken {clock(p.accepted_at)}</span>
+                {issue && <HugeiconsIcon icon={issue.icon} size={16} color={issue.color} strokeWidth={1.9} />}
+              </button>
             </li>
           );
         })}

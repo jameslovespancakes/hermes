@@ -8,7 +8,7 @@ import type {
 } from 'maplibre-gl';
 import { ISSUES, type Alert } from '../alerts';
 import { signed } from '../alert-card';
-import { courierKey, parcelKey, type Fleet } from '../api';
+import { courierKey, parcelKey, type Fleet, type Parcel } from '../api';
 import { iconSvg, MAP_IMAGES } from '../icons';
 
 const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
@@ -36,8 +36,19 @@ export async function addLayers(map: MapLibre) {
   ]);
   for (const [name, svg] of [...Object.entries(MAP_IMAGES), ...alertImages])
     map.addImage(name, await image(svg), { pixelRatio: 2 });
-  for (const id of ['parcels', 'stops', 'couriers', 'route', 'alerts'])
+  for (const id of ['spot', 'parcels', 'stops', 'couriers', 'route', 'alerts'])
     map.addSource(id, { type: 'geojson', data: empty });
+  map.addLayer({
+    id: 'spot',
+    type: 'circle',
+    source: 'spot',
+    paint: {
+      'circle-radius': 22,
+      'circle-color': 'rgba(3, 79, 70, 0.12)',
+      'circle-stroke-color': '#034f46',
+      'circle-stroke-width': 2,
+    },
+  });
   map.addLayer({
     id: 'route',
     type: 'line',
@@ -78,7 +89,7 @@ export async function addLayers(map: MapLibre) {
     source: 'stops',
     minzoom: DETAIL_ZOOM,
     layout: {
-      'text-field': ['to-string', ['get', 'stop']],
+      'text-field': ['get', 'stop'],
       'text-font': ['Noto Sans Bold'],
       'text-size': 11,
       'text-offset': [0.9, -0.9],
@@ -169,20 +180,40 @@ export function drawOverview(
       }),
     );
   source('parcels')?.setData(at(fleet.parcels.filter((p) => visible(map, p))));
+  // Parcels at the same address share one icon, so their stop numbers share one label ('3·4·7').
+  const sameSpot = new Map<string, { lng: number; lat: number; stops: number[] }>();
+  for (const p of fleet.parcels) {
+    if (focus === null || courierKey(p) !== focus) continue;
+    const key = `${p.lng.toFixed(5)},${p.lat.toFixed(5)}`;
+    const entry = sameSpot.get(key) ?? { lng: p.lng, lat: p.lat, stops: [] };
+    entry.stops.push(p.position);
+    sameSpot.set(key, entry);
+  }
   source('stops')?.setData({
     type: 'FeatureCollection',
-    features: fleet.parcels
-      .filter((p) => focus !== null && courierKey(p) === focus)
-      .map((p) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-        properties: { stop: p.position },
-      })),
+    features: [...sameSpot.values()].map((s) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
+      properties: { stop: s.stops.sort((a, b) => a - b).join('·') },
+    })),
   });
   source('couriers')?.setData(at(fleet.couriers.filter((c) => visible(map, c))));
   source('route')?.setData(
     focus && road
       ? { type: 'Feature', geometry: { type: 'LineString', coordinates: road }, properties: {} }
+      : empty,
+  );
+}
+
+/** Rings one parcel (or none). */
+export function drawSpot(map: MapLibre, parcel: Parcel | null) {
+  map.getSource<GeoJSONSource>('spot')?.setData(
+    parcel
+      ? {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [parcel.lng, parcel.lat] },
+          properties: {},
+        }
       : empty,
   );
 }

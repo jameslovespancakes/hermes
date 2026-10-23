@@ -3,9 +3,9 @@
 import type { MapLayerMouseEvent, Map as MapLibre, Popup } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import type { Alert } from '../alerts';
-import { courierKey, parcelKey, type City, type Fleet } from '../api';
+import { courierKey, parcelKey, type City, type Fleet, type Parcel } from '../api';
 import { CHINA, quietBasemap, STYLE_URL } from './basemap';
-import { addLayers, drawAlerts, drawOverview } from './layers';
+import { addLayers, drawAlerts, drawOverview, drawSpot } from './layers';
 
 type MapLibreModule = typeof import('maplibre-gl');
 
@@ -23,12 +23,14 @@ interface Props {
   road: [number, number][] | null;
   onSelect: (alert: Alert) => void;
   onCourier: (courierId: string) => void;
+  /** A parcel to fly to and ring (picked from the courier card or search). */
+  spot: Parcel | null;
 }
 
 // The card sits bottom-right, so a focused alert is framed left of centre.
 const FOCUS_OFFSET: [number, number] = [-170, -60];
 
-export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect, onCourier }: Props) {
+export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect, onCourier, spot }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<{ map: MapLibre; lib: MapLibreModule } | null>(null);
 
@@ -163,6 +165,17 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
       map.map.off('mouseleave', 'alerts', hide);
     };
   }, [map]);
+
+  // The spotted parcel: ring it and bring it into view.
+  const spotKey = spot ? parcelKey(spot) : null;
+  useEffect(() => {
+    if (!map) return;
+    drawSpot(map.map, spot);
+    if (spot)
+      map.map.flyTo({ center: [spot.lng, spot.lat], zoom: 16.5, offset: FOCUS_OFFSET, duration: 900 });
+    // Only a newly spotted parcel moves the camera.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, spotKey]);
 
   // Fly to a newly selected alert or courier.
   const parcelId = selected?.parcel.order_id;
