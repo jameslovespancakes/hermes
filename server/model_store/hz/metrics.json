@@ -1,0 +1,89 @@
+{
+  "city": "hz",
+  "target": "minutes until delivery, re-predicted after every courier delivery",
+  "split": {
+    "fit": "events < 09-01 with outcomes < 09-01 (sampled to 800,000)",
+    "early_stopping": "events 09-01..09-16 with outcomes < 09-16",
+    "test": "events 09-16..10-01, all outcomes",
+    "data_cutoff": "packages accepted before 10-01"
+  },
+  "rows": {
+    "packages": 1462994,
+    "test_predictions": 1640476,
+    "test_packages": 155776
+  },
+  "record_exclusions": {
+    "missing_order_id": 0,
+    "duplicate_order_id_all_occurrences": 0,
+    "unparseable_accept_or_delivery_time": 0,
+    "negative_duration": 0
+  },
+  "training": {
+    "guard": {
+      "input_rows": 1462994,
+      "duplicates_dropped": 0,
+      "clock_corrected_rows": 0,
+      "coordinates_repaired": 13578,
+      "mean_weight": 0.9958527867481469,
+      "output_rows": 1462994
+    },
+    "fit_rows": 800000,
+    "stop_rows": 1747181,
+    "eta_rounds": [
+      42,
+      67,
+      76
+    ],
+    "staleness_fit_rows": 1200000
+  },
+  "overall": {
+    "n": 1640476,
+    "mae": 605.2042418036052,
+    "median_ae": 26.192147443009176,
+    "within_30_pct": 54.269187723563164
+  },
+  "by_time_remaining": {
+    "under_30_min": {
+      "n": 378565,
+      "mae": 33.70876601015547,
+      "median_ae": 16.39293596440184,
+      "within_30_pct": 72.77429239364443
+    },
+    "30_to_60_min": {
+      "n": 312255,
+      "mae": 35.55993409791343,
+      "median_ae": 16.22791539871396,
+      "within_30_pct": 73.29842596595732
+    },
+    "1_to_3_hours": {
+      "n": 593289,
+      "mae": 50.75078826898891,
+      "median_ae": 23.6846952211111,
+      "within_30_pct": 59.378818754435024
+    },
+    "3_to_24_hours": {
+      "n": 285293,
+      "mae": 278.76461545299117,
+      "median_ae": 162.18962999703157,
+      "within_30_pct": 11.662746720038697
+    },
+    "over_24_hours": {
+      "n": 71074,
+      "mae": 12090.480762203933,
+      "median_ae": 3659.8068051388927,
+      "within_30_pct": 0.4727467146917298
+    }
+  },
+  "route": {
+    "next_stop_pct": 45.795544020296866,
+    "next3_pct": 66.59084502250346,
+    "order_agreement_spearman": 0.5131210259874327
+  },
+  "review": {
+    "flagged_pct": 7.706177962981477,
+    "staleness_model_pct": 0.0,
+    "mae_flagged": 1959.8073861707865,
+    "mae_not_flagged": 492.1001068863096
+  },
+  "seconds": 1539.7149158000248
+}

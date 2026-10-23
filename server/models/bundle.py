@@ -42,7 +42,7 @@ class ModelBundle:
         return add_route_outputs(live, predict_route(self.route_model, live))
 
     def minutes(self, live: pd.DataFrame) -> np.ndarray:
-        return self.later.blend(live, self.eta.predict(live))
+        return self.later.minutes(live, self.eta.predict(live))
 
     def save(self, path: Path) -> str:
         path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,83 @@
+{
+  "city": "jl",
+  "target": "minutes until delivery, re-predicted after every courier delivery",
+  "split": {
+    "fit": "events < 09-01 with outcomes < 09-01 (sampled to 800,000)",
+    "early_stopping": "events 09-01..09-16 with outcomes < 09-16",
+    "test": "events 09-16..10-01, all outcomes",
+    "data_cutoff": "packages accepted before 10-01"
+  },
+  "rows": {
+    "packages": 30326,
+    "test_predictions": 37291,
+    "test_packages": 3372
+  },
+  "record_exclusions": {
+    "missing_order_id": 0,
+    "duplicate_order_id_all_occurrences": 0,
+    "unparseable_accept_or_delivery_time": 0,
+    "negative_duration": 0
+  },
+  "training": {
+    "guard": {
+      "input_rows": 30326,
+      "duplicates_dropped": 0,
+      "clock_corrected_rows": 0,
+      "coordinates_repaired": 15,
+      "mean_weight": 0.9996833053198217,
+      "output_rows": 30326
+    },
+    "fit_rows": 199885,
+    "stop_rows": 34949,
+    "eta_rounds": [
+      239,
+      181,
+      189
+    ],
+    "staleness_fit_rows": 399770
+  },
+  "overall": {
+    "n": 37291,
+    "mae": 44.47960484448054,
+    "median_ae": 24.827365687691923,
+    "within_30_pct": 57.1826982381808
+  },
+  "by_time_remaining": {
+    "under_30_min": {
+      "n": 6984,
+      "mae": 25.006616728947765,
+      "median_ae": 15.03524336668724,
+      "within_30_pct": 73.61111111111111
+    },
+    "30_to_60_min": {
+      "n": 6750,
+      "mae": 27.194849086009043,
+      "median_ae": 18.436402457621842,
+      "within_30_pct": 70.25185185185185
+    },
+    "1_to_3_hours": {
+      "n": 16723,
+      "mae": 31.627661515886814,
+      "median_ae": 25.130376546557855,
+      "within_30_pct": 57.78269449261496
+    },
+    "3_to_24_hours": {
+      "n": 6834,
+      "mae": 112.90139276555696,
+      "median_ae": 69.26649021620348,
+      "within_30_pct": 26.01697395376061
+    }
+  },
+  "route": {
+    "next_stop_pct": 51.44374377696648,
+    "next3_pct": 72.51908396946564,
+    "order_agreement_spearman": 0.6881456722703686
+  },
+  "review": {
+    "flagged_pct": 1.8637204687458098,
+    "staleness_model_pct": 0.0,
+    "mae_flagged": 67.98749774317085,
+    "mae_not_flagged": 44.03316300480981
+  },
+  "seconds": 103.69933470000979
+}

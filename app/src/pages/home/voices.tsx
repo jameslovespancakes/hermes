@@ -27,7 +27,8 @@ export function Voices() {
           <em>More than one story.</em>
         </h2>
         <p className="sr-only" id="wall-disclaimer">
-          Fictional perspectives. Not testimonials.
+          Six fictional perspectives, then a real interview: Gerry McGowan, Executive Director, US Network at
+          Asendia, quoted with permission.
         </p>
       </div>
       <div className="wall-runway" id="perspectives-wall">
@@ -53,16 +54,19 @@ export function Voices() {
                 </div>
               </div>
             </article>
-            <article className="wall-card" aria-label="Dispatch desk, fictional perspective">
-              <blockquote>“Tell me which scan changed the ETA.”</blockquote>
+            <article className="wall-card" aria-label="Gerry McGowan, interview">
+              <blockquote>
+                “If I had to pick one data point: compare what we promised with what the customer got. Give
+                them a range of times.”
+              </blockquote>
+              <p className="wall-tie">
+                Hermes promises an arrival window, and checks it against real arrivals.
+              </p>
               <div className="wall-signature">
-                <span className="wall-mark" aria-hidden="true">
-                  <svg className="hermes-logo" viewBox="0 0 64 64" focusable="false">
-                    <use href="#hermes-boots" />
-                  </svg>
-                </span>
+                <span className="wall-mark photo" role="img" aria-label="Gerry McGowan" />
                 <div>
-                  <strong>Dispatch desk</strong>
+                  <strong>Gerry McGowan</strong>
+                  <small>Executive Director, US Network, Asendia</small>
                 </div>
               </div>
             </article>
@@ -76,14 +80,19 @@ export function Voices() {
                 aria-label="Illustrative stock photograph of colleagues collaborating at a shared workspace"
               />
             </article>
-            <article className="wall-card olive" aria-label="The data reviewer, fictional perspective">
-              <blockquote>“A timestamp doesn’t tell me when the record arrived.”</blockquote>
+            <article className="wall-card olive" aria-label="Gerry McGowan, interview">
+              <blockquote>
+                “When it’s late, trace the life of the order. When did it drop, when was it processed, when
+                did it get out?”
+              </blockquote>
+              <p className="wall-tie">
+                Every scan is checked for time, place and duplicates before the model uses it.
+              </p>
               <div className="wall-signature">
-                <span className="wall-mark" aria-hidden="true">
-                  ≠
-                </span>
+                <span className="wall-mark photo" role="img" aria-label="Gerry McGowan" />
                 <div>
-                  <strong>The data reviewer</strong>
+                  <strong>Gerry McGowan</strong>
+                  <small>Executive Director, US Network, Asendia</small>
                 </div>
               </div>
             </article>
@@ -100,19 +109,21 @@ export function Voices() {
                 aria-label="Illustrative stock photograph of a team reviewing work together around a table"
               />
             </article>
-            <article className="wall-card" aria-label="The customer, fictional perspective">
-              <blockquote>“The ETA changed. What happened?”</blockquote>
+            <article className="wall-card" aria-label="Gerry McGowan, interview">
+              <blockquote>“The goal is to know there’s a problem before the customer calls.”</blockquote>
+              <p className="wall-tie">
+                The dashboard flags slipping and unreliable ETAs for a dispatcher first.
+              </p>
               <div className="wall-signature">
-                <span className="wall-mark" aria-hidden="true">
-                  ↗
-                </span>
+                <span className="wall-mark photo" role="img" aria-label="Gerry McGowan" />
                 <div>
-                  <strong>The customer</strong>
+                  <strong>Gerry McGowan</strong>
+                  <small>Executive Director, US Network, Asendia</small>
                 </div>
               </div>
             </article>
           </div>
-          <div className="wall-controls" aria-label="Browse fictional perspectives">
+          <div className="wall-controls" aria-label="Browse perspectives">
             <button type="button" data-wall-prev aria-label="Previous perspective">
               <Arrow left />
             </button>

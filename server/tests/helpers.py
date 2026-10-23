@@ -64,7 +64,7 @@ class Constant:
 class Unchanged:
     """Stand-in later-day model: keeps the ETA."""
 
-    def blend(self, rows, minutes):
+    def minutes(self, rows, minutes):
         return minutes
 
 

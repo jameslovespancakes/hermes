@@ -6,7 +6,11 @@
                  vs that package's actual time. This is what a customer experiences.
 
 Uses their model, data, and preprocessing unchanged (filter_input, edge construction as in test_model).
+For a *_fair dataset (see clean.py) each parcel prediction is also written, with its courier, date, snapshot minute
+and order id, to results/m2g4rtp_<dataset>.csv for the head-to-head with Hermes.
 """
+
+import csv
 import os
 import sys
 
@@ -24,41 +28,90 @@ from utils.util import dict_merge, get_common_params, get_dataset_path, to_devic
 
 dataset, checkpoint = sys.argv[1], sys.argv[2]
 device = torch.device("cuda")
-params = dict_merge([vars(get_common_params().parse_known_args([])[0]),
-                     {"model": "m2g4rtp_delivery", "dataset": dataset, "hidden_size": 64, "device": device,
-                      "sort_x_size": 8, "start_fea": 4}])
+params = dict_merge(
+    [
+        vars(get_common_params().parse_known_args([])[0]),
+        {"model": "m2g4rtp_delivery", "dataset": dataset, "hidden_size": 64, "device": device, "sort_x_size": 8, "start_fea": 4},
+    ]
+)
 params["pad_value"] = params["max_task_num"] - 1
 params["train_path"], params["val_path"], params["test_path"] = get_dataset_path(params)
 model = M2G4RTP(params).to(device)
 model.load_state_dict(torch.load(checkpoint, map_location=device))
 model.eval()
-loader = DataLoader(M2GDataset(mode="test", params=params), batch_size=16, shuffle=False)
+data = M2GDataset(mode="test", params=params)
+loader = DataLoader(data, batch_size=16, shuffle=False)
+meta = data.data if "meta_order" in data.data else None
 
-pub_err, pkg_err, pkg_lab = [], [], []
+pub_err, pkg_err, pkg_lab, rows, first = [], [], [], [], 0
 with torch.no_grad():
     for batch in loader:
         batch = to_device(batch, device)
-        (V, V_reach_mask, label, label_len, V_at, start_fea, cou_fea, aoi_feature_steps, aoi_start_steps,
-         aoi_pos_steps, aoi_len_steps, aoi_idx_steps, aoi_index_steps, E_static_fea, E_mask) = batch
+        (
+            V,
+            V_reach_mask,
+            label,
+            label_len,
+            V_at,
+            start_fea,
+            cou_fea,
+            aoi_feature_steps,
+            aoi_start_steps,
+            aoi_pos_steps,
+            aoi_len_steps,
+            aoi_idx_steps,
+            aoi_index_steps,
+            E_static_fea,
+            E_mask,
+        ) = batch
         B, T, N, _ = E_mask.shape
         E = torch.zeros([B, T, N, N, E_static_fea.shape[-1]], device=device)
         for t in range(T):
             E[:, t] = E_static_fea * E_mask[:, t].unsqueeze(-1).expand(E_static_fea.shape)
-        (V, V_reach_mask, cou_fea, label, label_len, V_at, start_fea, aoi_feature_steps, aoi_start_steps, aoi_pos_steps,
-         aoi_len_steps, aoi_index_steps, aoi_idx_steps, E) = filter_input(
-            V, V_reach_mask, cou_fea, label, label_len, V_at, start_fea, aoi_feature_steps, aoi_start_steps,
-            aoi_pos_steps, aoi_len_steps, aoi_index_steps, aoi_idx_steps, E)
-        _, pointers, eta, _ = model(V, V_reach_mask, start_fea, cou_fea, aoi_feature_steps, aoi_start_steps,
-                                    aoi_pos_steps, aoi_len_steps, aoi_index_steps, E, is_train=False)
+        steps = (label_len.reshape(B * T) != 0).nonzero().squeeze(1).cpu().numpy()
+        (
+            V,
+            V_reach_mask,
+            cou_fea,
+            label,
+            label_len,
+            V_at,
+            start_fea,
+            aoi_feature_steps,
+            aoi_start_steps,
+            aoi_pos_steps,
+            aoi_len_steps,
+            aoi_index_steps,
+            aoi_idx_steps,
+            E,
+        ) = filter_input(
+            V,
+            V_reach_mask,
+            cou_fea,
+            label,
+            label_len,
+            V_at,
+            start_fea,
+            aoi_feature_steps,
+            aoi_start_steps,
+            aoi_pos_steps,
+            aoi_len_steps,
+            aoi_index_steps,
+            aoi_idx_steps,
+            E,
+        )
+        _, pointers, eta, _ = model(
+            V, V_reach_mask, start_fea, cou_fea, aoi_feature_steps, aoi_start_steps, aoi_pos_steps, aoi_len_steps, aoi_index_steps, E, is_train=False
+        )
         label, V_at, pointers, eta = label.long().cpu().numpy(), V_at.cpu().numpy(), pointers.cpu().numpy(), eta.cpu().numpy()
         for i, n in enumerate(label_len.long().cpu().numpy()):
             if n == 0:
                 continue
             # as published: position-wise, predicted step k vs actual k-th delivery (their code casts to integer minutes)
             pub_err.extend(np.abs(np.trunc(eta[i, :n]) - np.trunc(V_at[i, :n])).tolist())
-            true_time = {int(label[i, k]): float(V_at[i, k]) for k in range(n)}        # slot -> actual minutes
+            true_time = {int(label[i, k]): float(V_at[i, k]) for k in range(n)}  # slot -> actual minutes
             pred_time = {}
-            for k in range(eta.shape[1]):                                              # slot -> ETA at the step it was chosen
+            for k in range(eta.shape[1]):  # slot -> ETA at the step it was chosen
                 slot = int(pointers[i, k])
                 if slot in true_time and slot not in pred_time:
                     pred_time[slot] = float(eta[i, k])
@@ -66,8 +119,24 @@ with torch.no_grad():
                 if slot in pred_time:
                     pkg_err.append(abs(pred_time[slot] - actual))
                     pkg_lab.append(actual)
+                    if meta is not None:
+                        sample, step = first + steps[i] // T, steps[i] % T
+                        rows.append(
+                            (
+                                meta["meta_courier"][sample],
+                                int(meta["meta_ds"][sample]),
+                                float(meta["meta_time"][sample, step]),
+                                int(meta["meta_order"][sample, slot]),
+                                pred_time[slot],
+                                actual,
+                            )
+                        )
+        first += B
 
 pub, pkg = np.array(pub_err), np.array(pkg_err)
 print(f"{dataset}: {len(pkg):,} package predictions")
 print(f"  as published (step k vs k-th actual): MAE {pub.mean():.2f} min | within 20 min {np.mean(pub <= 20) * 100:.1f}%")
 print(f"  per package (customer view):          MAE {pkg.mean():.2f} min | within 20 min {np.mean(pkg <= 20) * 100:.1f}%")
+if meta is not None:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", f"m2g4rtp_{dataset}.csv"), "w", newline="") as f:
+        csv.writer(f).writerows([("courier", "ds", "minute", "order_id", "pred", "actual_min"), *rows])

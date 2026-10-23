@@ -19,8 +19,17 @@ from utils.util import dict_merge, get_common_params  # noqa: E402
 
 dataset, model = sys.argv[1], sys.argv[2]
 checkpoint = sys.argv[3] if len(sys.argv) > 3 else None
-params = {"model": model, "dataset": dataset, "hidden_size": 64, "workers": 0, "is_test": False, "inference": False,
-          "batch_size": 16 if model.startswith("m2g4rtp") else 64, "num_epoch": 60, "early_stop": 11}
+params = {
+    "model": model,
+    "dataset": dataset,
+    "hidden_size": 64,
+    "workers": 0,
+    "is_test": False,
+    "inference": False,
+    "batch_size": 16 if model.startswith("m2g4rtp") else 64,
+    "num_epoch": 60,
+    "early_stop": 11,
+}
 if checkpoint:
     params["model_path"] = checkpoint
 run(dict_merge([vars(get_common_params().parse_known_args([])[0]), params]))

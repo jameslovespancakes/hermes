@@ -14,7 +14,7 @@ index 8c5c76f..f6c1f66 100644
  
  class Decoder(nn.Module):
 diff --git a/time_prediction/algorithm/m2g4rtp_delivery/train.py b/time_prediction/algorithm/m2g4rtp_delivery/train.py
-index bb68afe..7d2a8ad 100644
+index bb68afe..8071aef 100644
 --- a/time_prediction/algorithm/m2g4rtp_delivery/train.py
 +++ b/time_prediction/algorithm/m2g4rtp_delivery/train.py
 @@ -5,7 +5,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3'
@@ -35,6 +35,17 @@ index bb68afe..7d2a8ad 100644
  
              for t in range(T):
                  E[:, t, :, :, :] = E_static_fea * E_mask[:, t, :, :].unsqueeze(-1).expand(E_static_fea.shape)
+@@ -170,8 +170,8 @@ def process_batch(batch, model, device, params):
+     unrolled = pred_scores.view(-1, pred_scores.size(-1))
+     unrolled_aoi = aoi_order_score.view(-1, aoi_order_score.size(-1))
+     aoi_idx_steps[aoi_idx_steps == -1] = aoi_order_score.size(-1) - 1
+-    mle_loss_aoi = F.cross_entropy(unrolled_aoi, aoi_idx_steps.view(-1), ignore_index=params['pad_value'])
+-    mle_loss = F.cross_entropy(unrolled, label.view(-1), ignore_index=params['pad_value'])
++    mle_loss_aoi = F.cross_entropy(unrolled_aoi, aoi_idx_steps.view(-1).long(), ignore_index=params['pad_value'])
++    mle_loss = F.cross_entropy(unrolled, label.view(-1).long(), ignore_index=params['pad_value'])
+     eta_loss = eta_mae_loss_calc(V_at, label_len, eta)
+     uncertainty_loss_ = uncertainty_loss(num_task=3)
+     loss = uncertainty_loss_(mle_loss, mle_loss_aoi, eta_loss)
 diff --git a/time_prediction/algorithm/rankepta/time_predictor.py b/time_prediction/algorithm/rankepta/time_predictor.py
 index f30c256..22c1c64 100644
 --- a/time_prediction/algorithm/rankepta/time_predictor.py

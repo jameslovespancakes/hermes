@@ -1,8 +1,8 @@
 // Benchmarks, laid out as a product story: a hero with handwritten sums, a dark statement over
-// a faded bar chart, a sticky four-part tour and a closing video card.
+// a faded bar chart, a sticky six-part tour and a closing video card.
 import { Nav } from '../../nav';
 import { Defs } from './defs';
-import { Clock, Lanes, Rods, Swap } from './figures';
+import { Clock, Lanes, Rods, Spread, Swap, Window } from './figures';
 
 // An unlabelled bar chart behind the statement, rising as it comes into view.
 const bars = Array.from({ length: 32 }, (_, i) =>
@@ -41,6 +41,22 @@ const tour = [
     text: 'Same 149,263 Yantai predictions, scored by parcel. Hermes has 24% lower error than M2G4RTP.',
     number: '24% lower',
     figure: <Rods />,
+  },
+  {
+    id: 'spread',
+    nav: 'The spread',
+    title: ['How far off,', 'and which way.'],
+    text: 'Every Yantai ETA, Sep 16–30: where real arrivals fell. Most land close; the misses that remain run late more often than early.',
+    number: '27 min',
+    figure: <Spread />,
+  },
+  {
+    id: 'customer-window',
+    nav: 'What customers see',
+    title: ['A window,', 'not a guess.'],
+    text: 'Customers see the range where 80% of similar parcels really arrived. Set on Sep 1–15, checked on Sep 16–30 in all five cities.',
+    number: '80.1%',
+    figure: <Window />,
   },
 ];
 

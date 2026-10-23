@@ -8,11 +8,10 @@ from server.features.live import build_live_queries
 from server.models.bundle import ModelBundle
 from server.pipeline.features import package_table
 from server.pipeline.train import score_events
-from server.quality.detectors import duplicate_records
+from server.quality.detectors import duplicate_records, record_weights, suspicious
 from server.quality.drift import drift_report
 from server.quality.guard import DataGuard
 from server.quality.monitor import DRIFT_FEATURES, MonitorBaseline
-from server.quality.trust import record_weights, suspicious
 from server.serving.predictor import LiveETAPredictor
 
 MECHANISM_INPUTS = ("n_pending", "dist_from_courier_km", "pace_today_min", "route_ahead", "feed_age_min")

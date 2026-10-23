@@ -60,7 +60,7 @@ def train_bundle(
     columns = eta_columns(habit_columns(packages))
     fit, stop = fit_rows(live, split), stop_rows(live, split)
     eta = fit_eta(fit, stop, columns, seeds=ENSEMBLE_SEEDS)
-    later = fit_later_day(fit, columns)
+    later = fit_later_day(live, split, columns, eta)
     risk = fit_risk(fit, stop, columns)
     info.update(fit_rows=len(fit), stop_rows=len(stop), eta_rounds=[int(m.best_iteration_) for m in eta.models])
     log(f"[{city}] ETA models: {info['eta_rounds']} rounds on {len(fit):,} rows")

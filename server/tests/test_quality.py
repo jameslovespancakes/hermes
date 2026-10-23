@@ -4,9 +4,8 @@ import numpy as np
 import pandas as pd
 
 from server.quality.config import CleanMode
-from server.quality.detectors import clock_offset_min, duplicate_records, running_bulk_share
+from server.quality.detectors import clock_offset_min, duplicate_records, record_weights, running_bulk_share, suspicious
 from server.quality.guard import DataGuard, data_issues, minutes_since_area_visit
-from server.quality.trust import record_weights, suspicious
 from server.tests.helpers import records
 
 
@@ -121,10 +120,11 @@ class QualityTests(unittest.TestCase):
                 "_delivered_at": pd.to_datetime(["2000-05-01 09:00", pd.NaT]),
             }
         )
-        live = pd.DataFrame({"row": [1, 1], "s": pd.to_datetime(["2000-05-01 08:30", "2000-05-01 10:30"])})
+        live = pd.DataFrame({"row": [1, 1, 1], "s": pd.to_datetime(["2000-05-01 08:30", "2000-05-01 10:30", "2000-05-02 10:30"])})
         since = minutes_since_area_visit(live, packages)
-        self.assertTrue(np.isnan(since[0]))
+        self.assertTrue(np.isnan(since[0]))  # not visited yet
         self.assertEqual(since[1], 90.0)
+        self.assertTrue(np.isnan(since[2]))  # the visit was yesterday
 
     def test_serving_marks_moved_addresses_and_removed_copies(self):
         recs = records(days=2)

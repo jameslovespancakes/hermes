@@ -12,6 +12,7 @@ PAGES = {
     "/benchmarks": "benchmarks/index.html",
     "/methodology": "methodology/index.html",
     "/dashboard": "dashboard/index.html",
+    "/results": "results/index.html",
 }
 
 

@@ -10,7 +10,7 @@ test('content', () => {
       .map((_, n) => $(n).attr('data-count'))
       .get(),
   ).toEqual(['800000', '181388', '155296']);
-  expect($('.quality-card')).toHaveLength(6);
+  expect($('.quality-card')).toHaveLength(8);
   expect($('.wall-card')).toHaveLength(6);
 });
 

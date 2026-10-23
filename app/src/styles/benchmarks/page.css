@@ -215,6 +215,13 @@
   opacity: 0.6;
 }
 .tour-card .lead .line,
+.tour-card .spread-fill {
+  fill: currentColor;
+  opacity: 0.22;
+}
+.tour-card .spread-fill.wide {
+  opacity: 0.1;
+}
 .tour-card .line.accent {
   stroke: var(--orange);
   stroke-width: 5;

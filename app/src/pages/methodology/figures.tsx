@@ -63,8 +63,12 @@ export function Figures() {
     <>
       <Chart id="validate" kind="bars" data={series.validate[0]} />
       <Chart id="clean" kind="line" data={series.clean[0]} />
+      <Chart id="weigh" kind="area" data={series.weigh[0]} />
+      <Chart id="correct" kind="bars" data={series.correct[0]} />
       <Chart id="adapt" kind="area" data={saved} />
+      <Chart id="flag" kind="stems" data={series.flag[0]} />
       <Chart id="monitor" kind="stems" data={series.monitor[0]} />
+      <Chart id="retrain" kind="line" data={series.retrain[0]} />
     </>
   );
 }

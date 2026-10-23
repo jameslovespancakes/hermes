@@ -1,0 +1,688 @@
+{
+  "created_utc": "2026-10-23T04:52:58.139051+00:00",
+  "smoke": false,
+  "design": {
+    "lq_rollout": "0% -> 60% of couriers, Jul 1 -> Sep 30 (bulk sync to the hour, ~1 km GPS jitter, 50% re-sent)",
+    "stale_rollout": "0% -> 60% of couriers, Sep 16 -> Sep 30, uploads 60 min late",
+    "retraining": "monthly: Jul 1, Aug 1, Sep 1 (fit before cutoff, early-stop next 15 days, test rest of month)",
+    "countermeasure": "data contract + DataGuard (dedupe, GPS repair, bulk-scan quarantine, review flags) + event-time processing with upload-lag monitoring + staleness-aware model when a feed is stale + PSI drift monitoring + gated retraining on a 10% audited sample",
+    "code_path": "systems trained by server.pipeline.train.train_bundle and scored by server.serving.predictor.LiveETAPredictor",
+    "scoring": "true delivery times; same real packages and true checkpoint moments for every condition"
+  },
+  "quality_config": {
+    "max_area_offset_km": 1.5,
+    "revisit_quantile": 0.9,
+    "bulk_scan_share": 0.3,
+    "stale_feed_minutes": 45.0,
+    "fresh_max_feed_age_min": 20.0,
+    "fresh_max_upload_lag_min": 10.0,
+    "max_duplicate_order_id_pct": 0.1,
+    "max_delivered_before_accepted_pct": 0.0,
+    "max_outside_city_pct": 0.5,
+    "max_shared_timestamp_pct": 1.0,
+    "max_on_the_hour_pct": 5.0,
+    "max_resent_record_pct": 0.5,
+    "drift_watch": 0.1,
+    "drift_act": 0.25,
+    "drift_margin": 2.0,
+    "audit_rate": 0.1,
+    "min_audited_predictions": 500,
+    "min_improvement_min": 0.0,
+    "augment_share": 0.5,
+    "augment_min_lag_min": 15.0,
+    "augment_max_lag_min": 180.0,
+    "augment_sample": 400000
+  },
+  "guard_detection_quality": {
+    "duplicates_found_pct_of_injected": 100.0,
+    "real_packages_wrongly_removed_as_duplicates": 0,
+    "bad_feed_records_flagged_pct": 91.31262644293705,
+    "good_records_flagged_pct": 0.0456141951375268,
+    "bad_feed_mean_weight": 0.09146880150751033,
+    "good_mean_weight": 0.9978099879757061,
+    "bad_feed_coordinates_repaired_pct": 29.513269070570036,
+    "good_coordinates_repaired_pct": 0.07298271222004288
+  },
+  "training_label_corruption": {
+    "training_rows_from_fake_duplicates_pct": 2.6213116692283007,
+    "mean_abs_label_error_min": 1.6974879310843234
+  },
+  "data_contract": {
+    "clean": {
+      "days": 92,
+      "days_failed": 4,
+      "first_failed_day": "07-07",
+      "most_common_failure": "destinations inside the city"
+    },
+    "low_quality": {
+      "days": 92,
+      "days_failed": 87,
+      "first_failed_day": "07-06",
+      "most_common_failure": "courier timestamps not repeated"
+    }
+  },
+  "drift_thresholds": {
+    "n_pending": {
+      "natural_psi": 0.009207577240072951,
+      "watch": 0.1,
+      "act": 0.25
+    },
+    "dist_from_courier_km": {
+      "natural_psi": 0.011760304763625525,
+      "watch": 0.1,
+      "act": 0.25
+    },
+    "pace_today_min": {
+      "natural_psi": 0.02717874516851588,
+      "watch": 0.1,
+      "act": 0.25
+    },
+    "feed_age_min": {
+      "natural_psi": 0.0,
+      "watch": 0.1,
+      "act": 0.25
+    },
+    "upload_lag_min": {
+      "natural_psi": 0.0,
+      "watch": 0.1,
+      "act": 0.25
+    }
+  },
+  "monthly": {
+    "07-01": {
+      "reference": {
+        "n": 39833,
+        "mae": 60.22958212042466,
+        "median_ae": 32.264682257777224,
+        "within_30_pct": 46.92842617929857,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.0,
+        "mae_flagged": null,
+        "mae_not_flagged": 60.22958212042466
+      },
+      "bad_data_no_fix": {
+        "n": 39833,
+        "mae": 62.924687255745404,
+        "median_ae": 34.76656701209974,
+        "within_30_pct": 44.37024577611528,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 2.2142444706650264,
+        "mae_flagged": 88.68770288316851,
+        "mae_not_flagged": 62.341313792075994,
+        "mae_affected_couriers": 84.74459317968426,
+        "mae_unaffected_couriers": 58.92844345834715,
+        "affected_share_pct": 15.479627444581126
+      },
+      "bad_data_with_guard": {
+        "n": 39833,
+        "mae": 62.54347512845114,
+        "median_ae": 34.38345376581044,
+        "within_30_pct": 44.76941229633721,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 16.02691235909924,
+        "mae_flagged": 93.63485270758954,
+        "mae_not_flagged": 56.60944557703797,
+        "mae_affected_couriers": 81.55355902081092,
+        "mae_unaffected_couriers": 59.061840967988665,
+        "affected_share_pct": 15.479627444581126
+      },
+      "lq_feed_share_at_test_pct": 15.164835164835164
+    },
+    "08-01": {
+      "reference": {
+        "n": 48929,
+        "mae": 49.85446929796778,
+        "median_ae": 26.976307512664704,
+        "within_30_pct": 53.63690245048949,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.0,
+        "mae_flagged": null,
+        "mae_not_flagged": 49.85446929796778
+      },
+      "bad_data_no_fix": {
+        "n": 48929,
+        "mae": 56.84112667531505,
+        "median_ae": 33.87083493986009,
+        "within_30_pct": 46.02178667048172,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 6.018925381675489,
+        "mae_flagged": 90.74349333857835,
+        "mae_not_flagged": 54.66988298569888,
+        "mae_affected_couriers": 89.53516950227805,
+        "mae_unaffected_couriers": 39.14339689303337,
+        "affected_share_pct": 35.12027631874757
+      },
+      "bad_data_with_guard": {
+        "n": 48929,
+        "mae": 54.90455145300687,
+        "median_ae": 32.52242198729901,
+        "within_30_pct": 47.421774407815406,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 35.31034764658996,
+        "mae_flagged": 82.91354168570916,
+        "mae_not_flagged": 39.616060228111195,
+        "mae_affected_couriers": 83.78085724342351,
+        "mae_unaffected_couriers": 39.27341462193048,
+        "affected_share_pct": 35.12027631874757
+      },
+      "lq_feed_share_at_test_pct": 35.604395604395606
+    },
+    "09-01": {
+      "reference": {
+        "n": 37291,
+        "mae": 45.898555797810076,
+        "median_ae": 25.35354104672868,
+        "within_30_pct": 56.375532970421816,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.0,
+        "mae_flagged": null,
+        "mae_not_flagged": 45.898555797810076
+      },
+      "bad_data_no_fix": {
+        "n": 37291,
+        "mae": 70.72804545415359,
+        "median_ae": 56.171919394098296,
+        "within_30_pct": 30.98602880051487,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 10.334933361937198,
+        "mae_flagged": 96.61706154782397,
+        "mae_not_flagged": 67.74403767758852,
+        "mae_affected_couriers": 88.10685396929229,
+        "mae_unaffected_couriers": 40.80914937594553,
+        "affected_share_pct": 63.25654983776246
+      },
+      "bad_data_with_guard": {
+        "n": 37291,
+        "mae": 63.587925088743134,
+        "median_ae": 47.0159307007346,
+        "within_30_pct": 35.27928990909335,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 62.57273873052479,
+        "mae_flagged": 76.30887756295022,
+        "mae_not_flagged": 42.32041021927631,
+        "mae_affected_couriers": 76.22931254927728,
+        "mae_unaffected_couriers": 41.82484752294687,
+        "affected_share_pct": 63.25654983776246
+      },
+      "lq_feed_share_at_test_pct": 55.714285714285715
+    }
+  },
+  "gated_retraining": {
+    "lq_raw": [
+      {
+        "cutoff": "07-01",
+        "deployed": "lq_raw@07-01",
+        "test_mae": 62.924687255745404,
+        "gate": null
+      },
+      {
+        "cutoff": "08-01",
+        "deployed": "lq_raw@07-01",
+        "test_mae": 61.25737976770385,
+        "gate": {
+          "promote": false,
+          "champion_mae": 56.681584357351454,
+          "challenger_mae": 61.974501549516255,
+          "audited_predictions": 4045,
+          "reason": "challenger not better; keep champion and alert"
+        }
+      },
+      {
+        "cutoff": "09-01",
+        "deployed": "lq_raw@09-01",
+        "test_mae": 70.72804545415359,
+        "gate": {
+          "promote": true,
+          "champion_mae": 65.74702687523944,
+          "challenger_mae": 62.560403636510515,
+          "audited_predictions": 3547,
+          "reason": "challenger better on audited deliveries"
+        }
+      }
+    ],
+    "lq_guarded": [
+      {
+        "cutoff": "07-01",
+        "deployed": "lq_guarded@07-01",
+        "test_mae": 62.54347512845114,
+        "gate": null
+      },
+      {
+        "cutoff": "08-01",
+        "deployed": "lq_guarded@07-01",
+        "test_mae": 60.31237852007247,
+        "gate": {
+          "promote": false,
+          "champion_mae": 56.251399176051294,
+          "challenger_mae": 60.165507537679694,
+          "audited_predictions": 4045,
+          "reason": "challenger not better; keep champion and alert"
+        }
+      },
+      {
+        "cutoff": "09-01",
+        "deployed": "lq_guarded@09-01",
+        "test_mae": 63.587925088743134,
+        "gate": {
+          "promote": true,
+          "champion_mae": 64.98426327781029,
+          "challenger_mae": 58.77213350175187,
+          "audited_predictions": 3547,
+          "reason": "challenger better on audited deliveries"
+        }
+      }
+    ]
+  },
+  "severity": [
+    {
+      "share": 0.2,
+      "no_fix": 58.254356959803175,
+      "with_fix": 51.348594856439114
+    },
+    {
+      "share": 0.4,
+      "no_fix": 64.87409281667024,
+      "with_fix": 56.800439220007455
+    },
+    {
+      "share": 0.6,
+      "no_fix": 70.72804545415359,
+      "with_fix": 58.54738208954543
+    }
+  ],
+  "random_weight_control": {
+    "guard_weights": 63.587925088743134,
+    "random_weights": 64.43003724803006
+  },
+  "new_faults": {
+    "never_retrained": {
+      "no_fix": {
+        "n": 37291,
+        "mae": 52.764285914875664,
+        "median_ae": 31.84537934198977,
+        "within_30_pct": 47.65761175618782,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.0,
+        "mae_flagged": null,
+        "mae_not_flagged": 52.764285914875664
+      },
+      "with_fix": {
+        "n": 37291,
+        "mae": 45.898555797810076,
+        "median_ae": 25.35354104672868,
+        "within_30_pct": 56.375532970421816,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.0,
+        "mae_flagged": null,
+        "mae_not_flagged": 45.898555797810076
+      },
+      "description": "model trained to Jul 1 and never retrained, vs retrained monthly (Sep 1)"
+    },
+    "frozen_habits": {
+      "no_fix": {
+        "n": 37291,
+        "mae": 50.76354052274883,
+        "median_ae": 29.227912317579396,
+        "within_30_pct": 51.01767182430077,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.0,
+        "mae_flagged": null,
+        "mae_not_flagged": 50.76354052274883
+      },
+      "with_fix": {
+        "n": 37291,
+        "mae": 45.898555797810076,
+        "median_ae": 25.35354104672868,
+        "within_30_pct": 56.375532970421816,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.0,
+        "mae_flagged": null,
+        "mae_not_flagged": 45.898555797810076
+      },
+      "description": "courier and area habits stop updating on Jul 1 (a failed nightly job), vs rebuilt from the log at every prediction"
+    },
+    "fast_clocks": {
+      "no_fix": {
+        "n": 37240,
+        "mae": 47.599717062438565,
+        "median_ae": 27.113002078157955,
+        "within_30_pct": 53.73523093447905,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.341031149301826,
+        "mae_flagged": 49.74216563504741,
+        "mae_not_flagged": 47.592385643024315,
+        "mae_affected_couriers": 60.892261610597934,
+        "mae_unaffected_couriers": 43.125613165638676,
+        "affected_share_pct": 25.182599355531686
+      },
+      "with_fix": {
+        "n": 37291,
+        "mae": 46.07630646899903,
+        "median_ae": 24.901702144014827,
+        "within_30_pct": 57.04861762891851,
+        "staleness_model_pct": 0.16357834329999196,
+        "flagged_for_review_pct": 23.917299080207023,
+        "mae_flagged": 48.517944697365664,
+        "mae_not_flagged": 45.30875496192156,
+        "mae_affected_couriers": 53.98770360410685,
+        "mae_unaffected_couriers": 43.39894793095683,
+        "affected_share_pct": 25.284921294682363
+      },
+      "description": "device clocks 20 min fast on up to 60% of couriers over the test window; receive times true"
+    },
+    "lost_scans": {
+      "no_fix": {
+        "n": 37291,
+        "mae": 53.87514746609268,
+        "median_ae": 29.918439018078594,
+        "within_30_pct": 50.08447078383524,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.09117481429835617,
+        "mae_flagged": 71.44721972346636,
+        "mae_not_flagged": 53.85911154111883,
+        "mae_affected_couriers": 101.72431355644564,
+        "mae_unaffected_couriers": 42.655747194046526,
+        "affected_share_pct": 18.993859108095787
+      },
+      "with_fix": {
+        "n": 37291,
+        "mae": 53.6313960238296,
+        "median_ae": 29.17788613446058,
+        "within_30_pct": 51.0659408436352,
+        "staleness_model_pct": 0.8152101043147141,
+        "flagged_for_review_pct": 1.7564559813359792,
+        "mae_flagged": 79.58658585025005,
+        "mae_not_flagged": 53.1673538430155,
+        "mae_affected_couriers": 101.00220813036078,
+        "mae_unaffected_couriers": 42.52415747276497,
+        "affected_share_pct": 18.993859108095787
+      },
+      "detection": {
+        "lost_flagged_pct": 41.80416217560733,
+        "pending_flagged_pct": 1.6916757003480345,
+        "lost_predictions": 12061
+      },
+      "description": "30% of delivery scans never arrive from up to 60% of couriers over the test window; the fix flags, it does not correct"
+    }
+  },
+  "four_conditions": {
+    "reference": {
+      "no_fix": {
+        "n": 37291,
+        "mae": 45.898555797810076,
+        "median_ae": 25.35354104672868,
+        "within_30_pct": 56.375532970421816,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.0,
+        "mae_flagged": null,
+        "mae_not_flagged": 45.898555797810076
+      },
+      "with_fix": {
+        "n": 37291,
+        "mae": 46.1249568430162,
+        "median_ae": 24.864218939014407,
+        "within_30_pct": 57.12638438229063,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 1.8637204687458098,
+        "mae_flagged": 72.78369202957956,
+        "mae_not_flagged": 45.61867689562683
+      }
+    },
+    "stale_only": {
+      "no_fix": {
+        "n": 37291,
+        "mae": 50.72441100323538,
+        "median_ae": 29.42325655953732,
+        "within_30_pct": 50.73342093266472,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 0.28425089163605155,
+        "mae_flagged": 72.94891967263762,
+        "mae_not_flagged": 50.661057556443495,
+        "mae_affected_couriers": 78.95330461872842,
+        "mae_unaffected_couriers": 47.013148304165924,
+        "affected_share_pct": 11.61942559866992
+      },
+      "with_fix": {
+        "n": 37291,
+        "mae": 47.130360665910146,
+        "median_ae": 25.950185294884534,
+        "within_30_pct": 55.56836770266285,
+        "staleness_model_pct": 10.989246735137165,
+        "flagged_for_review_pct": 12.55798986350594,
+        "mae_flagged": 48.433993267045125,
+        "mae_not_flagged": 46.943139386742004,
+        "mae_affected_couriers": 46.475897122186474,
+        "mae_unaffected_couriers": 47.21640322113058,
+        "affected_share_pct": 11.61942559866992
+      },
+      "event_time_processing_only": {
+        "n": 37291,
+        "mae": 50.70846809629645,
+        "median_ae": 29.457543803599748,
+        "within_30_pct": 50.682470301145045,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 10.95974900109946,
+        "mae_flagged": 79.12491361975242,
+        "mae_not_flagged": 47.21075659002116,
+        "mae_affected_couriers": 78.81003718749089,
+        "mae_unaffected_couriers": 47.01394479779091,
+        "affected_share_pct": 11.61942559866992
+      },
+      "staleness_model_always_on": {
+        "n": 37291,
+        "mae": 48.39591447979901,
+        "median_ae": 27.08903776931851,
+        "within_30_pct": 53.82800139443834,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 12.55798986350594,
+        "mae_flagged": 48.55515516331476,
+        "mae_not_flagged": 48.37304511887825,
+        "mae_affected_couriers": 45.79900666527414,
+        "mae_unaffected_couriers": 48.73733087522156,
+        "affected_share_pct": 11.61942559866992
+      }
+    },
+    "low_quality_only": {
+      "no_fix": {
+        "n": 37291,
+        "mae": 70.72804545415359,
+        "median_ae": 56.171919394098296,
+        "within_30_pct": 30.98602880051487,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 10.334933361937198,
+        "mae_flagged": 96.61706154782397,
+        "mae_not_flagged": 67.74403767758852,
+        "mae_affected_couriers": 88.10685396929229,
+        "mae_unaffected_couriers": 40.80914937594553,
+        "affected_share_pct": 63.25654983776246
+      },
+      "with_fix": {
+        "n": 37291,
+        "mae": 58.54738208954543,
+        "median_ae": 40.321528350952555,
+        "within_30_pct": 39.77903515593575,
+        "staleness_model_pct": 29.240299267919873,
+        "flagged_for_review_pct": 62.57273873052479,
+        "mae_flagged": 68.39978314744572,
+        "mae_not_flagged": 42.0756527576657,
+        "mae_affected_couriers": 68.26089977285264,
+        "mae_unaffected_couriers": 41.82484752294687,
+        "affected_share_pct": 63.25654983776246
+      },
+      "guard_only": {
+        "n": 37291,
+        "mae": 63.587925088743134,
+        "median_ae": 47.0159307007346,
+        "within_30_pct": 35.27928990909335,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 62.57273873052479,
+        "mae_flagged": 76.30887756295022,
+        "mae_not_flagged": 42.32041021927631,
+        "mae_affected_couriers": 76.22931254927728,
+        "mae_unaffected_couriers": 41.82484752294687,
+        "affected_share_pct": 63.25654983776246
+      }
+    },
+    "combined": {
+      "no_fix": {
+        "n": 37291,
+        "mae": 75.19501566090084,
+        "median_ae": 63.49087423431452,
+        "within_30_pct": 26.210077498592156,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 10.056045694671637,
+        "mae_flagged": 97.45968516812141,
+        "mae_not_flagged": 72.70574847590107,
+        "mae_affected_couriers": 88.4842665580915,
+        "mae_unaffected_couriers": 42.31176537415997,
+        "affected_share_pct": 71.21825641575715
+      },
+      "with_fix": {
+        "n": 37291,
+        "mae": 58.99206166203495,
+        "median_ae": 40.91766269855478,
+        "within_30_pct": 39.092542436512836,
+        "staleness_model_pct": 38.6339867528358,
+        "flagged_for_review_pct": 70.36818535303424,
+        "mae_flagged": 65.11657416770285,
+        "mae_not_flagged": 44.44786866101857,
+        "mae_affected_couriers": 65.25536229290275,
+        "mae_unaffected_couriers": 43.49399605553286,
+        "affected_share_pct": 71.21825641575715
+      },
+      "event_time_processing_only": {
+        "n": 37291,
+        "mae": 75.11451697174645,
+        "median_ae": 63.41524738329903,
+        "within_30_pct": 26.255664905741334,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 20.62964254109571,
+        "mae_flagged": 89.76773345663945,
+        "mae_not_flagged": 71.30590847055443,
+        "mae_affected_couriers": 88.37207928060076,
+        "mae_unaffected_couriers": 42.30967770979246,
+        "affected_share_pct": 71.21825641575715
+      },
+      "guard_only": {
+        "n": 37291,
+        "mae": 67.65214070675631,
+        "median_ae": 53.222152174105304,
+        "within_30_pct": 30.747365316027995,
+        "staleness_model_pct": 0.0,
+        "flagged_for_review_pct": 70.36818535303424,
+        "mae_flagged": 77.3004181926434,
+        "mae_not_flagged": 44.739882832804874,
+        "mae_affected_couriers": 77.41527673136589,
+        "mae_unaffected_couriers": 43.49399605553286,
+        "affected_share_pct": 71.21825641575715
+      }
+    }
+  },
+  "mechanism": {
+    "stale_only": {
+      "matched_predictions": 37291,
+      "mae_reference": 45.898555797810076,
+      "mae_degraded": 50.72441100323538,
+      "mean_abs_change_n_pending": 0.5307983160018921,
+      "mean_abs_change_dist_from_courier_km": 0.15693795680999756,
+      "mean_abs_change_pace_today_min": 0.16935278475284576,
+      "mean_abs_change_route_ahead": 0.644900918006897,
+      "mean_abs_change_feed_age_min": 49.396690368652344,
+      "route_position_changed_pct": 11.209138934327317
+    },
+    "low_quality_only": {
+      "matched_predictions": 37291,
+      "mae_reference": 45.898555797810076,
+      "mae_degraded": 70.72804545415359,
+      "mean_abs_change_n_pending": 7.321096420288086,
+      "mean_abs_change_dist_from_courier_km": 0.8565943241119385,
+      "mean_abs_change_pace_today_min": 3.6078033447265625,
+      "mean_abs_change_route_ahead": 5.2326836585998535,
+      "mean_abs_change_feed_age_min": 188.4427490234375,
+      "route_position_changed_pct": 80.77552224397307
+    },
+    "combined": {
+      "matched_predictions": 37291,
+      "mae_reference": 45.898555797810076,
+      "mae_degraded": 75.19501566090084,
+      "mean_abs_change_n_pending": 7.83784294128418,
+      "mean_abs_change_dist_from_courier_km": 0.9679604768753052,
+      "mean_abs_change_pace_today_min": 3.7397308349609375,
+      "mean_abs_change_route_ahead": 5.7374701499938965,
+      "mean_abs_change_feed_age_min": 233.24168395996094,
+      "route_position_changed_pct": 84.69335764661714
+    }
+  },
+  "unseen_degradation": {
+    "no_fix": {
+      "n": 36288,
+      "mae": 59.34473455173394,
+      "median_ae": 41.83204310264929,
+      "within_30_pct": 38.2688492063492,
+      "staleness_model_pct": 0.0,
+      "flagged_for_review_pct": 1.0802469135802468,
+      "mae_flagged": 77.70425244389612,
+      "mae_not_flagged": 59.144240596593335,
+      "mae_affected_couriers": 70.71109539543995,
+      "mae_unaffected_couriers": 40.60873790774448,
+      "affected_share_pct": 62.24096119929453
+    },
+    "with_fix": {
+      "n": 36288,
+      "mae": 52.71023078800744,
+      "median_ae": 32.47927676367589,
+      "within_30_pct": 47.117504409171076,
+      "staleness_model_pct": 9.143518518518519,
+      "flagged_for_review_pct": 42.250881834215164,
+      "mae_flagged": 60.60335726915356,
+      "mae_not_flagged": 46.93539707885817,
+      "mae_affected_couriers": 59.254366329442135,
+      "mae_unaffected_couriers": 41.92305772284586,
+      "affected_share_pct": 62.24096119929453
+    },
+    "description": "timestamps randomly off by +/-30 min instead of bulk-synced: detectors not designed for it"
+  },
+  "drift": {
+    "clean": {
+      "days": 47,
+      "days_act": 47,
+      "days_watch": 0,
+      "first_act_day": "07-16",
+      "most_drifted_feature": "pace_today_min",
+      "max_psi": 3.2973049169434807
+    },
+    "combined": {
+      "days": 15,
+      "days_act": 15,
+      "days_watch": 0,
+      "first_act_day": "09-16",
+      "most_drifted_feature": "feed_age_min",
+      "max_psi": 9.456070793199986
+    },
+    "low_quality": {
+      "days": 47,
+      "days_act": 47,
+      "days_watch": 0,
+      "first_act_day": "07-16",
+      "most_drifted_feature": "feed_age_min",
+      "max_psi": 7.2082771003564154
+    },
+    "low_quality_only": {
+      "days": 15,
+      "days_act": 15,
+      "days_watch": 0,
+      "first_act_day": "09-16",
+      "most_drifted_feature": "feed_age_min",
+      "max_psi": 7.2082771003564154
+    },
+    "stale_only": {
+      "days": 15,
+      "days_act": 15,
+      "days_watch": 0,
+      "first_act_day": "09-16",
+      "most_drifted_feature": "pace_today_min",
+      "max_psi": 3.2973049169434807
+    }
+  },
+  "seconds": 2692.454653593013
+}

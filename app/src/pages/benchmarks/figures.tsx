@@ -139,3 +139,84 @@ export function Rods() {
     </svg>
   );
 }
+
+// Where real arrivals fell around the ETA, every Yantai ETA on Sep 16-30: the distribution of (arrival - ETA) from
+// -180 to +240 min in 5-minute steps, rebuilt from each distance band's measured percentiles and weighted by its
+// share. Shaded: P50 and P80, the ranges either side of the ETA holding half and 80% of arrivals.
+const curve = [
+  0.005, 0.009, 0.011, 0.013, 0.015, 0.017, 0.02, 0.023, 0.027, 0.03, 0.032, 0.035, 0.038, 0.041, 0.046,
+  0.053, 0.064, 0.081, 0.101, 0.122, 0.144, 0.164, 0.182, 0.201, 0.23, 0.269, 0.316, 0.374, 0.444, 0.524,
+  0.608, 0.7, 0.798, 0.898, 0.977, 0.999, 0.947, 0.841, 0.719, 0.606, 0.508, 0.426, 0.363, 0.314, 0.268,
+  0.228, 0.201, 0.18, 0.157, 0.135, 0.118, 0.106, 0.098, 0.093, 0.092, 0.088, 0.08, 0.068, 0.057, 0.05, 0.048,
+  0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.047, 0.046, 0.044, 0.042,
+  0.04, 0.038, 0.036, 0.034, 0.032, 0.03, 0.027, 0.022, 0.014,
+];
+const P50 = 27;
+const P80 = 71;
+const minute = (m: number) => 30 + ((m + 180) / 420) * 340;
+const BASE = 200;
+const HEIGHT = 140;
+
+export function Spread() {
+  const points = curve.map((v, k) => [minute(-180 + k * 5), BASE - v * HEIGHT] as const);
+  const line = points.map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
+  const area = (from: number, to: number) => {
+    const inside = points.filter((_, k) => -180 + k * 5 >= from && -180 + k * 5 <= to);
+    return `M${inside[0][0].toFixed(1)} ${String(BASE)}${inside.map(([x, y]) => `L${x.toFixed(1)} ${y.toFixed(1)}`).join('')}L${inside[inside.length - 1][0].toFixed(1)} ${String(BASE)}Z`;
+  };
+  return (
+    <svg
+      viewBox="0 0 400 300"
+      role="img"
+      aria-label="Every Yantai ETA, September 16 to 30: how far real arrivals fell from the ETA, as one curve peaking just before the ETA with a longer late tail. Half arrived within 27 minutes of the ETA (P50), 80% within 71 minutes (P80)."
+    >
+      <path className="spread-fill wide" d={area(-P80, P80)} data-value={P80} />
+      <path className="spread-fill" d={area(-P50, P50)} data-value={P50} />
+      <path className="line" d={line} />
+      <path className="faint" d={`M${minute(-180).toFixed(1)} ${String(BASE)}H${minute(240).toFixed(1)}`} />
+      <path className="faint" d={`M${minute(0).toFixed(1)} ${String(BASE)}V${String(BASE - HEIGHT - 8)}`} />
+      {[-120, -60, 0, 60, 120, 180].map((m) => (
+        <text key={m} className="middle" x={minute(m)} y={BASE + 18}>
+          {m === 0 ? 'ETA' : `${m > 0 ? '+' : '−'}${String(Math.abs(m) / 60)} h`}
+        </text>
+      ))}
+      <text className="middle" x={200} y={BASE + 50}>
+        P50 ±27 min
+      </text>
+      <text className="middle" x={200} y={BASE + 72}>
+        P80 ±71 min
+      </text>
+    </svg>
+  );
+}
+
+// What a customer sees for a parcel the ETA puts 20 minutes away (Yantai window: 13 min early to 52 min late).
+export function Window() {
+  const x = (m: number) => 60 + (m + 20) * 3.6;
+  return (
+    <svg
+      viewBox="0 0 400 300"
+      role="img"
+      aria-label="Invented example: the ETA says 10:20, twenty minutes from now. The customer sees 'Arrives between 10:07 and 11:12', the window where 80% of parcels with an ETA like this really arrived."
+    >
+      <text className="middle" x={200} y={58}>
+        Arrives between
+      </text>
+      <text className="middle big" x={200} y={108}>
+        10:07 – 11:12
+      </text>
+      <path className="faint" d={`M${String(x(-20))} 200H${String(x(70))}`} />
+      <path className="line accent" d={`M${String(x(-13))} 200H${String(x(52))}`} />
+      <circle className="link-dot" cx={x(0)} cy={200} r={5} />
+      <text className="middle" x={x(0)} y={180}>
+        ETA 10:20
+      </text>
+      <text className="middle" x={x(-13)} y={232}>
+        10:07
+      </text>
+      <text className="middle" x={x(52)} y={232}>
+        11:12
+      </text>
+    </svg>
+  );
+}

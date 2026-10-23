@@ -1,41 +1,77 @@
-// Data hygiene: four steps, each a headline number over a faint chart of the saved simulation.
+// Data hygiene: eight steps, each a headline number over a faint chart of the saved simulation (Yantai and Jilin).
 
 const steps = [
   {
     id: 'validate',
     heading: 'Clean|inputs.',
-    caption: 'Bad records are checked and repaired before training.',
+    caption: 'A cheap scanner app spreads to 60% of couriers, July to September.',
     name: 'Validate',
-    number: '88/92',
-    label: 'corrupted days flagged',
-    desc: 'Share of repeated courier timestamps per day rises in the simulated corrupted feed and stays near zero in the clean feed. The data contract flagged 88 of 92 corrupted days and no clean days.',
+    number: '175/184',
+    label: 'bad days caught by the daily data contract',
+    desc: 'Share of repeated courier timestamps per day in the simulated cheap-app feed and in the clean feed. The daily data contract flagged 175 of 184 corrupted days across Yantai and Jilin, and 4 of 184 clean days.',
   },
   {
     id: 'clean',
     heading: 'Clean|inputs.',
-    caption: 'Bad records are checked and repaired before training.',
+    caption: 'A cheap scanner app spreads to 60% of couriers, July to September.',
     name: 'Clean',
     number: '100%',
-    label: 're-sent copies removed',
-    desc: 'Re-sent records per day in the simulated corrupted feed. DataGuard removed every injected copy and no real parcels. GPS repairs are estimates, not verified locations.',
+    label: 'of re-sent copies removed, no real parcel lost',
+    desc: 'Re-sent records per day in the simulated feed. The guard removed every injected copy and no real parcels. Address repairs are estimates, not verified locations.',
+  },
+  {
+    id: 'weigh',
+    heading: 'Clean|inputs.',
+    caption: 'A cheap scanner app spreads to 60% of couriers, July to September.',
+    name: 'Weigh',
+    number: '0.11',
+    label: 'how much a bad record counts in training; clean ones 1.00',
+    desc: 'Average training weight per day of the cheap app’s records. Courier-days with same-minute bursts or impossible travel count for less, by a share learned from all couriers; nothing is deleted.',
+  },
+  {
+    id: 'correct',
+    heading: 'Clean|inputs.',
+    caption: 'A cheap scanner app spreads to 60% of couriers, July to September.',
+    name: 'Correct',
+    number: '20 → 2.6',
+    label: 'min of clock error after correcting fast devices',
+    desc: 'Clock error per day on devices running 20 minutes fast. Deliveries stamped after the server received them reveal the offset, which is then removed using each device’s earlier uploads.',
   },
   {
     id: 'adapt',
     heading: 'Keep|watch.',
-    caption: 'Live feeds are watched for delays and drift.',
+    caption: 'Late uploads, lost scans, frozen habits, no retraining. September 16 to 30.',
     name: 'Adapt',
-    number: '60.0',
-    label: 'min error with late uploads, from 63.3',
-    desc: 'Minutes of error saved per day by the delay-aware controls with uploads simulated 60 minutes late, growing as more couriers go stale. Overall error falls from 63.3 to 60.0 minutes.',
+    number: '54.0',
+    label: 'min error with late uploads, from 62.8',
+    desc: 'Minutes of error saved per day by the stale-feed model with uploads 60 minutes late, growing as more couriers go stale. Error falls from 62.8 to 54.0 minutes.',
+  },
+  {
+    id: 'flag',
+    heading: 'Keep|watch.',
+    caption: 'Late uploads, lost scans, frozen habits, no retraining. September 16 to 30.',
+    name: 'Flag',
+    number: '50%',
+    label: 'of lost scans flagged, 1.7% false alarms',
+    desc: 'Lost scans per day as up to 60% of couriers lose 30% of their scans. A parcel is flagged when its courier left its area without scanning it; the estimate itself is not repaired.',
   },
   {
     id: 'monitor',
     heading: 'Keep|watch.',
-    caption: 'Live feeds are watched for delays and drift.',
+    caption: 'Late uploads, lost scans, frozen habits, no retraining. September 16 to 30.',
     name: 'Monitor',
-    number: '47/47',
-    label: 'corrupted days above the drift alert',
-    desc: 'Daily input drift for the simulated corrupted and clean feeds. The corrupted feed passed the action threshold on all 47 monitored days; the clean feed on 3.',
+    number: '94/94',
+    label: 'corrupted days above the drift alarm',
+    desc: 'Daily input drift for the corrupted and clean feeds. Every corrupted day crossed the alarm; clean days crossed it once in Yantai but every day in Jilin, whose operation grew four-fold.',
+  },
+  {
+    id: 'retrain',
+    heading: 'Keep|watch.',
+    caption: 'Late uploads, lost scans, frozen habits, no retraining. September 16 to 30.',
+    name: 'Retrain',
+    number: '51.0',
+    label: 'min error retrained monthly, from 56.7 never retrained',
+    desc: 'Records per day in Jilin as its operation grows. A model trained on July data and never updated errs by 56.7 minutes in late September; retraining monthly brings it to 51.0.',
   },
 ];
 
@@ -58,7 +94,10 @@ export function Hygiene() {
               <br />
               <em>inputs.</em>
             </h2>
-            <p className="method-context">Bad records are checked and repaired before training.</p>
+            <p className="method-context">
+              A cheap scanner app spreads to 60% of couriers, July to September: bulk-synced times, 1 km GPS
+              errors, re-sent records, clocks 20 min fast.
+            </p>
           </header>
           <figure className="method-figure guard-mechanism">
             <div

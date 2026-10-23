@@ -113,6 +113,14 @@
   --quality-crop: 52% 50%;
   --card-color: #ebe6d7;
 }
+.quality-late {
+  --quality-image: url('/assets/images/delivery-training.jpg');
+  --quality-crop: 50% 45%;
+}
+.quality-bulk {
+  --quality-image: url('/assets/images/stop-shop.jpg');
+  --quality-crop: 50% 50%;
+}
 .quality-copy {
   position: relative;
   align-self: center;

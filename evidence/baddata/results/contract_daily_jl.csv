@@ -1,0 +1,185 @@
+day,records,passed,order ids unique,delivered not before accepted,destinations inside the city,courier timestamps not repeated,delivery times not bunched on the hour,no re-sent records,failed_checks,feed
+07-01,197,True,0.0,0.0,0.0,0.0,0.508,0.0,,clean
+07-02,219,True,0.0,0.0,0.0,0.0,0.913,0.0,,clean
+07-03,216,True,0.0,0.0,0.0,0.0,0.463,0.0,,clean
+07-04,231,True,0.0,0.0,0.0,0.0,2.165,0.0,,clean
+07-05,199,True,0.0,0.0,0.0,0.0,2.01,0.0,,clean
+07-06,212,True,0.0,0.0,0.0,0.0,1.415,0.0,,clean
+07-07,191,False,0.0,0.0,0.524,0.0,1.047,0.0,destinations inside the city,clean
+07-08,183,False,0.0,0.0,0.546,0.0,1.093,0.0,destinations inside the city,clean
+07-09,158,False,0.0,0.0,0.633,0.0,1.266,0.0,destinations inside the city,clean
+07-10,136,True,0.0,0.0,0.0,0.0,0.735,0.0,,clean
+07-11,130,True,0.0,0.0,0.0,0.0,1.538,0.0,,clean
+07-12,138,True,0.0,0.0,0.0,0.0,1.449,0.0,,clean
+07-13,127,True,0.0,0.0,0.0,0.0,0.0,0.0,,clean
+07-14,244,True,0.0,0.0,0.0,0.0,1.639,0.0,,clean
+07-15,226,True,0.0,0.0,0.0,0.0,2.212,0.0,,clean
+07-16,218,True,0.0,0.0,0.0,0.0,3.67,0.0,,clean
+07-17,230,True,0.0,0.0,0.435,0.0,1.739,0.0,,clean
+07-18,220,True,0.0,0.0,0.0,0.0,2.273,0.0,,clean
+07-19,218,True,0.0,0.0,0.0,0.0,1.376,0.0,,clean
+07-20,203,True,0.0,0.0,0.0,0.0,1.478,0.0,,clean
+07-21,241,True,0.0,0.0,0.0,0.0,3.734,0.0,,clean
+07-22,246,True,0.0,0.0,0.407,0.0,3.252,0.0,,clean
+07-23,231,True,0.0,0.0,0.0,0.0,2.165,0.0,,clean
+07-24,238,True,0.0,0.0,0.0,0.0,2.941,0.0,,clean
+07-25,263,True,0.0,0.0,0.0,0.0,1.901,0.0,,clean
+07-26,265,True,0.0,0.0,0.0,0.0,0.0,0.0,,clean
+07-27,343,True,0.0,0.0,0.292,0.0,1.458,0.0,,clean
+07-28,229,True,0.0,0.0,0.0,0.0,1.31,0.0,,clean
+07-29,219,True,0.0,0.0,0.0,0.0,1.37,0.0,,clean
+07-30,277,True,0.0,0.0,0.0,0.0,1.805,0.0,,clean
+07-31,238,True,0.0,0.0,0.0,0.0,2.101,0.0,,clean
+08-01,239,True,0.0,0.0,0.0,0.0,2.929,0.0,,clean
+08-02,222,True,0.0,0.0,0.0,0.0,2.252,0.0,,clean
+08-03,282,True,0.0,0.0,0.0,0.0,1.418,0.0,,clean
+08-04,231,True,0.0,0.0,0.0,0.0,1.732,0.0,,clean
+08-05,166,True,0.0,0.0,0.0,0.0,1.807,0.0,,clean
+08-06,184,True,0.0,0.0,0.0,0.0,2.717,0.0,,clean
+08-07,180,True,0.0,0.0,0.0,0.0,2.778,0.0,,clean
+08-08,291,True,0.0,0.0,0.0,0.0,1.031,0.0,,clean
+08-09,245,True,0.0,0.0,0.408,0.0,2.449,0.0,,clean
+08-10,383,True,0.0,0.0,0.0,0.0,1.567,0.0,,clean
+08-11,381,True,0.0,0.0,0.262,0.0,2.362,0.0,,clean
+08-12,361,True,0.0,0.0,0.277,0.0,2.77,0.0,,clean
+08-13,336,True,0.0,0.0,0.0,0.0,1.19,0.0,,clean
+08-14,312,True,0.0,0.0,0.0,0.0,1.923,0.0,,clean
+08-15,228,True,0.0,0.0,0.0,0.0,0.439,0.0,,clean
+08-16,283,True,0.0,0.0,0.0,0.0,1.767,0.0,,clean
+08-17,210,True,0.0,0.0,0.0,0.0,1.429,0.0,,clean
+08-18,215,True,0.0,0.0,0.465,0.0,2.326,0.0,,clean
+08-19,266,True,0.0,0.0,0.376,0.0,0.0,0.0,,clean
+08-20,269,True,0.0,0.0,0.0,0.0,2.23,0.0,,clean
+08-21,273,True,0.0,0.0,0.366,0.0,1.465,0.0,,clean
+08-22,287,True,0.0,0.0,0.0,0.0,1.045,0.0,,clean
+08-23,250,True,0.0,0.0,0.0,0.0,2.0,0.0,,clean
+08-24,281,True,0.0,0.0,0.0,0.0,1.068,0.0,,clean
+08-25,255,True,0.0,0.0,0.0,0.0,1.176,0.0,,clean
+08-26,269,True,0.0,0.0,0.0,0.0,1.487,0.0,,clean
+08-27,302,True,0.0,0.0,0.0,0.0,2.318,0.0,,clean
+08-28,272,True,0.0,0.0,0.0,0.0,1.471,0.0,,clean
+08-29,279,True,0.0,0.0,0.0,0.0,0.358,0.0,,clean
+08-30,272,True,0.0,0.0,0.0,0.0,0.368,0.0,,clean
+08-31,313,True,0.0,0.0,0.0,0.0,1.278,0.0,,clean
+09-01,283,True,0.0,0.0,0.0,0.0,1.06,0.0,,clean
+09-02,321,True,0.0,0.0,0.0,0.0,0.935,0.0,,clean
+09-03,234,True,0.0,0.0,0.0,0.0,0.0,0.0,,clean
+09-04,224,True,0.0,0.0,0.0,0.0,0.446,0.0,,clean
+09-05,234,True,0.0,0.0,0.0,0.0,3.419,0.0,,clean
+09-06,298,True,0.0,0.0,0.336,0.0,1.007,0.0,,clean
+09-07,229,True,0.0,0.0,0.0,0.0,1.31,0.0,,clean
+09-08,233,True,0.0,0.0,0.0,0.0,1.288,0.0,,clean
+09-09,284,True,0.0,0.0,0.0,0.0,2.465,0.0,,clean
+09-10,210,True,0.0,0.0,0.0,0.0,3.81,0.0,,clean
+09-11,277,True,0.0,0.0,0.0,0.0,1.805,0.0,,clean
+09-12,231,True,0.0,0.0,0.0,0.0,3.03,0.0,,clean
+09-13,213,True,0.0,0.0,0.0,0.0,1.878,0.0,,clean
+09-14,268,True,0.0,0.0,0.373,0.0,2.239,0.0,,clean
+09-15,244,True,0.0,0.0,0.0,0.0,0.41,0.0,,clean
+09-16,243,True,0.0,0.0,0.0,0.0,0.412,0.0,,clean
+09-17,252,True,0.0,0.0,0.397,0.0,2.778,0.0,,clean
+09-18,231,True,0.0,0.0,0.433,0.0,0.866,0.0,,clean
+09-19,224,True,0.0,0.0,0.0,0.0,1.339,0.0,,clean
+09-20,214,True,0.0,0.0,0.0,0.0,0.467,0.0,,clean
+09-21,278,True,0.0,0.0,0.0,0.0,2.158,0.0,,clean
+09-22,252,True,0.0,0.0,0.0,0.0,1.984,0.0,,clean
+09-23,244,True,0.0,0.0,0.0,0.0,2.869,0.0,,clean
+09-24,274,True,0.0,0.0,0.0,0.0,1.095,0.0,,clean
+09-25,245,True,0.0,0.0,0.0,0.0,0.0,0.0,,clean
+09-26,192,False,0.0,0.0,0.521,0.0,1.562,0.0,destinations inside the city,clean
+09-27,252,True,0.0,0.0,0.397,0.0,0.397,0.0,,clean
+09-28,261,True,0.0,0.0,0.383,0.0,2.299,0.0,,clean
+09-29,231,True,0.0,0.0,0.0,0.0,0.866,0.0,,clean
+09-30,222,True,0.0,0.0,0.45,0.0,1.351,0.0,,clean
+07-01,197,True,0.0,0.0,0.0,0.0,0.508,0.0,,low_quality
+07-02,219,True,0.0,0.0,0.0,0.0,0.913,0.0,,low_quality
+07-03,216,True,0.0,0.0,0.0,0.0,0.463,0.0,,low_quality
+07-04,231,True,0.0,0.0,0.0,0.0,2.165,0.0,,low_quality
+07-05,199,True,0.0,0.0,0.0,0.0,2.513,0.0,,low_quality
+07-06,219,False,0.0,0.0,0.0,8.219,10.502,3.196,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-07,196,False,0.0,0.0,0.51,5.612,7.653,2.551,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-08,188,False,0.0,0.0,0.532,6.383,7.979,2.66,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-09,164,False,0.0,0.0,0.61,8.537,10.366,3.659,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-10,144,False,0.0,0.0,0.0,17.361,18.056,5.556,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-11,135,False,0.0,0.0,0.0,10.37,11.852,3.704,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-12,146,False,0.0,0.0,0.0,13.699,15.068,5.479,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-13,137,False,0.0,0.0,0.0,15.328,16.788,7.299,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-14,260,False,0.0,0.0,0.0,16.154,18.077,6.154,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-15,233,False,0.0,0.0,0.0,9.442,11.588,3.004,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-16,226,False,0.0,0.0,0.0,10.177,13.717,3.54,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-17,236,False,0.0,0.0,0.424,8.051,10.169,2.542,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-18,233,False,0.0,0.0,0.0,14.592,16.738,5.579,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-19,226,False,0.0,0.0,0.0,10.177,11.504,3.54,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-20,209,False,0.0,0.0,0.0,9.569,11.005,2.871,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-21,267,False,0.0,0.0,0.0,25.843,28.839,9.738,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-22,260,False,0.0,0.0,0.769,15.0,18.462,5.385,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-23,242,False,0.0,0.0,0.0,15.289,18.595,4.545,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-24,250,False,0.0,0.0,0.0,13.2,15.6,4.8,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-25,287,False,0.0,0.0,0.0,24.042,26.829,8.362,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-26,293,False,0.0,0.0,0.0,31.399,31.741,9.556,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-27,387,False,0.0,0.0,0.517,35.401,37.726,11.37,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-28,258,False,0.0,0.0,0.0,40.698,42.248,11.24,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-29,250,False,0.0,0.0,0.0,33.6,35.2,12.4,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-30,309,False,0.0,0.0,0.0,30.097,32.362,10.356,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+07-31,262,False,0.0,0.0,0.0,24.809,27.863,9.16,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-01,273,False,0.0,0.0,0.0,36.63,39.927,12.454,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-02,256,False,0.0,0.0,0.0,37.891,39.062,13.281,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-03,333,False,0.0,0.0,0.0,41.441,42.643,15.315,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-04,269,False,0.0,0.0,0.0,41.264,43.494,14.126,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-05,194,False,0.0,0.0,0.0,39.175,40.206,14.433,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-06,209,False,0.0,0.0,0.0,39.234,41.627,11.962,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-07,207,False,0.0,0.0,0.0,33.816,39.614,13.043,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-08,349,False,0.0,0.0,0.0,51.289,53.009,16.619,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-09,283,False,0.0,0.0,0.353,36.042,38.869,13.428,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-10,441,False,0.0,0.0,0.0,38.095,39.229,13.152,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-11,445,False,0.0,0.0,0.225,41.573,44.045,14.382,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-12,424,False,0.0,0.0,0.236,41.745,43.868,14.858,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-13,384,False,0.0,0.0,0.0,37.76,39.323,12.5,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-14,362,False,0.0,0.0,0.0,39.503,41.16,13.812,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-15,262,False,0.0,0.0,0.0,33.206,35.878,12.977,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-16,330,False,0.0,0.0,0.0,41.212,43.03,14.242,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-17,246,False,0.0,0.0,0.0,41.463,43.902,14.634,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-18,249,False,0.0,0.0,0.803,39.759,42.169,13.655,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-19,301,False,0.0,0.0,0.664,33.555,34.884,11.628,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-20,308,False,0.0,0.0,0.325,42.208,45.455,12.662,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-21,320,False,0.0,0.0,0.312,42.188,44.688,14.688,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-22,346,False,0.0,0.0,0.0,47.977,50.289,17.052,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-23,293,False,0.0,0.0,0.0,44.369,46.416,14.676,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-24,343,False,0.0,0.0,0.0,53.353,55.102,18.076,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-25,302,False,0.0,0.0,0.0,51.987,54.967,15.563,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-26,330,False,0.0,0.0,0.0,53.636,56.061,18.485,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-27,371,False,0.0,0.0,0.27,55.526,58.76,18.598,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-28,339,False,0.0,0.0,0.0,54.572,56.342,19.764,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-29,332,False,0.0,0.0,0.0,50.904,53.313,15.964,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-30,326,False,0.0,0.0,0.0,52.454,53.988,16.564,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+08-31,370,False,0.0,0.0,0.0,47.838,50.0,15.405,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-01,357,False,0.0,0.0,0.0,61.064,63.585,20.728,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-02,393,False,0.0,0.0,0.0,57.506,61.069,18.321,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-03,318,False,0.0,0.0,0.0,70.126,72.642,26.415,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-04,299,False,0.0,0.0,0.0,68.562,70.903,25.084,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-05,317,False,0.0,0.0,0.631,66.246,69.401,26.183,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-06,386,False,0.0,0.0,0.518,67.098,68.653,22.798,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-07,286,False,0.0,0.0,0.0,57.343,60.49,19.93,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-08,297,False,0.0,0.0,0.0,69.36,71.044,21.549,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-09,361,False,0.0,0.0,0.0,60.111,63.712,21.33,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-10,267,False,0.0,0.0,0.0,67.416,71.536,21.348,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-11,344,False,0.0,0.0,0.0,59.593,63.081,19.477,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-12,294,False,0.0,0.0,0.0,67.007,70.068,21.429,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-13,264,False,0.0,0.0,0.0,61.742,65.53,19.318,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-14,349,False,0.0,0.0,0.287,65.903,68.195,23.209,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-15,325,False,0.0,0.0,0.0,78.769,81.538,24.923,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-16,340,False,0.0,0.0,0.0,77.353,78.529,28.529,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-17,332,False,0.0,0.0,0.301,75.0,77.108,24.096,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-18,317,False,0.0,0.0,0.315,77.918,79.495,27.129,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-19,305,False,0.0,0.0,0.0,77.377,79.344,26.557,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-20,286,False,0.0,0.0,0.0,73.776,76.224,25.175,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-21,379,False,0.0,0.0,0.0,77.045,79.156,26.649,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-22,344,False,0.0,0.0,0.0,76.453,77.907,26.744,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-23,332,False,0.0,0.0,0.0,74.699,76.506,26.506,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-24,376,False,0.0,0.0,0.0,76.596,77.66,27.128,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-25,333,False,0.0,0.0,0.0,73.874,76.877,26.426,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-26,244,False,0.0,0.0,0.82,70.082,72.131,21.311,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-27,343,False,0.0,0.0,0.292,74.344,77.551,26.531,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-28,364,False,0.0,0.0,0.549,76.923,78.846,28.297,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-29,304,False,0.0,0.0,0.658,69.408,71.711,24.013,destinations inside the city; courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality
+09-30,291,False,0.0,0.0,0.344,67.698,69.759,23.711,courier timestamps not repeated; delivery times not bunched on the hour; no re-sent records,low_quality

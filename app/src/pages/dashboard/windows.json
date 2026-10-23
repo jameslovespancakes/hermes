@@ -1,27 +1,27 @@
 {
   "yt": {
-    "before_min": [-13, -29, -59, -108, -1476],
-    "after_min": [51, 86, 124, 126, 50],
-    "test_coverage_pct": 82.1
+    "before_min": [-13, -29, -59, -111, -1273],
+    "after_min": [52, 87, 123, 125, 58],
+    "test_coverage_pct": 81.9
   },
   "jl": {
-    "before_min": [-13, -27, -52, -79, null],
-    "after_min": [42, 64, 105, 127, null],
-    "test_coverage_pct": 79.7
+    "before_min": [-12, -27, -52, -77, null],
+    "after_min": [41, 64, 107, 128, null],
+    "test_coverage_pct": 80.0
   },
   "sh": {
-    "before_min": [-12, -26, -69, -544, -1369],
-    "after_min": [28, 55, 186, 2092, 812],
-    "test_coverage_pct": 79.8
+    "before_min": [-12, -26, -69, -434, null],
+    "after_min": [28, 55, 188, 2190, null],
+    "test_coverage_pct": 80.1
   },
   "cq": {
-    "before_min": [-17, -33, -71, -660, -2631],
-    "after_min": [62, 111, 164, 1834, 2708],
-    "test_coverage_pct": 78.9
+    "before_min": [-17, -33, -71, -651, -2590],
+    "after_min": [59, 111, 164, 1799, 2695],
+    "test_coverage_pct": 78.2
   },
   "hz": {
-    "before_min": [-14, -30, -56, -481, -1892],
-    "after_min": [34, 74, 132, 1323, 46677],
-    "test_coverage_pct": 80.2
+    "before_min": [-16, -30, -55, -439, -2102],
+    "after_min": [29, 72, 139, 1417, 44038],
+    "test_coverage_pct": 80.1
   }
 }

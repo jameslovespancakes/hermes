@@ -83,6 +83,15 @@
   width: 31px;
   height: 33px;
 }
+.wall-mark.photo {
+  background: url('/assets/images/voice-gerry.jpg') center / cover no-repeat;
+}
+.wall-tie {
+  margin: 16px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #4d6256;
+}
 .wall-card.olive {
   background: var(--olive);
 }

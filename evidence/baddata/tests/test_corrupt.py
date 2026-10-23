@@ -6,7 +6,7 @@ import pandas as pd
 from evidence.baddata.corrupt import Rollout, TimestampFault, low_quality_feed, sync_delay
 from server.tests.helpers import records
 
-ALWAYS = Rollout(pd.Timestamp("2000-04-01"), pd.Timestamp("2000-04-02"), 1.0)   # everyone adopted from the start
+ALWAYS = Rollout(pd.Timestamp("2000-04-01"), pd.Timestamp("2000-04-02"), 1.0)  # everyone adopted from the start
 NEVER = Rollout(pd.Timestamp("2000-04-01"), pd.Timestamp("2000-04-02"), 0.0)
 
 
@@ -22,10 +22,10 @@ class CorruptionTests(unittest.TestCase):
         real = bad.loc[bad["is_real"]]
         self.assertEqual(len(real), len(recs))
         self.assertEqual(len(bad) - len(real), round(len(recs) * 0.5))
-        self.assertTrue((real["delivered_at"] >= real["true_delivered_at"]).all())       # bulk sync is never early
+        self.assertTrue((real["delivered_at"] >= real["true_delivered_at"]).all())  # bulk sync is never early
         self.assertTrue((real["delivered_at"].dt.minute == 0).all())
         merged = real.merge(recs[["order_id", "lat"]], on="order_id", suffixes=("", "_clean"))
-        self.assertGreater((merged["lat"] - merged["lat_clean"]).abs().mean(), 0.003)   # GPS jittered
+        self.assertGreater((merged["lat"] - merged["lat_clean"]).abs().mean(), 0.003)  # GPS jittered
 
     def test_no_adoption_changes_nothing(self):
         recs = records(days=2)

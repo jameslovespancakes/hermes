@@ -13,10 +13,10 @@ from server.quality.detectors import (
     duplicate_records,
     offset_from_area_km,
     record_keys,
+    record_weights,
     revisit_gap_min,
     running_bulk_share,
 )
-from server.quality.trust import record_weights
 
 
 @dataclass
@@ -74,7 +74,7 @@ def feed_is_stale(live: pd.DataFrame, max_feed_age_min: float, max_upload_lag_mi
 
 
 def minutes_since_area_visit(live: pd.DataFrame, packages: pd.DataFrame) -> np.ndarray:
-    """Per live row: minutes since its courier last delivered in its area, if that was after it was accepted."""
+    """Per live row: minutes since its courier last delivered in its area, if that was today and after it was accepted."""
     seen = packages["_received_at"] if "_received_at" in packages else packages["_delivered_at"]
     key = packages["courier_id"].astype(str) + "|" + packages["aoi_id"].astype(str)
     rows = live["row"].to_numpy()
@@ -83,8 +83,9 @@ def minutes_since_area_visit(live: pd.DataFrame, packages: pd.DataFrame) -> np.n
     query = pd.DataFrame({"k": key.to_numpy()[rows], "s": live["s"].to_numpy("datetime64[ns]"), "i": np.arange(len(live))}).sort_values("s")
     last = pd.merge_asof(query, visits, left_on="s", right_on="t", by="k").set_index("i")["t"].reindex(np.arange(len(live))).to_numpy()
     accepted = packages["_accepted_at"].to_numpy("datetime64[ns]")[rows]
-    since = (live["s"].to_numpy("datetime64[ns]") - last) / np.timedelta64(1, "m")
-    return np.where(last >= accepted, since, np.nan)
+    s = live["s"].to_numpy("datetime64[ns]")
+    today = last.astype("datetime64[D]") == s.astype("datetime64[D]")
+    return np.where((last >= accepted) & today, (s - last) / np.timedelta64(1, "m"), np.nan)
 
 
 DATA_ISSUES = ("lagging", "silent", "bulk", "clock", "moved", "resent", "missed")
@@ -109,12 +110,12 @@ def data_issues(live: pd.DataFrame, packages: pd.DataFrame, guard: DataGuard | N
                 np.where(cur >= 0, packages["guard_bulk_scan"].to_numpy()[np.maximum(cur, 0)], False).astype(bool),
                 lambda i: "Scans uploaded in bulk, so times are unreliable",
             ),
-            "clock": (np.isfinite(clock), lambda i: f"Device clock ran {clock[i]:.0f} min fast; times corrected"),
+            "clock": (np.isfinite(clock), lambda i: f"Clock {clock[i]:.0f} min fast, corrected"),
             "moved": (np.isfinite(moved), lambda i: f"Address was {moved[i]:.1f} km off its area and was moved"),
             "resent": (packages["guard_resent"].to_numpy()[rows].astype(bool), lambda i: "A duplicate of this record was removed"),
             "missed": (
                 away > guard.missed_after_min,
-                lambda i: f"Courier left this parcel's area {away[i]:.0f} min ago without scanning it",
+                lambda i: f"Not scanned; courier left {away[i]:.0f} min ago",
             ),
         }
     out = pd.DataFrame({kind: flags[kind][0] if kind in flags else none for kind in DATA_ISSUES}, index=live.index)

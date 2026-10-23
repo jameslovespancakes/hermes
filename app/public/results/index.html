@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hermes · Results</title>
+    <link rel="icon" href="/assets/favicon.svg" />
+    <style>
+      @font-face {
+        font-family: Figtree;
+        src: url('/assets/fonts/figtree-regular.woff2') format('woff2');
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: 'EB Garamond';
+        src: url('/assets/fonts/eb-garamond-regular.woff2') format('woff2');
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: 'EB Garamond';
+        src: url('/assets/fonts/eb-garamond-italic.woff2') format('woff2');
+        font-style: italic;
+      }
+      body {
+        margin: 0;
+        background: #ffffeb;
+        color: #1a1a1a;
+        font: 400 16px/1.55 Figtree, Arial, sans-serif;
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 48px 24px 96px;
+      }
+      a {
+        color: #034f46;
+        text-decoration: none;
+      }
+      h1,
+      h2 {
+        margin: 0;
+        font-family: 'EB Garamond', Georgia, serif;
+        font-weight: 400;
+      }
+      h1 {
+        margin-top: 40px;
+        font-size: 52px;
+        line-height: 1.05;
+      }
+      h1 em {
+        color: #034f46;
+      }
+      h2 {
+        font-size: 28px;
+      }
+      .lede,
+      figcaption {
+        color: #4d6256;
+      }
+      .lede {
+        max-width: 620px;
+        margin-top: 14px;
+      }
+      section {
+        margin-top: 48px;
+        padding-top: 28px;
+        border-top: 1px solid #e1e3d4;
+      }
+      figure {
+        margin: 14px 0 0;
+      }
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      figcaption {
+        margin-top: 8px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="/methodology">← Methodology</a>
+      <h1>Every result, <em>every split.</em></h1>
+      <p class="lede">
+        Trained before Sep 1, tuned on Sep 1–15, tested once on Sep 16–30. October untouched.
+      </p>
+
+      <section>
+        <h2>Every bad-data test</h2>
+        <figure>
+          <img src="/assets/results/every-test.png" alt="Error without and with the fix for each bad-data test." />
+          <figcaption>Yantai and Jilin. Dashed line: clean data. Lost scans are flagged, not repaired.</figcaption>
+        </figure>
+      </section>
+
+      <section>
+        <h2>Three monthly retrains</h2>
+        <figure>
+          <img src="/assets/results/retraining.png" alt="Error after each monthly retrain on a worsening feed." />
+          <figcaption>More bad records each month. The fix slows the rise.</figcaption>
+        </figure>
+      </section>
+
+      <section>
+        <h2>By severity</h2>
+        <figure>
+          <img src="/assets/results/severity.png" alt="Error as more couriers use the low-quality feed." />
+          <figcaption>Share of couriers on the low-quality feed.</figcaption>
+        </figure>
+      </section>
+
+      <section>
+        <h2>The test window, day by day</h2>
+        <figure>
+          <img src="/assets/results/test-window.png" alt="Daily error, September 16 to 30." />
+          <figcaption>Late uploads and the low-quality feed together.</figcaption>
+        </figure>
+      </section>
+
+      <section>
+        <h2>Model training, per city</h2>
+        <figure>
+          <img src="/assets/results/models.png" alt="Validation error by tree, and validation and test error per city." />
+          <figcaption>Big-city averages are driven by parcels held for days; the typical miss stays about 20–60 min.</figcaption>
+        </figure>
+      </section>
+
+      <section>
+        <h2>Arrival windows</h2>
+        <figure>
+          <img src="/assets/results/windows.png" alt="Window width by how far away the ETA was, per city." />
+          <figcaption>Set on Sep 1–15. Share of Sep 16–30 arrivals inside, per city.</figcaption>
+        </figure>
+      </section>
+    </main>
+  </body>
+</html>
