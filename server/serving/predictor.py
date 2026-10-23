@@ -98,7 +98,7 @@ class LiveETAPredictor:
             if stale.any():
                 minutes = np.where(stale, self.bundle.staleness.predict(live), minutes)
                 model_used[stale] = "staleness"
-        issues = data_issues(live, packages, self.config)
+        issues = data_issues(live, packages, self.bundle.guard, self.config)
         risk = self.bundle.risk.predict(live, minutes)
         out = pd.DataFrame(
             {
@@ -126,7 +126,7 @@ class LiveETAPredictor:
 
     def predict_events(self, records: pd.DataFrame, events: pd.DataFrame, transition_cutoff: pd.Timestamp, diagnostics: bool = False) -> pd.DataFrame:
         """Batch predictions at many (courier_id 'city:id', s) events; every feature is causal per event."""
-        packages = package_table(self.clean(records), self.city)
+        packages = self.package_table(records)
         live = live_table(packages, transition_cutoff, events)
         if live.empty:
             return pd.DataFrame(columns=OUTPUT_COLUMNS)

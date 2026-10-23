@@ -37,7 +37,7 @@ class EtaModel:
 def fit_eta(
     fit_rows: pd.DataFrame, stop_rows: pd.DataFrame, columns: list[str], seeds=(SEED,), target: str = TARGET, threads: int | None = None
 ) -> EtaModel:
-    """One model per seed, early-stopped on stop_rows; seeds fit side by side unless `threads` is given."""
+    """One model per seed, early-stopped on stop_rows; rows count by `_weight` when present (see quality.trust)."""
     schema = fit_schema(fit_rows, columns)
     X, X_stop = encode(fit_rows, columns, schema), encode(stop_rows, columns, schema)
 
@@ -46,6 +46,7 @@ def fit_eta(
         return model.fit(
             X,
             fit_rows[target],
+            sample_weight=fit_rows["_weight"] if "_weight" in fit_rows else None,
             eval_set=[(X_stop, stop_rows[target])],
             eval_metric="l1",
             categorical_feature=categorical_columns(columns),

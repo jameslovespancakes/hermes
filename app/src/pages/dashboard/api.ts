@@ -1,7 +1,7 @@
 // Typed client for the ETA API (server/api/app.py, under /api). Times use the source format 'MM-DD HH:MM:SS'.
 
 /** Data problems the safeguards caught (most urgent first). */
-type DataIssue = 'lagging' | 'silent' | 'bulk' | 'moved' | 'resent';
+type DataIssue = 'lagging' | 'silent' | 'bulk' | 'clock' | 'moved' | 'resent' | 'missed';
 /** Why a parcel needs a person: a data problem, inputs that look wrong, or an ETA that slipped. */
 export type Issue = DataIssue | 'suspect' | 'late';
 

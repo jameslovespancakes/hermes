@@ -94,7 +94,7 @@ class ParcelStatus(BaseModel):
     minutes_remaining: float
     baseline_eta: str | None = Field(description="The ETA the model gave at `baseline_at` (none if not yet held then)")
     slip_min: float | None = Field(description="Minutes the ETA moved since `baseline_at` (positive = later)")
-    issue: Literal["lagging", "silent", "bulk", "moved", "resent", "suspect", "late"] | None
+    issue: Literal["lagging", "silent", "bulk", "clock", "moved", "resent", "missed", "suspect", "late"] | None
     reasons: list[str]
 
 

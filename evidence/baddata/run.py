@@ -19,10 +19,12 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
-from evidence.baddata.corrupt import Rollout, TimestampFault, low_quality_feed, sync_delay
+from evidence.baddata.corrupt import Rollout, TimestampFault, fast_clocks, lost_scans, low_quality_feed, sync_delay
 from evidence.baddata.score import (
+    FrozenHabits,
     contract_summary,
     daily,
     daily_drift,
@@ -31,6 +33,7 @@ from evidence.baddata.score import (
     guard_quality,
     label_corruption,
     mechanism,
+    missed_detection,
     summary,
 )
 from server.config import Split, ts
@@ -38,7 +41,7 @@ from server.data.loading import load_city
 from server.models.bundle import ModelBundle
 from server.pipeline.features import checkpoints
 from server.pipeline.train import train_bundle
-from server.quality.config import QUALITY
+from server.quality.config import QUALITY, CleanMode
 from server.quality.contract import city_bounds, daily_report
 from server.quality.gating import audited_gate
 
@@ -55,12 +58,17 @@ TEST = (ts("09-16"), ts("10-01"))
 
 # Systems, keyed by training track: (records it learns from, safeguards it carries)
 TRACKS = {"clean": ("clean", False), "lq_raw": ("lq", False), "lq_guarded": ("lq", True), "clean_guarded": ("clean", True)}
+SEVERITY = (0.2, 0.4)  # low-quality adoption shares tested besides the main 0.6 (last cutoff only)
+LAST_ONLY = {"clean_guarded"} | {f"lq{int(s * 100)}_{kind}" for s in SEVERITY for kind in ("raw", "guarded")}
+SEED_OFFSET = 0  # --seed: every simulated defect draws from seeds shifted by 100 x this
+CORE = False  # --core: four conditions and the new faults only (repeat seeds)
 
 
 @dataclass(frozen=True)
 class Condition:
     """One required condition: the naive pipeline vs the protected pipeline, each with the view it receives.
     Views ending in _pt store arrival time as delivery time (naive); _et keep scanner time + receive time."""
+
     name: str
     naive: str
     naive_view: str
@@ -68,19 +76,25 @@ class Condition:
     protected_view: str
 
 
-CONDITIONS = [Condition("reference", "clean", "clean", "clean_guarded", "clean"),
-              Condition("stale_only", "clean", "stale_pt", "clean_guarded", "stale_et"),
-              Condition("low_quality_only", "lq_raw", "lq", "lq_guarded", "lq"),
-              Condition("combined", "lq_raw", "combined_pt", "lq_guarded", "combined_et")]
+CONDITIONS = [
+    Condition("reference", "clean", "clean", "clean_guarded", "clean"),
+    Condition("stale_only", "clean", "stale_pt", "clean_guarded", "stale_et"),
+    Condition("low_quality_only", "lq_raw", "lq", "lq_guarded", "lq"),
+    Condition("combined", "lq_raw", "combined_pt", "lq_guarded", "combined_et"),
+]
 
-DESIGN = {"lq_rollout": "0% -> 60% of couriers, Jul 1 -> Sep 30 (bulk sync to the hour, ~1 km GPS jitter, 50% re-sent)",
-          "stale_rollout": f"0% -> 60% of couriers, Sep 16 -> Sep 30, uploads {STALE_LAG_MINUTES} min late",
-          "retraining": "monthly: Jul 1, Aug 1, Sep 1 (fit before cutoff, early-stop next 15 days, test rest of month)",
-          "countermeasure": ("data contract + DataGuard (dedupe, GPS repair, bulk-scan quarantine, review flags) + event-time processing "
-                             "with upload-lag monitoring + staleness-aware model when a feed is stale + PSI drift monitoring + gated "
-                             "retraining on a 10% audited sample"),
-          "code_path": "systems trained by server.pipeline.train.train_bundle and scored by server.serving.predictor.LiveETAPredictor",
-          "scoring": "true delivery times; same real packages and true checkpoint moments for every condition"}
+DESIGN = {
+    "lq_rollout": "0% -> 60% of couriers, Jul 1 -> Sep 30 (bulk sync to the hour, ~1 km GPS jitter, 50% re-sent)",
+    "stale_rollout": f"0% -> 60% of couriers, Sep 16 -> Sep 30, uploads {STALE_LAG_MINUTES} min late",
+    "retraining": "monthly: Jul 1, Aug 1, Sep 1 (fit before cutoff, early-stop next 15 days, test rest of month)",
+    "countermeasure": (
+        "data contract + DataGuard (dedupe, GPS repair, bulk-scan quarantine, review flags) + event-time processing "
+        "with upload-lag monitoring + staleness-aware model when a feed is stale + PSI drift monitoring + gated "
+        "retraining on a 10% audited sample"
+    ),
+    "code_path": "systems trained by server.pipeline.train.train_bundle and scored by server.serving.predictor.LiveETAPredictor",
+    "scoring": "true delivery times; same real packages and true checkpoint moments for every condition",
+}
 
 
 STARTED = time.perf_counter()
@@ -103,24 +117,50 @@ def month_window(cutoff: pd.Timestamp) -> tuple[pd.Timestamp, pd.Timestamp]:
 
 
 def build_views(clean: pd.DataFrame) -> dict[str, pd.DataFrame]:
-    lq = low_quality_feed(clean, LQ_ROLLOUT)
-    return {"clean": clean, "lq": lq, "lq_noise": low_quality_feed(clean, LQ_ROLLOUT, fault=TimestampFault.NOISE),
-            "stale_pt": sync_delay(clean, STALE_ROLLOUT, STALE_LAG_MINUTES),
-            "stale_et": sync_delay(clean, STALE_ROLLOUT, STALE_LAG_MINUTES, event_time=True),
-            "combined_pt": sync_delay(lq, STALE_ROLLOUT, STALE_LAG_MINUTES),
-            "combined_et": sync_delay(lq, STALE_ROLLOUT, STALE_LAG_MINUTES, event_time=True)}
+    o = 100 * SEED_OFFSET
+    lq = low_quality_feed(clean, LQ_ROLLOUT, seed=11 + o)
+    views = {
+        "clean": clean,
+        "lq": lq,
+        "lq_noise": low_quality_feed(clean, LQ_ROLLOUT, seed=11 + o, fault=TimestampFault.NOISE),
+        "stale_pt": sync_delay(clean, STALE_ROLLOUT, STALE_LAG_MINUTES, seed=23 + o),
+        "stale_et": sync_delay(clean, STALE_ROLLOUT, STALE_LAG_MINUTES, seed=23 + o, event_time=True),
+        "combined_pt": sync_delay(lq, STALE_ROLLOUT, STALE_LAG_MINUTES, seed=23 + o),
+        "combined_et": sync_delay(lq, STALE_ROLLOUT, STALE_LAG_MINUTES, seed=23 + o, event_time=True),
+        "lost": lost_scans(clean, STALE_ROLLOUT, seed=41 + o),
+        "clock": fast_clocks(clean, STALE_ROLLOUT, seed=53 + o),
+    }
+    for share in SEVERITY:
+        views[f"lq{int(share * 100)}"] = low_quality_feed(clean, Rollout(LQ_ROLLOUT.start, LQ_ROLLOUT.end, share), seed=11 + o)
+    return views
+
+
+def cutoffs_for(track: str) -> list[pd.Timestamp]:
+    """Which monthly systems a track trains; a --core run keeps only what the four conditions and new faults need."""
+    if CORE:
+        return {"clean": [CUTOFFS[0], LAST], "lq_raw": [LAST], "lq_guarded": [LAST], "clean_guarded": [LAST]}.get(track, [])
+    return [LAST] if track in LAST_ONLY else CUTOFFS
 
 
 def train_systems(views: dict, clean: pd.DataFrame, truth: pd.Series) -> dict[str, ModelBundle]:
     """Monthly systems per track; the protected tracks get the staleness-aware model at the last cutoff."""
     systems = {}
-    for track, (view, guarded) in TRACKS.items():
-        for cutoff in CUTOFFS if track != "clean_guarded" else [LAST]:
+    tracks = TRACKS | {f"lq{int(s * 100)}_{kind}": (f"lq{int(s * 100)}", kind == "guarded") for s in SEVERITY for kind in ("raw", "guarded")}
+    for track, (view, guarded) in tracks.items():
+        for cutoff in cutoffs_for(track):
             split, full = split_for(cutoff), guarded and cutoff == LAST
             events = checkpoints(clean, CITY, clean["delivered_at"].min(), split.stop_cutoff) if full else None
             name = key(track, cutoff)
-            systems[name] = train_bundle(views[view], CITY, split, use_guard=guarded, use_staleness=full, staleness_events=events,
-                                         truth=truth, log=lambda message, n=name: log(f"{n}: {message}"))
+            systems[name] = train_bundle(
+                views[view],
+                CITY,
+                split,
+                use_guard=guarded,
+                use_staleness=full,
+                staleness_events=events,
+                truth=truth,
+                log=lambda message, n=name: log(f"{n}: {message}"),
+            )
     return systems
 
 
@@ -158,12 +198,22 @@ def gated(systems, track, view, truth, clean) -> list[dict]:
             deployed = challenger
         else:
             events = checkpoints(clean, CITY, cutoff, gate_end)
-            decision = audited_gate(evaluate(guard_only(systems[deployed]), view, truth, events),
-                                    evaluate(guard_only(systems[challenger]), view, truth, events), truth, gate_end)
+            decision = audited_gate(
+                evaluate(guard_only(systems[deployed]), view, truth, events),
+                evaluate(guard_only(systems[challenger]), view, truth, events),
+                truth,
+                gate_end,
+            )
             deployed = challenger if decision.promote else deployed
         rows = evaluate(guard_only(systems[deployed]), view, truth, checkpoints(clean, CITY, *month_window(cutoff)))
-        history.append({"cutoff": f"{cutoff:%m-%d}", "deployed": deployed, "test_mae": summary(rows)["mae"],
-                        "gate": None if decision is None else decision.__dict__})
+        history.append(
+            {
+                "cutoff": f"{cutoff:%m-%d}",
+                "deployed": deployed,
+                "test_mae": summary(rows)["mae"],
+                "gate": None if decision is None else decision.__dict__,
+            }
+        )
     log(f"gated {track}: " + ", ".join(f"{h['cutoff']} {h['deployed']} {h['test_mae']:.1f}" for h in history))
     return history
 
@@ -195,15 +245,86 @@ def four_conditions(systems, views, truth, clean, baseline) -> tuple[dict, dict,
     return results, mechanisms, daily_frames, drift
 
 
+def new_faults(systems, views, truth, clean) -> dict:
+    """The faults added after the first study: each against the same test checkpoints, without and with the fix."""
+    events = checkpoints(clean, CITY, *TEST)
+    plain, retrained, guarded = systems[key("clean", LAST)], systems[key("clean", LAST)], systems[key("clean_guarded", LAST)]
+    lost = {"no_fix": evaluate(plain, views["lost"], truth, events), "with_fix": evaluate(guarded, views["lost"], truth, events)}
+    out = {
+        "never_retrained": {
+            "no_fix": summary(evaluate(systems[key("clean", CUTOFFS[0])], views["clean"], truth, events)),
+            "with_fix": summary(evaluate(retrained, views["clean"], truth, events)),
+            "description": "model trained to Jul 1 and never retrained, vs retrained monthly (Sep 1)",
+        },
+        "frozen_habits": {
+            "no_fix": summary(evaluate(plain, views["clean"], truth, events, predictor=FrozenHabits)),
+            "with_fix": summary(evaluate(plain, views["clean"], truth, events)),
+            "description": "courier and area habits stop updating on Jul 1 (a failed nightly job), vs rebuilt from the log at every prediction",
+        },
+        "fast_clocks": {
+            "no_fix": summary(evaluate(plain, views["clock"], truth, events)),
+            "with_fix": summary(evaluate(guarded, views["clock"], truth, events)),
+            "description": "device clocks 20 min fast on up to 60% of couriers over the test window; receive times true",
+        },
+        "lost_scans": {label: summary(rows) for label, rows in lost.items()} | {"detection": missed_detection(guarded, views["lost"], events)},
+    }
+    out["lost_scans"]["description"] = (
+        "30% of delivery scans never arrive from up to 60% of couriers over the test window; the fix flags, it does not correct"
+    )
+    for name, entry in out.items():
+        log(f"{name}: no fix {entry['no_fix']['mae']:.2f} | with fix {entry['with_fix']['mae']:.2f}")
+    log(f"lost-scan detection: {out['lost_scans']['detection']}")
+    return out
+
+
+def severity(systems, views, truth, clean) -> list[dict]:
+    """Damage and recovery as the low-quality feed reaches 20%, 40% and 60% of couriers."""
+    events = checkpoints(clean, CITY, *TEST)
+    out = []
+    for share, view, raw, guarded in [(s, f"lq{int(s * 100)}", f"lq{int(s * 100)}_raw", f"lq{int(s * 100)}_guarded") for s in SEVERITY] + [
+        (0.6, "lq", "lq_raw", "lq_guarded")
+    ]:
+        out.append(
+            {
+                "share": share,
+                "no_fix": summary(evaluate(systems[key(raw, LAST)], views[view], truth, events))["mae"],
+                "with_fix": summary(evaluate(systems[key(guarded, LAST)], views[view], truth, events))["mae"],
+            }
+        )
+        log(f"severity {share:.0%}: no fix {out[-1]['no_fix']:.2f} | with fix {out[-1]['with_fix']:.2f}")
+    return out
+
+
+def random_weights(systems, views, truth, clean) -> dict:
+    """Control: the guard's down-weighting given to random courier-days instead (same weights, shuffled)."""
+    guarded = systems[key("lq_guarded", LAST)]
+    cleaned, _ = guarded.guard.clean(views["lq"], CleanMode.TRAIN)
+    day = cleaned["courier_id"].astype(str) + "|" + cleaned["delivered_at"].dt.strftime("%m-%d")
+    weights = cleaned.groupby(day)["weight"].first()
+    shuffled = pd.Series(np.random.default_rng(7 + SEED_OFFSET).permutation(weights.to_numpy()), index=weights.index)
+    cleaned["weight"] = day.map(shuffled).fillna(1.0).to_numpy()
+    control = train_bundle(cleaned, CITY, split_for(LAST), use_guard=False, use_staleness=False, truth=truth, log=lambda m: None)
+    control = replace(control, guard=guarded.guard)
+    events = checkpoints(clean, CITY, *TEST)
+    out = {
+        "guard_weights": summary(evaluate(guard_only(guarded), views["lq"], truth, events))["mae"],
+        "random_weights": summary(evaluate(control, views["lq"], truth, events))["mae"],
+    }
+    log(f"random-weight control: guard {out['guard_weights']:.2f} | random {out['random_weights']:.2f}")
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke", action="store_true", help=f"{SMOKE_COURIERS} couriers, fast end-to-end check")
     parser.add_argument("--reuse", action="store_true", help="load trained systems from artifacts/ instead of training")
     parser.add_argument("--city", default="yt", help="a city whose history starts by May (yt, jl)")
+    parser.add_argument("--seed", type=int, default=0, help="shift every simulated defect's random draws (repeat runs)")
+    parser.add_argument("--core", action="store_true", help="four conditions and the new faults only (for repeat seeds)")
     args = parser.parse_args()
-    global CITY
-    CITY = args.city
-    suffix = ("" if CITY == "yt" else f"_{CITY}") + ("_smoke" if args.smoke else "")
+    global CITY, SEED_OFFSET, CORE
+    CITY, SEED_OFFSET, CORE = args.city, args.seed, args.core
+    suffix = ("" if CITY == "yt" else f"_{CITY}") + (f"_seed{SEED_OFFSET}" if SEED_OFFSET else "") + ("_smoke" if args.smoke else "")
     RESULTS.mkdir(parents=True, exist_ok=True)
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
 
@@ -214,8 +335,10 @@ def main():
     truth = clean.set_index("order_id")["delivered_at"]
     views = build_views(clean)
     bounds = city_bounds(clean.loc[clean["accepted_at"] < CUTOFFS[0]])
-    contracts = {label: daily_report(views[v].loc[(views[v]["delivered_at"] >= CUTOFFS[0]) & (views[v]["delivered_at"] < TEST[1])], bounds)
-                 for label, v in (("clean", "clean"), ("low_quality", "lq"))}
+    contracts = {
+        label: daily_report(views[v].loc[(views[v]["delivered_at"] >= CUTOFFS[0]) & (views[v]["delivered_at"] < TEST[1])], bounds)
+        for label, v in (("clean", "clean"), ("low_quality", "lq"))
+    }
     log("views ready; data contract evaluated")
 
     store = ARTIFACTS / f"systems{suffix}.pkl"
@@ -224,19 +347,31 @@ def main():
     else:
         systems = train_systems(views, clean, truth)
         store.write_bytes(pickle.dumps(systems, protocol=pickle.HIGHEST_PROTOCOL))
-    baseline = systems[key("clean", CUTOFFS[0])].monitor        # clean June inputs; thresholds from clean May -> June
+    baseline = systems[key("clean", CUTOFFS[0])].monitor  # clean June inputs; thresholds from clean May -> June
 
-    results = {"created_utc": datetime.now(timezone.utc).isoformat(), "smoke": args.smoke, "design": DESIGN, "quality_config": QUALITY.__dict__,
-               "guard_detection_quality": guard_quality(views["lq"], systems[key("lq_guarded", LAST)].guard),
-               "training_label_corruption": label_corruption(views["lq"], truth, CITY, LAST),
-               "data_contract": {label: contract_summary(report) for label, report in contracts.items()},
-               "drift_thresholds": baseline.drift_thresholds}
-    results["monthly"], drift = monthly(systems, views, truth, clean, baseline)
-    results["gated_retraining"] = {track: gated(systems, track, views["lq"], truth, clean) for track in ("lq_raw", "lq_guarded")}
+    results = {
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "smoke": args.smoke,
+        "design": DESIGN,
+        "quality_config": QUALITY.__dict__,
+        "guard_detection_quality": guard_quality(views["lq"], systems[key("lq_guarded", LAST)].guard),
+        "training_label_corruption": label_corruption(views["lq"], truth, CITY, LAST),
+        "data_contract": {label: contract_summary(report) for label, report in contracts.items()},
+        "drift_thresholds": baseline.drift_thresholds,
+    }
+    drift = []
+    if not CORE:
+        results["monthly"], drift = monthly(systems, views, truth, clean, baseline)
+        results["gated_retraining"] = {track: gated(systems, track, views["lq"], truth, clean) for track in ("lq_raw", "lq_guarded")}
+        results["severity"] = severity(systems, views, truth, clean)
+        results["random_weight_control"] = random_weights(systems, views, truth, clean)
+    results["new_faults"] = new_faults(systems, views, truth, clean)
     results["four_conditions"], results["mechanism"], daily_frames, more_drift = four_conditions(systems, views, truth, clean, baseline)
     events = checkpoints(clean, CITY, *TEST)
-    results["unseen_degradation"] = {label: summary(evaluate(systems[key(track, LAST)], views["lq_noise"], truth, events))
-                                     for label, track in (("no_fix", "lq_raw"), ("with_fix", "lq_guarded"))}
+    results["unseen_degradation"] = {
+        label: summary(evaluate(systems[key(track, LAST)], views["lq_noise"], truth, events))
+        for label, track in (("no_fix", "lq_raw"), ("with_fix", "lq_guarded"))
+    }
     results["unseen_degradation"]["description"] = "timestamps randomly off by +/-30 min instead of bulk-synced: detectors not designed for it"
     drift_table = pd.concat(drift + more_drift, ignore_index=True)
     results["drift"] = drift_summary(drift_table)

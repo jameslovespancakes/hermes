@@ -24,8 +24,8 @@ class Rollout:
 
 
 class TimestampFault(str, Enum):
-    BULK_SYNC = "bulk_sync"    # delivery times pushed to the next sync boundary (what the guard is built for)
-    NOISE = "noise"            # delivery times randomly off by up to +/-30 min (not designed for)
+    BULK_SYNC = "bulk_sync"  # delivery times pushed to the next sync boundary (what the guard is built for)
+    NOISE = "noise"  # delivery times randomly off by up to +/-30 min (not designed for)
 
 
 def _courier_draw(couriers: pd.Series, seed: int) -> np.ndarray:
@@ -50,8 +50,15 @@ def _finish(out: pd.DataFrame) -> pd.DataFrame:
     return out.sort_values(["accepted_at", "order_id"]).reset_index(drop=True)
 
 
-def low_quality_feed(records: pd.DataFrame, rollout: Rollout, seed: int = 11, fault: TimestampFault = TimestampFault.BULK_SYNC,
-                     batch_minutes: int = 60, jitter_deg: float = 0.01, duplicate_rate: float = 0.5) -> pd.DataFrame:
+def low_quality_feed(
+    records: pd.DataFrame,
+    rollout: Rollout,
+    seed: int = 11,
+    fault: TimestampFault = TimestampFault.BULK_SYNC,
+    batch_minutes: int = 60,
+    jitter_deg: float = 0.01,
+    duplicate_rate: float = 0.5,
+) -> pd.DataFrame:
     """A fast, cheap scanner app on a growing share of couriers.
 
     BULK_SYNC: delivery times are bulk-synced up to the next `batch_minutes` boundary.
@@ -86,8 +93,7 @@ def _apply_lag(out: pd.DataFrame, lag: pd.Series, event_time: bool) -> pd.DataFr
     return out
 
 
-def sync_delay(records: pd.DataFrame, rollout: Rollout, lag_minutes: float = 60.0, seed: int = 23,
-               event_time: bool = False) -> pd.DataFrame:
+def sync_delay(records: pd.DataFrame, rollout: Rollout, lag_minutes: float = 60.0, seed: int = 23, event_time: bool = False) -> pd.DataFrame:
     """Stale feed: a growing share of courier devices upload delivery events `lag_minutes` late."""
     out = _with_truth(records)
     affected = _courier_draw(out["courier_id"], seed) < rollout.share(out["true_delivered_at"])
@@ -96,3 +102,25 @@ def sync_delay(records: pd.DataFrame, rollout: Rollout, lag_minutes: float = 60.
     out["stale_feed"] = affected
     return _finish(out)
 
+
+def lost_scans(records: pd.DataFrame, rollout: Rollout, share: float = 0.3, seed: int = 41) -> pd.DataFrame:
+    """Records that stop updating: on a growing share of courier devices, `share` of delivery scans never arrive."""
+    out = _with_truth(records)
+    affected = _courier_draw(out["courier_id"], seed) < rollout.share(out["true_delivered_at"])
+    lost = affected & (np.random.default_rng(seed + 1).uniform(size=len(out)) < share)
+    out.loc[lost, "delivered_at"] = pd.NaT
+    out["stale_feed"], out["lost_scan"] = affected, lost
+    return _finish(out)
+
+
+def fast_clocks(records: pd.DataFrame, rollout: Rollout, minutes: float = 20.0, seed: int = 53) -> pd.DataFrame:
+    """Device clocks running `minutes` fast on a growing share of couriers: their accept and delivery stamps move
+    later; the server's receive time (kept in `received_at`) stays true."""
+    out = _with_truth(records)
+    out["received_at"] = out["delivered_at"]
+    affected = _courier_draw(out["courier_id"], seed) < rollout.share(out["true_delivered_at"])
+    shift = pd.to_timedelta(np.where(affected, minutes, 0.0), unit="m")
+    out["accepted_at"] += shift
+    out["delivered_at"] += shift
+    out["stale_feed"] = affected
+    return _finish(out)

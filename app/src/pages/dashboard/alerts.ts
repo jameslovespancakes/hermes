@@ -1,10 +1,12 @@
 // Turns the city overview into the few things a dispatcher should look at: one alert per courier at most.
 import {
   AlarmClockIcon,
+  Clock04Icon,
   Copy01Icon,
   HelpCircleIcon,
   Layers01Icon,
   LocationOffline01Icon,
+  PackageSearchIcon,
   Upload04Icon,
   WifiDisconnected01Icon,
 } from '@hugeicons/core-free-icons';
@@ -17,8 +19,10 @@ export const ISSUES: Record<Issue, { color: string; label: string; icon: IconSvg
   lagging: { color: DATA, label: 'Uploads lagging', icon: Upload04Icon },
   silent: { color: DATA, label: 'Courier silent', icon: WifiDisconnected01Icon },
   bulk: { color: DATA, label: 'Bulk-synced scans', icon: Layers01Icon },
+  clock: { color: DATA, label: 'Device clock fast', icon: Clock04Icon },
   moved: { color: DATA, label: 'Address repaired', icon: LocationOffline01Icon },
   resent: { color: DATA, label: 'Duplicate removed', icon: Copy01Icon },
+  missed: { color: DATA, label: 'Scan may be missing', icon: PackageSearchIcon },
   suspect: { color: '#7c5cff', label: 'May be wrong', icon: HelpCircleIcon },
   late: { color: '#e5484d', label: 'Running late', icon: AlarmClockIcon },
 };
@@ -28,8 +32,10 @@ const RANK: Record<Issue, number> = {
   lagging: 0,
   silent: 0,
   bulk: 0,
+  clock: 0,
   moved: 0,
   resent: 0,
+  missed: 0,
   suspect: 1,
   late: 2,
 };

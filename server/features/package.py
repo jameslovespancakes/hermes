@@ -35,4 +35,8 @@ def package_features(records: pd.DataFrame, city: str) -> pd.DataFrame:
         f[target] = values.where(values.between(-180, 180) & (values != 0)).to_numpy(dtype="float32")
     if "received_at" in records:
         f["_received_at"] = records["received_at"].to_numpy()
+    if "weight" in records:
+        f["_weight"] = records["weight"].to_numpy(dtype="float32")
+    for column in records.columns[records.columns.str.startswith("guard_")]:
+        f[column] = records[column].to_numpy()
     return f

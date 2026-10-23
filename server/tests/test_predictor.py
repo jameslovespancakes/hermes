@@ -74,6 +74,17 @@ class PredictorTests(unittest.TestCase):
         self.assertNotIn(copy["order_id"].iloc[0], set(guarded["order_id"]))
         self.assertEqual(guarded["packages_held"].iloc[0], unguarded["packages_held"].iloc[0] - 1)
 
+    def test_guard_flags_reach_the_predictions(self):
+        recs = records(days=2, couriers=(1, 2), per_day=6)
+        mine = recs.loc[recs["courier_id"] == 1]
+        at = mine["delivered_at"].iloc[8] + pd.Timedelta(minutes=1)
+        parcel = mine.loc[mine["delivered_at"] > at].index[0]
+        dirty = recs.copy()
+        dirty.loc[parcel, "lat"] += 0.05  # ~5.5 km from its area
+        out = LiveETAPredictor(constant_bundle(eta=25.0, guard=DataGuard.fit(recs))).predict(dirty, 1, at)
+        flagged = out.set_index("order_id").loc[recs.loc[parcel, "order_id"], "data_issues"]
+        self.assertIn("moved", flagged)
+
 
 if __name__ == "__main__":
     unittest.main()

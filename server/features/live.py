@@ -61,6 +61,8 @@ def annotate_events(live: pd.DataFrame, packages: pd.DataFrame, package_cols: li
     live = pd.concat([live.reset_index(drop=True), packages[package_cols].iloc[rows].reset_index(drop=True)], axis=1)
     live["_delivered_at"] = packages["_delivered_at"].to_numpy()[rows]
     live["_order_id"] = packages["_order_id"].to_numpy()[rows]
+    if "_weight" in packages:
+        live["_weight"] = packages["_weight"].to_numpy()[rows]
     live["courier_s"] = packages["courier_id"].astype(str).to_numpy()[rows]
     s = live["s"].to_numpy()
     starts = np.r_[True, (s[1:] != s[:-1]) | (live["courier_s"].to_numpy()[1:] != live["courier_s"].to_numpy()[:-1])]

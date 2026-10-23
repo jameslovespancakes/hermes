@@ -6,7 +6,7 @@ import { clock, type Courier, type Parcel } from './api';
 import { arrivalWindow } from './window';
 
 /** Problems with the courier's feed, the same for every parcel they hold: shown once, under their name. */
-const COURIER_ISSUES = new Set(['lagging', 'silent', 'bulk']);
+const COURIER_ISSUES = new Set(['lagging', 'silent', 'bulk', 'clock']);
 
 const ago = (minutes: number) => {
   const m = Math.round(minutes);
