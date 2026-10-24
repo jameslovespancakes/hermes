@@ -2,7 +2,7 @@
 // The service replays each city's log as it stood at that moment, so nothing shown uses later information.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCard } from './alert-card';
-import { alerts as findAlerts, route, stops, type Alert } from './alerts';
+import { alerts as findAlerts, routes, stops, type Alert } from './alerts';
 import { CourierCard } from './courier-card';
 import { api, courierKey, moment, parcelKey, type City, type Fleet, type Overview, type Parcel } from './api';
 import { Defs } from './defs';
@@ -79,11 +79,12 @@ function useRoad(city: string | null, points: [number, number][] | null) {
   return road && road.key === key ? road.path : null;
 }
 
-export function Dashboard() {
+export function Page() {
   const cities = useCities();
   const [date, setDate] = useState('2000-09-20');
   const [time, setTime] = useState('10:30');
-  const { fleet, loading, error } = useMoment(cities, moment(date, time));
+  const now = moment(date, time);
+  const { fleet, loading, error } = useMoment(cities, now);
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
   const [selectedParcel, setSelectedParcel] = useState<string | null>(null);
   const [selectedCourier, setSelectedCourier] = useState<string | null>(null);
@@ -93,10 +94,8 @@ export function Dashboard() {
   // Selections follow the parcel or courier across refreshes and disappear with them.
   const selected = list.find((a) => parcelKey(a.parcel) === selectedParcel) ?? null;
   const courier = fleet.couriers.find((c) => courierKey(c) === selectedCourier) ?? null;
-  const held = useMemo(
-    () => (selectedCourier ? route(fleet, selectedCourier) : []),
-    [fleet, selectedCourier],
-  );
+  const byKey = useMemo(() => routes(fleet.parcels), [fleet.parcels]);
+  const held = (selectedCourier ? byKey.get(selectedCourier) : undefined) ?? [];
   const select = useCallback((alert: Alert) => {
     setSelectedCourier(null);
     setSelectedParcel(parcelKey(alert.parcel));
@@ -153,7 +152,7 @@ export function Dashboard() {
         )}
         {selected && (
           <AlertCard
-            now={moment(date, time)}
+            now={now}
             alert={selected}
             onClose={() => setSelectedParcel(null)}
             onDismiss={() => {
@@ -164,7 +163,7 @@ export function Dashboard() {
         )}
         {courier && (
           <CourierCard
-            now={moment(date, time)}
+            now={now}
             courier={courier}
             parcels={held}
             onClose={() => {

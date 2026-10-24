@@ -11,7 +11,16 @@ import { signed } from '../alert-card';
 import { courierKey, parcelKey, type Courier, type Fleet, type Parcel } from '../api';
 import { iconSvg, MAP_IMAGES } from '../icons';
 
-const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+const point = (lng: number, lat: number, properties: GeoJSON.GeoJsonProperties = {}): GeoJSON.Feature => ({
+  type: 'Feature',
+  geometry: { type: 'Point', coordinates: [lng, lat] },
+  properties,
+});
+const collection = (features: GeoJSON.Feature[]): GeoJSON.FeatureCollection => ({
+  type: 'FeatureCollection',
+  features,
+});
+const empty = collection([]);
 /** Below this zoom the map shows one label per city; at and above it, every parcel, courier and alert. */
 const DETAIL_ZOOM = 8;
 const zoomed = (...stops: (number | unknown[])[]) =>
@@ -132,11 +141,6 @@ const tip = ({ parcel }: Alert) =>
 
 /** Alert icons on screen: one per flagged parcel (the selected one larger), and one on each courier with a feed problem. */
 export function drawAlerts(map: MapLibre, alerts: Alert[], couriers: Courier[], selected: string | null) {
-  const point = (lng: number, lat: number, properties: GeoJSON.GeoJsonProperties): GeoJSON.Feature => ({
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [lng, lat] },
-    properties,
-  });
   const parcels = alerts
     .filter(({ parcel }) => visible(map, parcel))
     .map((alert, rank) => {
@@ -163,21 +167,8 @@ export function drawAlerts(map: MapLibre, alerts: Alert[], couriers: Courier[], 
         rank: -2,
       }),
     );
-  map
-    .getSource<GeoJSONSource>('alerts')
-    ?.setData({ type: 'FeatureCollection', features: [...parcels, ...flaggedCouriers] });
+  map.getSource<GeoJSONSource>('alerts')?.setData(collection([...parcels, ...flaggedCouriers]));
 }
-
-const points = (
-  items: { lat: number; lng: number; dim: boolean; courier: string }[],
-): GeoJSON.FeatureCollection => ({
-  type: 'FeatureCollection',
-  features: items.map(({ lat, lng, dim, courier }) => ({
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [lng, lat] },
-    properties: { dim, courier },
-  })),
-});
 
 /** Draws every parcel and courier; with a courier in focus (key 'city:id'), the rest fade and its road route is traced. */
 export function drawOverview(
@@ -188,10 +179,10 @@ export function drawOverview(
 ) {
   const source = (id: string) => map.getSource<GeoJSONSource>(id);
   const at = (items: { city: string; courier_id: string; lat: number; lng: number }[]) =>
-    points(
+    collection(
       items.map((i) => {
         const courier = courierKey(i);
-        return { lat: i.lat, lng: i.lng, courier, dim: focus !== null && courier !== focus };
+        return point(i.lng, i.lat, { dim: focus !== null && courier !== focus, courier });
       }),
     );
   source('parcels')?.setData(at(fleet.parcels.filter((p) => visible(map, p))));
@@ -204,14 +195,13 @@ export function drawOverview(
     entry.stops.push(p.position);
     sameSpot.set(key, entry);
   }
-  source('stops')?.setData({
-    type: 'FeatureCollection',
-    features: [...sameSpot.values()].map((s) => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
-      properties: { stop: s.stops.sort((a, b) => a - b).join('·') },
-    })),
-  });
+  source('stops')?.setData(
+    collection(
+      [...sameSpot.values()].map((s) =>
+        point(s.lng, s.lat, { stop: s.stops.sort((a, b) => a - b).join('·') }),
+      ),
+    ),
+  );
   source('couriers')?.setData(at(fleet.couriers.filter((c) => visible(map, c))));
   source('route')?.setData(
     focus && road
@@ -222,13 +212,5 @@ export function drawOverview(
 
 /** Rings one parcel (or none). */
 export function drawSpot(map: MapLibre, parcel: Parcel | null) {
-  map.getSource<GeoJSONSource>('spot')?.setData(
-    parcel
-      ? {
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [parcel.lng, parcel.lat] },
-          properties: {},
-        }
-      : empty,
-  );
+  map.getSource<GeoJSONSource>('spot')?.setData(parcel ? point(parcel.lng, parcel.lat) : empty);
 }

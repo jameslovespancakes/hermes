@@ -2,7 +2,7 @@
 // Driven by the cinema clock; counts and membership never change.
 import * as cinema from './cinema';
 import type { Box } from './training';
-import { $, $$, clamp, ease, isPaused, range } from './util';
+import { $, $$, clamp, ease, range } from './util';
 
 const colors = [
   [3, 79, 70],
@@ -22,7 +22,6 @@ let bands: SVGRectElement[];
 let svg: SVGSVGElement;
 let counts: number[];
 let total = 0;
-let paused = false;
 let geometry:
   | {
       width: number;
@@ -84,14 +83,14 @@ function paint(p: number) {
   const second = range(p, 0.6, 0.72);
   const a = ease(first);
   const b = ease(second);
-  const weights = paused ? [1, 1, 1] : [1 - a, a * (1 - b), b];
-  const separation = paused ? 1 : ease(range(p, 0.02, 0.18));
+  const weights = [1 - a, a * (1 - b), b];
+  const separation = ease(range(p, 0.02, 0.18));
   const left = (width - usable - gap * separation * 2) / 2;
   bands.forEach((band, i) => {
     const strength = 0.3 + 0.7 * weights[i];
     const rgb = colors[i].map((v, c) => Math.round(muted[c] + (v - muted[c]) * strength));
     band.setAttribute('x', String(left + starts[i] + i * gap * separation));
-    band.setAttribute('y', String((height - bar) / 2 - (paused ? 0 : lift * weights[i] * separation)));
+    band.setAttribute('y', String((height - bar) / 2 - lift * weights[i] * separation));
     band.setAttribute('rx', String(2 + 3 * separation));
     band.setAttribute('fill', `rgb(${rgb.join(',')})`);
   });
@@ -103,21 +102,19 @@ function paint(p: number) {
   const opacity = [1 - outA, inA * (1 - outB), inB];
   const shift = [-28 * outA, 28 * (1 - inA) - 28 * outB, 28 * (1 - inB)];
   labels.forEach((label, i) => {
-    label.style.opacity = String(paused ? 1 : opacity[i]);
-    label.style.transform = `translateY(${String(paused ? 0 : shift[i])}px)`;
-    label.style.filter = `blur(${String(paused ? 0 : (1 - opacity[i]) * 2.5)}px)`;
+    label.style.opacity = String(opacity[i]);
+    label.style.transform = `translateY(${String(shift[i])}px)`;
+    label.style.filter = `blur(${String((1 - opacity[i]) * 2.5)}px)`;
   });
   pictures.forEach((picture, i) => {
     const local = range(p, [0, 0.27, 0.6][i], [0.39, 0.72, 1][i]);
-    picture.style.opacity = String(paused ? (i === 0 ? 1 : 0) : weights[i]);
-    picture.style.transform = paused
-      ? 'none'
-      : `translate3d(${String((0.5 - local) * drift)}px,${String((0.5 - local) * 20)}px,0) scale(${String(1.04 + local * 0.025)})`;
+    picture.style.opacity = String(weights[i]);
+    picture.style.transform = `translate3d(${String((0.5 - local) * drift)}px,${String((0.5 - local) * 20)}px,0) scale(${String(1.04 + local * 0.025)})`;
   });
 }
 
 export function render(progress: number, entrance: number, exit: number) {
-  const state = paused ? 1 : clamp(progress);
+  const state = clamp(progress);
   paint(state);
   section.style.visibility = entrance > 0 && exit < 1 ? 'visible' : 'hidden';
   section.setAttribute('aria-hidden', String(entrance < 0.5 || exit >= 0.25));
@@ -128,13 +125,7 @@ export function render(progress: number, entrance: number, exit: number) {
   const copy = entrance * (1 - ease(range(exit, 0, 0.25)));
   heading.style.opacity = String(copy);
   captions.style.opacity = String(copy);
-  reflections.style.opacity = String(copy * (paused ? 0.32 : ease(range(state, 0, 0.1))));
-}
-
-export function setPaused(value: boolean) {
-  paused = value;
-  section.classList.toggle('split-still', paused);
-  measure();
+  reflections.style.opacity = String(copy * ease(range(state, 0, 0.1)));
 }
 
 export function init() {
@@ -147,7 +138,6 @@ export function init() {
   labels = $$('.split-group', section);
   counts = labels.map((label) => Number(label.dataset.count));
   total = counts.reduce((sum, count) => sum + count, 0);
-  paused = isPaused();
 
   svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.classList.add('split-motion');
@@ -159,7 +149,6 @@ export function init() {
   const scene = $('.time-comparison');
   scene.insertBefore(section, $('.model-linked', scene));
   section.classList.add('split-ready', 'split-linked');
-  section.classList.toggle('split-still', paused);
   $('.comparison-scroll').classList.add('with-data');
 
   addEventListener('resize', () => {

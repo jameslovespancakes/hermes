@@ -1,7 +1,9 @@
 import unittest
+from typing import get_args
 
 import pandas as pd
 
+from server.api.schemas import ParcelIssue
 from server.serving.overview import IssueRules, classify
 from server.serving.predictor import courier_positions
 from server.tests.helpers import app_client, records
@@ -112,7 +114,7 @@ class OverviewApiTests(unittest.TestCase):
                 "reasons",
             },
         )
-        self.assertIn(parcel["issue"], {None, "lagging", "silent", "bulk", "moved", "resent", "suspect", "late"})
+        self.assertIn(parcel["issue"], {None, *get_args(ParcelIssue)})
 
 
 if __name__ == "__main__":

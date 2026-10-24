@@ -37,17 +37,7 @@ export const ISSUES: Record<Issue, { color: string; label: string; icon: IconSvg
 };
 
 // Same order as the server: data problems first, then implausible inputs, then plain slips.
-const RANK: Record<Issue, number> = {
-  lagging: 0,
-  silent: 0,
-  bulk: 0,
-  clock: 0,
-  moved: 0,
-  resent: 0,
-  missed: 0,
-  suspect: 1,
-  late: 2,
-};
+const RANK: Record<ParcelIssue, number> = { moved: 0, resent: 0, missed: 0, suspect: 1, late: 2 };
 
 export interface Alert {
   parcel: Parcel & { issue: ParcelIssue };
@@ -61,7 +51,7 @@ const flagged = (p: Parcel): p is Parcel & { issue: ParcelIssue } => p.issue !==
 /** Every flagged parcel, worst first; dismissed parcels (by key 'city:order') are skipped. */
 export function alerts(fleet: Fleet, dismissed: ReadonlySet<string> = new Set()): Alert[] {
   const couriers = new Map(fleet.couriers.map((c) => [courierKey(c), c]));
-  const routes = byCourier(fleet.parcels);
+  const byKey = routes(fleet.parcels);
   return fleet.parcels
     .filter(flagged)
     .filter((p) => !dismissed.has(parcelKey(p)))
@@ -69,12 +59,12 @@ export function alerts(fleet: Fleet, dismissed: ReadonlySet<string> = new Set())
     .map((parcel) => ({
       parcel,
       courier: couriers.get(courierKey(parcel)),
-      route: routes.get(courierKey(parcel)) ?? [],
+      route: byKey.get(courierKey(parcel)) ?? [],
     }));
 }
 
 /** Parcels grouped by courier key, each in predicted stop order. */
-function byCourier(parcels: Parcel[]): Map<string, Parcel[]> {
+export function routes(parcels: Parcel[]): Map<string, Parcel[]> {
   const groups = new Map<string, Parcel[]>();
   for (const parcel of parcels) {
     const group = groups.get(courierKey(parcel));
@@ -91,11 +81,6 @@ export function stops(courier: Courier | undefined, parcels: Parcel[], until = I
   return start.concat(
     parcels.filter((p) => p.position <= until).map((p): [number, number] => [p.lng, p.lat]),
   );
-}
-
-/** A courier's pending parcels (courier key 'city:id') in predicted stop order. */
-export function route(fleet: Fleet, key: string): Parcel[] {
-  return fleet.parcels.filter((p) => courierKey(p) === key).sort((a, b) => a.position - b.position);
 }
 
 // Lower is worse: issue kind first, then how far the estimate moved.

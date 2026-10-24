@@ -55,7 +55,7 @@ const tour = [
     nav: 'What customers see',
     title: ['A window,', 'not a guess.'],
     text: 'Customers see the range where 80% of similar parcels really arrived. Set on Sep 1–15, checked on Sep 16–30 in all five cities.',
-    number: '80.1%',
+    number: '80.0%',
     figure: <Window />,
   },
 ];

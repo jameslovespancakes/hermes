@@ -44,16 +44,11 @@ def offset_from_area_km(records: pd.DataFrame, reference: pd.DataFrame) -> np.nd
     return haversine_km(records["lat"].to_numpy(), records["lng"].to_numpy(), ref["lat"].to_numpy(), ref["lng"].to_numpy())
 
 
-RECENT_RECEIPTS = 20  # a device's clock is judged on its last 20 uploads
+RECENT_RECEIPTS = 20
 
 
 def clock_offset_min(records: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
-    """Minutes to add to each record's accept and delivery time when its courier's device clock runs fast.
-
-    A delivery stamped after the server received it is impossible unless the device clock is ahead; the median gap
-    over the device's last uploads (only those received before the record is looked up) estimates by how much.
-    Gaps within the timestamps' 1-minute resolution are ignored. Without receive times there is nothing to check.
-    """
+    """Minutes to add to each record's accept and delivery time: its device's recent median upload gap, if the clock runs fast."""
     zero = np.zeros(len(records))
     if "received_at" not in records:
         return zero, zero
@@ -78,8 +73,7 @@ def clock_offset_min(records: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
 
 
 def revisit_gap_min(records: pd.DataFrame, quantile: float) -> float:
-    """How long couriers normally leave an area and come back the same day for a parcel: the `quantile` of the time
-    between a delivery and the courier's previous same-day delivery in that area after the parcel was accepted."""
+    """`quantile` of same-day gaps between a courier's consecutive deliveries in an area, the earlier after acceptance."""
     done = records.loc[records["delivered_at"].notna()]
     key = done["courier_id"].astype(str) + "|" + done["aoi_id"].astype(str)
     frame = pd.DataFrame(
@@ -92,13 +86,6 @@ def revisit_gap_min(records: pd.DataFrame, quantile: float) -> float:
     return float(gap[(prev >= frame["a"]) & (gap > 0) & same_day].quantile(quantile))
 
 
-# How much each training record counts: courier-days whose records look machine-made count for less.
-#
-# Two signs, neither about speed: a delivery that shares its exact minute with another of the courier's deliveries
-# (no courier hands over two parcels in the same minute; never seen in clean LaDe data), and travel between two
-# consecutive drop-offs faster than any courier rides. Each courier-day's share of such records is shrunk towards
-# the fleet's typical share with a prior estimated from every courier-day (empirical Bayes), so a day with few
-# records moves little; its records then count 1 - that share.
 MAX_SPEED_KMH = 60.0
 MIN_LEG_KM = 1.0
 
@@ -121,7 +108,7 @@ def suspicious(records: pd.DataFrame) -> pd.Series:
 
 
 def record_weights(records: pd.DataFrame) -> pd.Series:
-    """1 - each courier-day's shrunk share of suspicious records (1 everywhere when nothing looks suspicious)."""
+    """1 - each courier-day's empirical-Bayes-shrunk share of suspicious records."""
     flag = suspicious(records).astype(float)
     day = records["delivered_at"].dt.normalize()
     stats = flag.groupby([records["courier_id"], day]).agg(["sum", "size"])

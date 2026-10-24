@@ -1,4 +1,4 @@
-"""Every data-quality threshold in one place."""
+"""Data-quality thresholds that tune the guard, contract, drift and gating."""
 
 from dataclasses import dataclass
 from enum import Enum

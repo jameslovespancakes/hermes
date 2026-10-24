@@ -1,6 +1,5 @@
 // Smooth wheel and navigation scrolling on the real document scroll position.
 // Touch, nested scrollers and modified gestures stay native.
-import { isPaused, onPause } from './util';
 
 interface Options {
   immediate?: boolean;
@@ -21,7 +20,6 @@ let start = 0;
 let origin = 0;
 let duration = 0;
 let done: (() => void) | undefined;
-let paused = false;
 
 function stop() {
   cancelAnimationFrame(frame);
@@ -45,7 +43,7 @@ function finish() {
 
 function tick(now: number) {
   frame = 0;
-  if (document.hidden || paused) {
+  if (document.hidden) {
     stop();
     return;
   }
@@ -77,7 +75,7 @@ export function go(y: number, { immediate = false, done: callback }: Options = {
   stop();
   target = fit(y);
   done = callback;
-  if (immediate || paused || document.hidden || Math.abs(target - scrollY) < 1) {
+  if (immediate || document.hidden || Math.abs(target - scrollY) < 1) {
     write(target);
     finish();
     return;
@@ -108,7 +106,7 @@ function nested(event: WheelEvent, delta: number) {
 function wheel(event: WheelEvent) {
   const modified = event.ctrlKey || event.metaKey || event.altKey || event.shiftKey;
   const sideways = Math.abs(event.deltaX) > Math.abs(event.deltaY);
-  if (paused || document.hidden || !fine.matches || !event.cancelable || modified || sideways) {
+  if (document.hidden || !fine.matches || !event.cancelable || modified || sideways) {
     stop();
     return;
   }
@@ -141,7 +139,6 @@ function wheel(event: WheelEvent) {
 export function init() {
   root = document.documentElement;
   fine = matchMedia('(hover: hover) and (pointer: fine)');
-  paused = isPaused();
   target = written = scrollY;
   addEventListener('wheel', wheel, { passive: false });
   // Any other scroll source takes over immediately.
@@ -155,10 +152,4 @@ export function init() {
   for (const type of ['pointerdown', 'touchstart', 'keydown'] as const) addEventListener(type, stop, true);
   for (const type of ['resize', 'pageshow', 'pagehide'] as const) addEventListener(type, stop);
   document.addEventListener('visibilitychange', stop);
-  onPause((value) => {
-    paused = value;
-    root.toggleAttribute('data-scroll-paused', paused);
-    stop();
-  });
-  root.toggleAttribute('data-scroll-paused', paused);
 }

@@ -195,11 +195,6 @@ summary:focus-visible {
 .hero h1 em {
   font-weight: 400;
 }
-body.motion-paused *,
-body.motion-paused *:before,
-body.motion-paused *:after {
-  animation-play-state: paused !important;
-}
 .dark-foundation {
   background: var(--ink);
   color: var(--cream);

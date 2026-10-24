@@ -3,7 +3,7 @@
 import * as deck from './deck';
 import * as parcel from './parcel';
 import { go } from './scroll';
-import { $, $$, clamp, ease, frames, isPaused, onPause, range } from './util';
+import { $, $$, clamp, ease, frames, range } from './util';
 
 interface Scene {
   node: HTMLElement;
@@ -69,7 +69,6 @@ export function init() {
   const unpack = scenes.findIndex((s) => s.kind === 'unpack');
   let enabled = false;
   let visible = true;
-  let paused = isPaused();
   let frame = 0;
   let start = 0;
   let distance = 900;
@@ -111,13 +110,13 @@ export function init() {
         line.style.strokeDasharray = '1';
         line.style.strokeDashoffset = (1 - ease(range(p * scene.span, 0.02, 0.3))).toFixed(5);
       }
-    scene.steps?.render(p, enabled, paused);
+    scene.steps?.render(p, enabled);
   }
 
   // Stepped sections keep a sticky heading through their steps.
   function headings(index: number, t: number) {
     for (const s of stepped) {
-      const opacity = deck.headingOpacity(index, t, s.index, paused);
+      const opacity = deck.headingOpacity(index, t, s.index);
       s.header.style.opacity = String(opacity);
       s.header.style.visibility = opacity > 0.001 ? 'visible' : 'hidden';
       s.header.inert = opacity <= 0.001;
@@ -156,16 +155,6 @@ export function init() {
       s.header.style.opacity = String(0.45 + 0.55 * (1 - clamp(Math.abs(q - s.index) * 0.8)));
     }
     headings(index, t);
-
-    if (paused) {
-      // Paused: show the nearest complete chapter.
-      const current = Math.min(last, index + (t >= 0.5 ? 1 : 0));
-      color(current, 0);
-      box?.draw(current === 0 ? 0 : 1);
-      pose(scenes[current], 1);
-      for (const s of scenes) detail(s, s.steps ? progress(s) : 1);
-      return;
-    }
 
     box?.draw(ease(range(q, 0.12, 1)));
     if (index === 0 && box) pose(scenes[0], 1);
@@ -232,7 +221,7 @@ export function init() {
       ? start + (scene.stop + (index ? 0.28 : 0)) * distance
       : scrollY + scene.node.getBoundingClientRect().top - padding - 12;
     go(y, {
-      immediate: !smooth || paused,
+      immediate: !smooth,
       done: () => {
         paint();
         done?.();
@@ -311,11 +300,6 @@ export function init() {
   addEventListener('resize', layout);
   addEventListener('pageshow', layout);
   addEventListener('hashchange', () => void frames().then(openHash));
-  onPause((value) => {
-    paused = value;
-    document.body.classList.toggle('motion-paused', paused);
-    paint();
-  });
   document.addEventListener('visibilitychange', request);
   layout();
   return openHash;

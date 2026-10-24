@@ -5,7 +5,7 @@ import { go } from './scroll';
 import * as split from './split';
 import { create } from './training';
 import * as wall from './wall';
-import { $, clamp, isPaused, mix, onLink, onPause, ease, range, stickyTop } from './util';
+import { $, clamp, mix, onLink, ease, range, stickyTop } from './util';
 
 const dataEnd = 0.58;
 
@@ -18,7 +18,6 @@ let image: HTMLElement;
 let intro: HTMLElement;
 let curtain: HTMLElement;
 let training: ReturnType<typeof create>;
-let paused = false;
 let mobile = false;
 let frame = 0;
 const state = { story: 0, hero: 0 };
@@ -87,19 +86,14 @@ function paintStory(p: number) {
   const metrics = wall.metrics();
   const deck = Boolean(metrics?.quality);
   const distance = metrics ? p * metrics.total : 0;
-  let core = metrics ? clamp(distance / metrics.core) : p;
-  let entering = metrics && deck ? clamp((distance - metrics.core) / metrics.qualityEntrance) : 0;
+  const core = metrics ? clamp(distance / metrics.core) : p;
+  const entering = metrics && deck ? clamp((distance - metrics.core) / metrics.qualityEntrance) : 0;
   const cards =
     metrics && deck ? clamp((distance - metrics.core - metrics.qualityEntrance) / metrics.qualityTravel) : 0;
-  let entrance = metrics ? clamp((distance - metrics.perspectivesStart) / metrics.entrance) : 0;
+  const entrance = metrics ? clamp((distance - metrics.perspectivesStart) / metrics.entrance) : 0;
   const gallery = metrics
     ? clamp((distance - metrics.perspectivesStart - metrics.entrance) / metrics.travel)
     : 0;
-  if (paused) {
-    core = core < 0.46 * dataEnd ? 0 : core < 0.64 ? dataEnd * 0.9 : 1;
-    entering = entering < 0.5 ? 0 : 1;
-    entrance = entrance < 0.45 ? 0 : entrance < 0.9 ? 0.58 : 1;
-  }
   const leaving = deck ? ease(range(entering, 0.08, 0.55)) : ease(range(entrance, 0.08, 0.4));
   // Reset before drawing so reverse scrolling restores the exact geometry.
   modelSection.style.opacity = String(1 - leaving);
@@ -108,13 +102,13 @@ function paintStory(p: number) {
   paintComparison(core);
   if (leaving > 0.5) modelSection.setAttribute('aria-hidden', 'true');
   if (leaving === 1) modelSection.style.visibility = 'hidden';
-  if (deck) quality.render(entering, cards, entrance, paused);
-  if (metrics) wall.render(entrance, gallery, paused);
+  if (deck) quality.render(entering, cards, entrance);
+  if (metrics) wall.render(entrance, gallery);
 }
 
 function paint() {
   frame = 0;
-  if (paused || document.hidden) return;
+  if (document.hidden) return;
   let moving = false;
   for (const key of ['story', 'hero'] as const) {
     const diff = target[key] - state[key];
@@ -131,12 +125,6 @@ function paint() {
 export function update() {
   target.story = progress();
   target.hero = clamp(scrollY / $('.hero').offsetHeight);
-  if (paused) {
-    // Paused: draw readable end states without easing.
-    state.story = target.story;
-    paintStory(state.story);
-    return;
-  }
   frame ||= requestAnimationFrame(paint);
 }
 
@@ -150,9 +138,8 @@ function layout() {
 
 export function seekTimeline(p: number, smooth = false) {
   const top = scrollY + outer.getBoundingClientRect().top - stickyTop(comparison);
-  const moving = smooth && !paused;
-  go(top + clamp(p) * (outer.offsetHeight - comparison.offsetHeight), { immediate: !moving });
-  if (!moving) state.story = clamp(p);
+  go(top + clamp(p) * (outer.offsetHeight - comparison.offsetHeight), { immediate: !smooth });
+  if (!smooth) state.story = clamp(p);
   update();
 }
 
@@ -171,7 +158,6 @@ export function openHash() {
 }
 
 export function init() {
-  paused = isPaused();
   outer = $('.comparison-scroll');
   comparison = $('.time-comparison');
   modelSection = $('#model-training');
@@ -196,15 +182,6 @@ export function init() {
   });
   addEventListener('scroll', update, { passive: true });
   addEventListener('resize', layout);
-  onPause((value) => {
-    paused = value;
-    split.setPaused(paused);
-    if (paused) {
-      cancelAnimationFrame(frame);
-      frame = 0;
-    }
-    update();
-  });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) update();
   });

@@ -30,31 +30,30 @@ OUTPUT_COLUMNS = [
     "uncertain",
 ]
 HEALTH_EVENTS = 2000
-DIAGNOSTIC_COLUMNS = ["s", "courier", "n_pending", "dist_from_courier_km", "pace_today_min", "route_ahead"]
+DIAGNOSTIC_COLUMNS = ["n_pending", "dist_from_courier_km", "pace_today_min", "route_ahead"]
+
+
+def _as_of(frame: pd.DataFrame, at: pd.Timestamp, prefix: str) -> pd.DataFrame:
+    """`frame` as it looked at `at`: later acceptances dropped, deliveries not yet received hidden."""
+    rows = frame.loc[frame[f"{prefix}accepted_at"] <= at].copy()
+    received = f"{prefix}received_at"
+    seen = rows[received] if received in rows else rows[f"{prefix}delivered_at"]
+    future = (seen > at).to_numpy()
+    rows.loc[future, f"{prefix}delivered_at"] = pd.NaT
+    rows.loc[future, f"{prefix}duration_minutes"] = np.nan
+    if received in rows:
+        rows.loc[future, received] = pd.NaT
+    return rows.reset_index(drop=True)
 
 
 def known_at(records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
-    """The log as it looked at time `at`: later acceptances dropped, deliveries not yet received hidden."""
-    known = records.loc[records["accepted_at"] <= at].copy()
-    arrived = known["received_at"] if "received_at" in known else known["delivered_at"]
-    future = arrived > at
-    known.loc[future, "delivered_at"] = pd.NaT
-    known.loc[future, "duration_minutes"] = np.nan
-    if "received_at" in known:
-        known.loc[future, "received_at"] = pd.NaT
-    return known.reset_index(drop=True)
+    """The delivery log as it looked at `at`."""
+    return _as_of(records, at, "")
 
 
 def at_moment(day_table: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
-    """A day's package table as it looked at `at`: later acceptances dropped, later deliveries hidden."""
-    rows = day_table.loc[day_table["_accepted_at"] <= at].copy()
-    seen = rows["_received_at"] if "_received_at" in rows else rows["_delivered_at"]
-    future = (seen > at).to_numpy()
-    rows.loc[future, "_delivered_at"] = pd.NaT
-    rows.loc[future, "_duration_minutes"] = np.nan
-    if "_received_at" in rows:
-        rows.loc[future, "_received_at"] = pd.NaT
-    return rows.reset_index(drop=True)
+    """A package table as it looked at `at`."""
+    return _as_of(day_table, at, "_")
 
 
 def courier_positions(records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
@@ -111,16 +110,16 @@ class LiveETAPredictor:
                 "feed_age_min": live["feed_age_min"].to_numpy(),
                 "upload_lag_min": live["upload_lag_min"].to_numpy(),
                 "model_used": model_used,
-                "needs_review": issues["issues"].str.len().to_numpy() > 0,
-                "data_issues": issues["issues"].to_numpy(),
-                "review_reasons": issues["reasons"].to_numpy(),
+                "needs_review": issues["data_issues"].str.len().to_numpy() > 0,
+                "data_issues": issues["data_issues"].to_numpy(),
+                "review_reasons": issues["review_reasons"].to_numpy(),
                 "risk_min": risk,
                 "uncertain": risk > self.bundle.risk.threshold,
             }
         )
         if diagnostics:
             out["s"], out["courier"] = live["s"].to_numpy(), live["courier_s"].to_numpy()
-            for column in DIAGNOSTIC_COLUMNS[2:]:
+            for column in DIAGNOSTIC_COLUMNS:
                 out[column] = live[column].to_numpy()
         return out
 
@@ -132,30 +131,26 @@ class LiveETAPredictor:
             return pd.DataFrame(columns=OUTPUT_COLUMNS)
         return self.score(live, packages, diagnostics)
 
-    def score_events(self, packages: pd.DataFrame, events: pd.DataFrame, day: pd.Timestamp) -> pd.DataFrame:
+    def predict_day(self, packages: pd.DataFrame, events: pd.DataFrame, day: pd.Timestamp) -> pd.DataFrame:
         """Predictions with diagnostics at many (courier_id 'city:id', s) events of one day, in stop order."""
         out = self.score(live_table(packages, day, events), packages, diagnostics=True)
         return out.sort_values(["s", "courier", "predicted_position"], kind="stable").reset_index(drop=True)
-
-    def prepare(self, records: pd.DataFrame, at: pd.Timestamp) -> pd.DataFrame:
-        """Package table as known at `at`."""
-        return at_moment(self.package_table(records), at)
 
     def package_table(self, records: pd.DataFrame) -> pd.DataFrame:
         """Package table for the whole log (the expensive step); every input built from it is causal per moment."""
         return package_table(self.clean(records), self.city)
 
-    def predict_couriers(self, packages: pd.DataFrame, courier_ids, at: pd.Timestamp, diagnostics: bool = False) -> pd.DataFrame:
+    def predict_couriers(self, packages: pd.DataFrame, courier_ids, at: pd.Timestamp) -> pd.DataFrame:
         """ETAs for every package the given couriers (raw ids) hold at `at`, in predicted stop order."""
         events = pd.DataFrame({"courier_id": [f"{self.city}:{c}" for c in courier_ids], "s": at})
         live = live_table(packages, at.normalize(), events)
         if live.empty:
             return pd.DataFrame(columns=OUTPUT_COLUMNS)
-        return self.score(live, packages, diagnostics).sort_values("predicted_position", kind="stable").reset_index(drop=True)
+        return self.score(live, packages).sort_values("predicted_position", kind="stable").reset_index(drop=True)
 
     def predict(self, records: pd.DataFrame, courier_id, at: pd.Timestamp) -> pd.DataFrame:
         """ETAs for every package `courier_id` (raw id) holds at time `at`."""
-        return self.predict_couriers(self.prepare(records, at), [courier_id], at)
+        return self.predict_couriers(at_moment(self.package_table(records), at), [courier_id], at)
 
     def data_health(self, records: pd.DataFrame, packages: pd.DataFrame, at: pd.Timestamp) -> dict:
         """Data contract and input drift over the 24 h before `at`."""

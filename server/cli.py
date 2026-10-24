@@ -4,7 +4,7 @@ import argparse
 
 import pandas as pd
 
-from server.config import CITIES, PARSE_YEAR
+from server.config import CITIES, ts
 
 
 def main(argv=None):
@@ -37,8 +37,7 @@ def main(argv=None):
         from server.serving.predictor import LiveETAPredictor
 
         records, _ = load_city(args.city)
-        at = pd.Timestamp(f"{PARSE_YEAR}-{args.at}")
-        result = LiveETAPredictor.from_store(args.city).predict(records, args.courier, at)
+        result = LiveETAPredictor.from_store(args.city).predict(records, args.courier, ts(args.at))
         with pd.option_context("display.width", 160, "display.max_rows", 60):
             print(result.to_string(index=False) if len(result) else "No pending packages for this courier at that time.")
 

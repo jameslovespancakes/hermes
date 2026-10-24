@@ -44,7 +44,7 @@ CATS = CATEGORICAL + ["city"]
 
 
 def ts(month_day: str) -> pd.Timestamp:
-    """'MM-DD' -> Timestamp in the parsing-anchor year."""
+    """'MM-DD[ HH:MM:SS]' -> Timestamp in the anchor year."""
     return pd.Timestamp(f"{PARSE_YEAR}-{month_day}")
 
 

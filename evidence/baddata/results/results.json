@@ -1,5 +1,5 @@
 {
-  "created_utc": "2026-10-23T06:08:01.464234+00:00",
+  "created_utc": "2026-10-23T22:42:34.184714+00:00",
   "smoke": false,
   "design": {
     "lq_rollout": "0% -> 60% of couriers, Jul 1 -> Sep 30 (bulk sync to the hour, ~1 km GPS jitter, 50% re-sent)",
@@ -92,38 +92,38 @@
     "07-01": {
       "reference": {
         "n": 172219,
-        "mae": 56.263506469132466,
-        "median_ae": 28.2787957990531,
-        "within_30_pct": 51.9367781719787,
+        "mae": 56.28110569363835,
+        "median_ae": 28.281596457554798,
+        "within_30_pct": 51.935036203903174,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.0,
         "mae_flagged": null,
-        "mae_not_flagged": 56.263506469132466
+        "mae_not_flagged": 56.28110569363835
       },
       "bad_data_no_fix": {
         "n": 172219,
-        "mae": 65.22825211195799,
-        "median_ae": 37.20084709919337,
-        "within_30_pct": 43.38429557714306,
+        "mae": 65.25369073108347,
+        "median_ae": 37.21461863566208,
+        "within_30_pct": 43.38081164099199,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 4.309048362840337,
-        "mae_flagged": 106.38495499097685,
-        "mae_not_flagged": 63.37492930424674,
-        "mae_affected_couriers": 93.19046950340766,
-        "mae_unaffected_couriers": 56.168273546198165,
+        "mae_flagged": 106.3965655422965,
+        "mae_not_flagged": 63.40099061352128,
+        "mae_affected_couriers": 93.30763376332754,
+        "mae_unaffected_couriers": 56.163992335601456,
         "affected_share_pct": 24.471748181095002
       },
       "bad_data_with_guard": {
         "n": 172219,
-        "mae": 59.96969988735678,
-        "median_ae": 32.943303078470635,
-        "within_30_pct": 46.89552256138986,
+        "mae": 59.95256562110378,
+        "median_ae": 32.95637059658057,
+        "within_30_pct": 46.88449009691149,
         "staleness_model_pct": 0.0,
-        "flagged_for_review_pct": 24.86136837398893,
-        "mae_flagged": 72.51233364170595,
-        "mae_not_flagged": 55.81967703760669,
-        "mae_affected_couriers": 71.36987140612378,
-        "mae_unaffected_couriers": 56.27595456808903,
+        "flagged_for_review_pct": 24.852658533611276,
+        "mae_flagged": 72.19477022458616,
+        "mae_not_flagged": 55.903835156766135,
+        "mae_affected_couriers": 71.41003051928847,
+        "mae_unaffected_couriers": 56.24025679586588,
         "affected_share_pct": 24.471748181095002
       },
       "lq_feed_share_at_test_pct": 15.164835164835164
@@ -131,38 +131,38 @@
     "08-01": {
       "reference": {
         "n": 193447,
-        "mae": 57.911919157612594,
-        "median_ae": 30.459072666009604,
-        "within_30_pct": 49.511752573056185,
+        "mae": 58.12858378563178,
+        "median_ae": 30.46518227180799,
+        "within_30_pct": 49.50554932358734,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.0,
         "mae_flagged": null,
-        "mae_not_flagged": 57.911919157612594
+        "mae_not_flagged": 58.12858378563178
       },
       "bad_data_no_fix": {
         "n": 193447,
-        "mae": 70.00330715894557,
-        "median_ae": 47.3524434754587,
-        "within_30_pct": 35.35231872295771,
+        "mae": 70.08834000849524,
+        "median_ae": 47.345266133566014,
+        "within_30_pct": 35.37092847136425,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 9.885394966063057,
-        "mae_flagged": 87.18227556568624,
-        "mae_not_flagged": 68.11880810636475,
-        "mae_affected_couriers": 80.71241118856969,
-        "mae_unaffected_couriers": 59.25349211648874,
+        "mae_flagged": 87.18398732030363,
+        "mae_not_flagged": 68.2129811161814,
+        "mae_affected_couriers": 80.73517170831366,
+        "mae_unaffected_couriers": 59.40103402616349,
         "affected_share_pct": 50.094858023127784
       },
       "bad_data_with_guard": {
         "n": 193447,
-        "mae": 64.49960754791373,
-        "median_ae": 39.67524728612729,
-        "within_30_pct": 40.54547240329393,
+        "mae": 64.5143884485884,
+        "median_ae": 39.69250343895324,
+        "within_30_pct": 40.534099779267706,
         "staleness_model_pct": 0.0,
-        "flagged_for_review_pct": 49.61203843946921,
-        "mae_flagged": 69.54705936024364,
-        "mae_not_flagged": 59.52988133595223,
-        "mae_affected_couriers": 69.62542740162915,
-        "mae_unaffected_couriers": 59.35430172065042,
+        "flagged_for_review_pct": 49.60531825254462,
+        "mae_flagged": 69.54030523558123,
+        "mae_not_flagged": 59.56719574720428,
+        "mae_affected_couriers": 69.68705446797419,
+        "mae_unaffected_couriers": 59.32205836840796,
         "affected_share_pct": 50.094858023127784
       },
       "lq_feed_share_at_test_pct": 35.604395604395606
@@ -170,38 +170,38 @@
     "09-01": {
       "reference": {
         "n": 155296,
-        "mae": 55.9990425881555,
-        "median_ae": 26.94748582343314,
-        "within_30_pct": 53.60150937564393,
+        "mae": 56.03843728089145,
+        "median_ae": 26.941081965651392,
+        "within_30_pct": 53.613100144240676,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.0,
         "mae_flagged": null,
-        "mae_not_flagged": 55.9990425881555
+        "mae_not_flagged": 56.03843728089145
       },
       "bad_data_no_fix": {
         "n": 155296,
-        "mae": 77.23388550329418,
-        "median_ae": 56.00310074278843,
-        "within_30_pct": 29.562255305996292,
+        "mae": 77.16745600521863,
+        "median_ae": 55.990216956235244,
+        "within_30_pct": 29.566118895528536,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 13.185787141974037,
-        "mae_flagged": 93.95282282818786,
-        "mae_not_flagged": 74.69452770059686,
-        "mae_affected_couriers": 85.63802584037182,
-        "mae_unaffected_couriers": 57.77862443181187,
+        "mae_flagged": 93.79694151745818,
+        "mae_not_flagged": 74.64168460182498,
+        "mae_affected_couriers": 85.50709109031072,
+        "mae_unaffected_couriers": 57.86152210671595,
         "affected_share_pct": 69.8337368637956
       },
       "bad_data_with_guard": {
         "n": 155296,
-        "mae": 68.7937844908573,
-        "median_ae": 43.808320773782135,
-        "within_30_pct": 36.566943127962084,
+        "mae": 68.84460310575874,
+        "median_ae": 43.80952994386039,
+        "within_30_pct": 36.575958170204,
         "staleness_model_pct": 0.0,
-        "flagged_for_review_pct": 68.37909540490418,
-        "mae_flagged": 73.6124638596145,
-        "mae_not_flagged": 58.37355962692365,
-        "mae_affected_couriers": 73.4530172970424,
-        "mae_unaffected_couriers": 58.007840063295966,
+        "flagged_for_review_pct": 68.37845147331547,
+        "mae_flagged": 73.51809546976757,
+        "mae_not_flagged": 58.738641009891964,
+        "mae_affected_couriers": 73.51315810554219,
+        "mae_unaffected_couriers": 58.03707815919839,
         "affected_share_pct": 69.8337368637956
       },
       "lq_feed_share_at_test_pct": 55.714285714285715
@@ -212,17 +212,17 @@
       {
         "cutoff": "07-01",
         "deployed": "lq_raw@07-01",
-        "test_mae": 65.22825211195799,
+        "test_mae": 65.25369073108347,
         "gate": null
       },
       {
         "cutoff": "08-01",
         "deployed": "lq_raw@08-01",
-        "test_mae": 70.00330715894557,
+        "test_mae": 70.08834000849524,
         "gate": {
           "promote": true,
-          "champion_mae": 68.5025286800859,
-          "challenger_mae": 63.9918985707425,
+          "champion_mae": 68.61772831553067,
+          "challenger_mae": 64.06663770424655,
           "audited_predictions": 17971,
           "reason": "challenger better on audited deliveries"
         }
@@ -230,11 +230,11 @@
       {
         "cutoff": "09-01",
         "deployed": "lq_raw@09-01",
-        "test_mae": 77.23388550329418,
+        "test_mae": 77.16745600521863,
         "gate": {
           "promote": true,
-          "champion_mae": 74.3641503420872,
-          "challenger_mae": 72.74310807541436,
+          "champion_mae": 74.46758896155329,
+          "challenger_mae": 72.38175311635102,
           "audited_predictions": 17868,
           "reason": "challenger better on audited deliveries"
         }
@@ -244,31 +244,31 @@
       {
         "cutoff": "07-01",
         "deployed": "lq_guarded@07-01",
-        "test_mae": 59.96969988735678,
+        "test_mae": 59.95256562110378,
         "gate": null
       },
       {
         "cutoff": "08-01",
         "deployed": "lq_guarded@08-01",
-        "test_mae": 64.49960754791373,
+        "test_mae": 64.5143884485884,
         "gate": {
           "promote": true,
-          "champion_mae": 63.28404243388582,
-          "challenger_mae": 60.570644401915196,
+          "champion_mae": 63.416276446576454,
+          "challenger_mae": 60.49968954229461,
           "audited_predictions": 17971,
           "reason": "challenger better on audited deliveries"
         }
       },
       {
         "cutoff": "09-01",
-        "deployed": "lq_guarded@08-01",
-        "test_mae": 69.60723365902255,
+        "deployed": "lq_guarded@09-01",
+        "test_mae": 68.84460310575874,
         "gate": {
-          "promote": false,
-          "champion_mae": 67.84306047221442,
-          "challenger_mae": 67.89563198024022,
+          "promote": true,
+          "champion_mae": 67.8962562568972,
+          "challenger_mae": 67.66450661618565,
           "audited_predictions": 17868,
-          "reason": "challenger not better; keep champion and alert"
+          "reason": "challenger better on audited deliveries"
         }
       }
     ]
@@ -276,96 +276,96 @@
   "severity": [
     {
       "share": 0.2,
-      "no_fix": 64.69724501484403,
-      "with_fix": 60.06258324424654
+      "no_fix": 64.78838981826118,
+      "with_fix": 59.99223001408374
     },
     {
       "share": 0.4,
-      "no_fix": 74.67654367662,
-      "with_fix": 62.88971190434543
+      "no_fix": 74.82600824416124,
+      "with_fix": 62.89912071371756
     },
     {
       "share": 0.6,
-      "no_fix": 77.23388550329418,
-      "with_fix": 64.75705894898395
+      "no_fix": 77.16745600521863,
+      "with_fix": 64.79918736881658
     }
   ],
   "random_weight_control": {
-    "guard_weights": 68.7937844908573,
-    "random_weights": 71.17717584528963
+    "guard_weights": 68.84460310575874,
+    "random_weights": 71.2172849434043
   },
   "new_faults": {
     "never_retrained": {
       "no_fix": {
         "n": 155296,
-        "mae": 60.599172963757546,
-        "median_ae": 31.195776022938738,
-        "within_30_pct": 48.7069853698743,
+        "mae": 60.79025161772983,
+        "median_ae": 31.213568489469566,
+        "within_30_pct": 48.690243148567895,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.0,
         "mae_flagged": null,
-        "mae_not_flagged": 60.599172963757546
+        "mae_not_flagged": 60.79025161772983
       },
       "with_fix": {
         "n": 155296,
-        "mae": 55.9990425881555,
-        "median_ae": 26.94748582343314,
-        "within_30_pct": 53.60150937564393,
+        "mae": 56.03843728089145,
+        "median_ae": 26.941081965651392,
+        "within_30_pct": 53.613100144240676,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.0,
         "mae_flagged": null,
-        "mae_not_flagged": 55.9990425881555
+        "mae_not_flagged": 56.03843728089145
       },
       "description": "model trained to Jul 1 and never retrained, vs retrained monthly (Sep 1)"
     },
     "frozen_habits": {
       "no_fix": {
         "n": 155296,
-        "mae": 60.490656847544244,
-        "median_ae": 31.51375663806781,
-        "within_30_pct": 48.32062641664949,
+        "mae": 61.104752171273205,
+        "median_ae": 31.45950920236518,
+        "within_30_pct": 48.38630743869771,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.0,
         "mae_flagged": null,
-        "mae_not_flagged": 60.490656847544244
+        "mae_not_flagged": 61.104752171273205
       },
       "with_fix": {
         "n": 155296,
-        "mae": 55.9990425881555,
-        "median_ae": 26.94748582343314,
-        "within_30_pct": 53.60150937564393,
+        "mae": 56.03843728089145,
+        "median_ae": 26.941081965651392,
+        "within_30_pct": 53.613100144240676,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.0,
         "mae_flagged": null,
-        "mae_not_flagged": 55.9990425881555
+        "mae_not_flagged": 56.03843728089145
       },
       "description": "courier and area habits stop updating on Jul 1 (a failed nightly job), vs rebuilt from the log at every prediction"
     },
     "fast_clocks": {
       "no_fix": {
         "n": 155110,
-        "mae": 57.61302351187779,
-        "median_ae": 28.64106461022113,
-        "within_30_pct": 51.599510025143445,
+        "mae": 57.691123307662025,
+        "median_ae": 28.63584272916573,
+        "within_30_pct": 51.610469989040034,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 1.2732899232802528,
-        "mae_flagged": 94.98704528321001,
-        "mae_not_flagged": 57.13100638321104,
-        "mae_affected_couriers": 79.06474767011595,
-        "mae_unaffected_couriers": 50.34381981229457,
+        "mae_flagged": 95.48833062439844,
+        "mae_not_flagged": 57.203648305536106,
+        "mae_affected_couriers": 79.19543664283894,
+        "mae_unaffected_couriers": 50.404099061966,
         "affected_share_pct": 25.30978015601831
       },
       "with_fix": {
         "n": 155265,
-        "mae": 56.1353206140952,
-        "median_ae": 27.071066422399866,
-        "within_30_pct": 53.397739348855175,
+        "mae": 56.11292872168106,
+        "median_ae": 27.041227668223343,
+        "within_30_pct": 53.43895919878917,
         "staleness_model_pct": 0.4012494767011239,
-        "flagged_for_review_pct": 22.81518693846005,
-        "mae_flagged": 69.0088288557029,
-        "mae_not_flagged": 52.330018956476266,
-        "mae_affected_couriers": 72.81685258959519,
-        "mae_unaffected_couriers": 50.460241895122884,
+        "flagged_for_review_pct": 22.814542878304835,
+        "mae_flagged": 69.0788365615279,
+        "mae_not_flagged": 52.280454685776334,
+        "mae_affected_couriers": 72.90199366105782,
+        "mae_unaffected_couriers": 50.40126714954025,
         "affected_share_pct": 25.384342897626638
       },
       "description": "device clocks 20 min fast on up to 60% of couriers over the test window; receive times true"
@@ -373,33 +373,33 @@
     "lost_scans": {
       "no_fix": {
         "n": 155296,
-        "mae": 72.55715501383324,
-        "median_ae": 39.73724939607244,
-        "within_30_pct": 41.07124459097465,
+        "mae": 72.7474970817341,
+        "median_ae": 39.75710491589119,
+        "within_30_pct": 41.06995672779724,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.8937770451267257,
-        "mae_flagged": 138.23291409731794,
-        "mae_not_flagged": 71.96486641539862,
-        "mae_affected_couriers": 109.72139669556205,
-        "mae_unaffected_couriers": 56.4816192295249,
+        "mae_flagged": 138.00330149732218,
+        "mae_not_flagged": 72.15899579181519,
+        "mae_affected_couriers": 110.00017376835116,
+        "mae_unaffected_couriers": 56.63370839567569,
         "affected_share_pct": 30.194596126107566
       },
       "with_fix": {
         "n": 155296,
-        "mae": 71.73063755169036,
-        "median_ae": 39.055369454128474,
-        "within_30_pct": 41.56063259839275,
+        "mae": 71.78646457238406,
+        "median_ae": 39.03211391620012,
+        "within_30_pct": 41.57737481969915,
         "staleness_model_pct": 2.6575056665979804,
-        "flagged_for_review_pct": 2.5544766124046983,
-        "mae_flagged": 129.64599827892462,
-        "mae_not_flagged": 70.21242071284958,
-        "mae_affected_couriers": 107.75427565758429,
-        "mae_unaffected_couriers": 56.148474234283675,
+        "flagged_for_review_pct": 2.55383268081599,
+        "mae_flagged": 129.16634596151135,
+        "mae_not_flagged": 70.28267411715854,
+        "mae_affected_couriers": 107.53486083341555,
+        "mae_unaffected_couriers": 56.32335817437634,
         "affected_share_pct": 30.194596126107566
       },
       "detection": {
-        "lost_flagged_pct": 53.556200757027064,
-        "pending_flagged_pct": 1.5665593584095787,
+        "lost_flagged_pct": 14.287783648971212,
+        "pending_flagged_pct": 1.5658533830339998,
         "lost_predictions": 158779
       },
       "description": "30% of delivery scans never arrive from up to 60% of couriers over the test window; the fix flags, it does not correct"
@@ -409,171 +409,171 @@
     "reference": {
       "no_fix": {
         "n": 155296,
-        "mae": 55.9990425881555,
-        "median_ae": 26.94748582343314,
-        "within_30_pct": 53.60150937564393,
+        "mae": 56.03843728089145,
+        "median_ae": 26.941081965651392,
+        "within_30_pct": 53.613100144240676,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.0,
         "mae_flagged": null,
-        "mae_not_flagged": 55.9990425881555
+        "mae_not_flagged": 56.03843728089145
       },
       "with_fix": {
         "n": 155296,
-        "mae": 55.944630299307555,
-        "median_ae": 26.909725110466656,
-        "within_30_pct": 53.60022151246652,
+        "mae": 55.94337722389919,
+        "median_ae": 26.880813037022932,
+        "within_30_pct": 53.640145270966414,
         "staleness_model_pct": 0.0,
-        "flagged_for_review_pct": 1.8616062229548733,
-        "mae_flagged": 121.87060666408239,
-        "mae_not_flagged": 54.69406766900956
+        "flagged_for_review_pct": 1.8609622913661652,
+        "mae_flagged": 120.74711598013691,
+        "mae_not_flagged": 54.714535806858336
       }
     },
     "stale_only": {
       "no_fix": {
         "n": 155296,
-        "mae": 61.454285441466894,
-        "median_ae": 32.184340932319486,
-        "within_30_pct": 47.76298166082835,
+        "mae": 61.4763478106037,
+        "median_ae": 32.181760941070976,
+        "within_30_pct": 47.76942097671543,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 0.6928703894498248,
-        "mae_flagged": 86.07056993227296,
-        "mae_not_flagged": 61.28253649767163,
-        "mae_affected_couriers": 90.63483657599377,
-        "mae_unaffected_couriers": 54.853593532380884,
+        "mae_flagged": 86.13464423096237,
+        "mae_not_flagged": 61.30430574765269,
+        "mae_affected_couriers": 90.53179725556137,
+        "mae_unaffected_couriers": 54.90395412338285,
         "affected_share_pct": 18.447352153307232
       },
       "with_fix": {
         "n": 155296,
-        "mae": 57.26259689825161,
-        "median_ae": 28.148971544276804,
-        "within_30_pct": 52.16425406964764,
+        "mae": 57.24764879720426,
+        "median_ae": 28.12768614050043,
+        "within_30_pct": 52.19709458067175,
         "staleness_model_pct": 17.38293323717288,
-        "flagged_for_review_pct": 18.85946837008036,
-        "mae_flagged": 65.25092883229095,
-        "mae_not_flagged": 55.4058714071388,
-        "mae_affected_couriers": 67.98890721793842,
-        "mae_unaffected_couriers": 54.83628666801987,
+        "flagged_for_review_pct": 18.858824438491656,
+        "mae_flagged": 65.13296886731257,
+        "mae_not_flagged": 55.414943443671895,
+        "mae_affected_couriers": 68.07105458866482,
+        "mae_unaffected_couriers": 54.79937540075299,
         "affected_share_pct": 18.447352153307232
       },
       "event_time_processing_only": {
         "n": 155296,
-        "mae": 61.12410234224453,
-        "median_ae": 31.989104666133997,
-        "within_30_pct": 47.93877498454564,
+        "mae": 61.15677475536099,
+        "median_ae": 31.982790773748594,
+        "within_30_pct": 47.94263857407789,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 17.36747887904389,
-        "mae_flagged": 81.72677707702513,
-        "mae_not_flagged": 56.79388811842401,
-        "mae_affected_couriers": 88.82582942819548,
-        "mae_unaffected_couriers": 54.85792302983276,
+        "mae_flagged": 81.53645861086996,
+        "mae_not_flagged": 56.87342814895592,
+        "mae_affected_couriers": 88.77563628958916,
+        "mae_unaffected_couriers": 54.90933977626486,
         "affected_share_pct": 18.447352153307232
       },
       "staleness_model_always_on": {
         "n": 155296,
-        "mae": 57.3798351734187,
-        "median_ae": 28.445224562752557,
-        "within_30_pct": 51.864825880898415,
+        "mae": 57.38491125993797,
+        "median_ae": 28.423181527146596,
+        "within_30_pct": 51.8963785287451,
         "staleness_model_pct": 0.0,
-        "flagged_for_review_pct": 18.85946837008036,
-        "mae_flagged": 64.93384798748588,
-        "mae_not_flagged": 55.62405833942086,
-        "mae_affected_couriers": 66.85982563680672,
-        "mae_unaffected_couriers": 55.235444683279574,
+        "flagged_for_review_pct": 18.858824438491656,
+        "mae_flagged": 64.91980289208861,
+        "mae_not_flagged": 55.6336524511958,
+        "mae_affected_couriers": 67.01128058792328,
+        "mae_unaffected_couriers": 55.20740961357861,
         "affected_share_pct": 18.447352153307232
       }
     },
     "low_quality_only": {
       "no_fix": {
         "n": 155296,
-        "mae": 77.23388550329418,
-        "median_ae": 56.00310074278843,
-        "within_30_pct": 29.562255305996292,
+        "mae": 77.16745600521863,
+        "median_ae": 55.990216956235244,
+        "within_30_pct": 29.566118895528536,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 13.185787141974037,
-        "mae_flagged": 93.95282282818786,
-        "mae_not_flagged": 74.69452770059686,
-        "mae_affected_couriers": 85.63802584037182,
-        "mae_unaffected_couriers": 57.77862443181187,
+        "mae_flagged": 93.79694151745818,
+        "mae_not_flagged": 74.64168460182498,
+        "mae_affected_couriers": 85.50709109031072,
+        "mae_unaffected_couriers": 57.86152210671595,
         "affected_share_pct": 69.8337368637956
       },
       "with_fix": {
         "n": 155296,
-        "mae": 64.75705894898395,
-        "median_ae": 37.96766224126412,
-        "within_30_pct": 41.37839995878838,
+        "mae": 64.79918736881658,
+        "median_ae": 37.96305036626167,
+        "within_30_pct": 41.386127137852874,
         "staleness_model_pct": 35.13097568514321,
-        "flagged_for_review_pct": 68.37909540490418,
-        "mae_flagged": 67.8314958081348,
-        "mae_not_flagged": 58.10869724016571,
-        "mae_affected_couriers": 67.67253679698464,
-        "mae_unaffected_couriers": 58.007840063295966,
+        "flagged_for_review_pct": 68.37845147331547,
+        "mae_flagged": 67.73493313562062,
+        "mae_not_flagged": 58.45092933572244,
+        "mae_affected_couriers": 67.72023348397656,
+        "mae_unaffected_couriers": 58.03707815919839,
         "affected_share_pct": 69.8337368637956
       },
       "guard_only": {
         "n": 155296,
-        "mae": 68.7937844908573,
-        "median_ae": 43.808320773782135,
-        "within_30_pct": 36.566943127962084,
+        "mae": 68.84460310575874,
+        "median_ae": 43.80952994386039,
+        "within_30_pct": 36.575958170204,
         "staleness_model_pct": 0.0,
-        "flagged_for_review_pct": 68.37909540490418,
-        "mae_flagged": 73.6124638596145,
-        "mae_not_flagged": 58.37355962692365,
-        "mae_affected_couriers": 73.4530172970424,
-        "mae_unaffected_couriers": 58.007840063295966,
+        "flagged_for_review_pct": 68.37845147331547,
+        "mae_flagged": 73.51809546976757,
+        "mae_not_flagged": 58.738641009891964,
+        "mae_affected_couriers": 73.51315810554219,
+        "mae_unaffected_couriers": 58.03707815919839,
         "affected_share_pct": 69.8337368637956
       }
     },
     "combined": {
       "no_fix": {
         "n": 155296,
-        "mae": 81.55215232355968,
-        "median_ae": 60.14985527470913,
-        "within_30_pct": 27.815912837420154,
+        "mae": 81.49133059477793,
+        "median_ae": 60.13066007982412,
+        "within_30_pct": 27.824927879662063,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 12.443334020193694,
-        "mae_flagged": 98.37002223404635,
-        "mae_not_flagged": 79.16203878437337,
-        "mae_affected_couriers": 92.3017976994211,
-        "mae_unaffected_couriers": 53.09890151338974,
+        "mae_flagged": 98.17105580232922,
+        "mae_not_flagged": 79.12084983468965,
+        "mae_affected_couriers": 92.19895656303854,
+        "mae_unaffected_couriers": 53.14930101112818,
         "affected_share_pct": 72.57946115804657
       },
       "with_fix": {
         "n": 155296,
-        "mae": 64.54878331573615,
-        "median_ae": 37.45974624837227,
-        "within_30_pct": 41.812409849577584,
+        "mae": 64.59561404071474,
+        "median_ae": 37.4575599412491,
+        "within_30_pct": 41.81820523387596,
         "staleness_model_pct": 44.7062384092314,
-        "flagged_for_review_pct": 71.44034617762209,
-        "mae_flagged": 67.2520280776378,
-        "mae_not_flagged": 57.786770624889805,
-        "mae_affected_couriers": 68.7768717411457,
-        "mae_unaffected_couriers": 53.357450373172576,
+        "flagged_for_review_pct": 71.43970224603338,
+        "mae_flagged": 67.1652983267859,
+        "mae_not_flagged": 58.1678981308644,
+        "mae_affected_couriers": 68.82667486931793,
+        "mae_unaffected_couriers": 53.3964134401382,
         "affected_share_pct": 72.57946115804657
       },
       "event_time_processing_only": {
         "n": 155296,
-        "mae": 81.26561741612178,
-        "median_ae": 59.80048273992341,
-        "within_30_pct": 27.92022975479085,
+        "mae": 81.21214513565468,
+        "median_ae": 59.79056219666806,
+        "within_30_pct": 27.925381207500514,
         "staleness_model_pct": 0.0,
         "flagged_for_review_pct": 27.5145528539048,
-        "mae_flagged": 100.97335137964463,
-        "mae_not_flagged": 73.78481252190439,
-        "mae_affected_couriers": 91.90653624645701,
-        "mae_unaffected_couriers": 53.10015504560831,
+        "mae_flagged": 100.97695740508982,
+        "mae_not_flagged": 73.70967404323244,
+        "mae_affected_couriers": 91.81351736144438,
+        "mae_unaffected_couriers": 53.15135872592703,
         "affected_share_pct": 72.57946115804657
       },
       "guard_only": {
         "n": 155296,
-        "mae": 72.24480817455205,
-        "median_ae": 47.42896985841188,
-        "within_30_pct": 34.385946837008035,
+        "mae": 72.29481708232778,
+        "median_ae": 47.429200026101974,
+        "within_30_pct": 34.39496187924995,
         "staleness_model_pct": 0.0,
-        "flagged_for_review_pct": 71.44034617762209,
-        "mae_flagged": 77.93734459069718,
-        "mae_not_flagged": 58.00525279592639,
-        "mae_affected_couriers": 79.38045674442546,
-        "mae_unaffected_couriers": 53.357450373172576,
+        "flagged_for_review_pct": 71.43970224603338,
+        "mae_flagged": 77.84497996159996,
+        "mae_not_flagged": 58.41183914813859,
+        "mae_affected_couriers": 79.43463877366206,
+        "mae_unaffected_couriers": 53.3964134401382,
         "affected_share_pct": 72.57946115804657
       }
     }
@@ -581,8 +581,8 @@
   "mechanism": {
     "stale_only": {
       "matched_predictions": 155296,
-      "mae_reference": 55.9990425881555,
-      "mae_degraded": 61.454285441466894,
+      "mae_reference": 56.03843728089145,
+      "mae_degraded": 61.4763478106037,
       "mean_abs_change_n_pending": 0.7202696800231934,
       "mean_abs_change_dist_from_courier_km": 0.22029395401477814,
       "mean_abs_change_pace_today_min": 1.086128830909729,
@@ -592,8 +592,8 @@
     },
     "low_quality_only": {
       "matched_predictions": 155296,
-      "mae_reference": 55.9990425881555,
-      "mae_degraded": 77.23388550329418,
+      "mae_reference": 56.03843728089145,
+      "mae_degraded": 77.16745600521863,
       "mean_abs_change_n_pending": 8.125264167785645,
       "mean_abs_change_dist_from_courier_km": 0.9874462485313416,
       "mean_abs_change_pace_today_min": 6.76016092300415,
@@ -603,8 +603,8 @@
     },
     "combined": {
       "matched_predictions": 155296,
-      "mae_reference": 55.9990425881555,
-      "mae_degraded": 81.55215232355968,
+      "mae_reference": 56.03843728089145,
+      "mae_degraded": 81.49133059477793,
       "mean_abs_change_n_pending": 8.83929443359375,
       "mean_abs_change_dist_from_courier_km": 1.0576485395431519,
       "mean_abs_change_pace_today_min": 7.454298973083496,
@@ -616,28 +616,28 @@
   "unseen_degradation": {
     "no_fix": {
       "n": 151567,
-      "mae": 66.26515627252076,
-      "median_ae": 41.464853039035006,
-      "within_30_pct": 38.11053857370008,
+      "mae": 66.20655925962448,
+      "median_ae": 41.458370464498955,
+      "within_30_pct": 38.11977541285373,
       "staleness_model_pct": 0.0,
       "flagged_for_review_pct": 1.82097686171792,
-      "mae_flagged": 87.62371571840663,
-      "mae_not_flagged": 65.86900808009268,
-      "mae_affected_couriers": 70.09308749151168,
-      "mae_unaffected_couriers": 57.70834458227957,
+      "mae_flagged": 87.4910992657573,
+      "mae_not_flagged": 65.8117839438334,
+      "mae_affected_couriers": 69.9793945732686,
+      "mae_unaffected_couriers": 57.77290685830085,
       "affected_share_pct": 69.09155686923934
     },
     "with_fix": {
       "n": 151567,
-      "mae": 60.33902687455795,
-      "median_ae": 31.95606632412057,
-      "within_30_pct": 47.76303548925558,
+      "mae": 60.366045250916706,
+      "median_ae": 31.954760842490373,
+      "within_30_pct": 47.76501481193136,
       "staleness_model_pct": 12.486227213047695,
-      "flagged_for_review_pct": 46.49560920253089,
-      "mae_flagged": 62.64166328117242,
-      "mae_not_flagged": 58.33802320174293,
-      "mae_affected_couriers": 61.39110359538608,
-      "mae_unaffected_couriers": 57.98725463289635,
+      "flagged_for_review_pct": 46.49494942830563,
+      "mae_flagged": 62.436412206313435,
+      "mae_not_flagged": 58.566932721152426,
+      "mae_affected_couriers": 61.418507756274934,
+      "mae_unaffected_couriers": 58.01341064120607,
       "affected_share_pct": 69.09155686923934
     },
     "description": "timestamps randomly off by +/-30 min instead of bulk-synced: detectors not designed for it"
@@ -684,5 +684,5 @@
       "max_psi": 4.009806063831022
     }
   },
-  "seconds": 8187.405733453808
+  "seconds": 8287.58555757883
 }

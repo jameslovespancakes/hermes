@@ -47,8 +47,8 @@ def _csv_summary(path: Path) -> dict:
         return {"row_count": sum(1 for row in reader if row), "columns": columns}
 
 
-def fetch(source_path: str) -> tuple[Path, dict, str, bool]:
-    """Download a file from the pinned revision if missing and verify it. Returns path, listing entry, url, downloaded."""
+def fetch(source_path: str) -> tuple[Path, str, str, bool]:
+    """Download a file from the pinned revision if missing and verify it. Returns path, url, sha256, downloaded."""
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     output = RAW_DIR / Path(source_path).name
     url = f"https://huggingface.co/datasets/{HF_REPO}/resolve/{HF_REVISION}/{source_path}"
@@ -68,17 +68,18 @@ def fetch(source_path: str) -> tuple[Path, dict, str, bool]:
                     with part.open("wb") as stream:
                         for chunk in response.iter_content(chunk_size=1024 * 1024):
                             stream.write(chunk)
-                verify(part, entry)
+                digest = verify(part, entry)
                 part.replace(output)
             finally:
                 part.unlink(missing_ok=True)
-    verify(output, entry)
-    return output, entry, url, downloaded
+        else:
+            digest = verify(output, entry)
+    return output, url, digest, downloaded
 
 
 def download_roads() -> list[Path]:
     """Every city's OpenStreetMap roads from LaDe's road network file (data/raw/roads_<city>.csv)."""
-    source, _, _, _ = fetch("road-network/roads.csv")
+    source, *_ = fetch("road-network/roads.csv")
     roads = pd.read_csv(source, sep="	", usecols=["fclass", "city", "geometry"])
     outputs = []
     for city, name in ROAD_CITY.items():
@@ -92,8 +93,7 @@ def download_city(city: str) -> dict:
     """Download (if missing), verify, and write data/manifest_<city>.json. Returns the manifest."""
     source_path = f"delivery/delivery_{city}.csv"
     manifest_path = DATA_DIR / f"manifest_{city}.json"
-    output, entry, url, downloaded = fetch(source_path)
-    digest = verify(output, entry)
+    output, url, digest, downloaded = fetch(source_path)
     previous = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
     retrieved = datetime.now(timezone.utc).isoformat()
     if not downloaded and previous.get("sha256") == digest:

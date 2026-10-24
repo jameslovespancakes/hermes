@@ -59,9 +59,6 @@
   top: 120px;
   height: var(--compare-height);
 }
-body.motion-paused .navbar {
-  transition: none;
-}
 @media (max-width: 1100px) {
   .city-set {
     gap: 45px;

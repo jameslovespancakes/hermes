@@ -1,12 +1,11 @@
 """The whole city at one moment, for the dispatcher map.
 
 Every pending parcel gets its current ETA and the ETA the model gave an hour earlier ("before" and "after"), plus
-at most one issue for a dispatcher; problems with a courier's device feed (lagging, silent, bulk, clock) go on the
-courier instead, once:
+at most one issue for a dispatcher:
 
-- data:    the data guards flagged the inputs (stale courier feed, bulk-synced scans)
-- suspect: the inputs passed every guard but the picture is implausible
-- late:    the estimate slipped far in the last hour
+- parcel issues: moved/resent/missed (from the guard), suspect (inputs passed every guard but the picture is
+  implausible), late (the estimate slipped far in the last hour)
+- device issues: lagging/silent/bulk/clock, shown once, on the courier
 
 Both moments are replayed from the log as it was known then, so neither estimate uses later information.
 Coordinates are returned in WGS-84 for web maps.
@@ -18,19 +17,20 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from server.features.context import visible_at
 from server.features.geometry import gcj02_to_wgs84
 from server.quality.guard import COURIER_ISSUES
-from server.serving.predictor import OUTPUT_COLUMNS, LiveETAPredictor, courier_positions
+from server.serving.predictor import DIAGNOSTIC_COLUMNS, OUTPUT_COLUMNS, LiveETAPredictor, courier_positions
 
 
 @dataclass(frozen=True)
 class IssueRules:
     """Thresholds, set from clean held-out days (Sept 18, 20, 25 at 10:30, 14:00 and 17:00 in Yantai)."""
 
-    lookback_min: float = 60.0  # the "before" estimate is the one made this long ago
-    late_slip_min: float = 90.0  # median hourly slip is +14..55 min; >= 90 min hits ~5-10% of parcels
-    early_jump_min: float = 60.0  # an estimate rarely moves an hour earlier when nothing was flagged
-    far_from_courier_km: float = 15.0  # ~1% of parcels sit this far from their courier's last position
+    lookback_min: float = 60.0
+    late_slip_min: float = 90.0
+    early_jump_min: float = 60.0
+    far_from_courier_km: float = 15.0
 
 
 RULES = IssueRules()
@@ -38,21 +38,37 @@ RULES = IssueRules()
 
 def city_predictions(predictor: LiveETAPredictor, day_table: pd.DataFrame, moments: list[pd.Timestamp]) -> pd.DataFrame:
     """ETAs with diagnostics for every package held at each moment (one batch; column `s` is the moment)."""
-    seen = day_table["_received_at"] if "_received_at" in day_table else day_table["_delivered_at"]
+    seen = visible_at(day_table)
     held = [day_table.loc[(day_table["_accepted_at"] <= m) & ~(seen <= m), ["courier_id"]].drop_duplicates().assign(s=m) for m in moments]
     events = pd.concat(held)
     if events.empty:
-        return pd.DataFrame(columns=[*OUTPUT_COLUMNS, "s", "courier", "lat", "lng", "courier_id"])
+        return pd.DataFrame(columns=[*OUTPUT_COLUMNS, "s", "courier", *DIAGNOSTIC_COLUMNS, "lat", "lng", "courier_id"])
     events["courier_id"] = events["courier_id"].astype(str)
-    out = predictor.score_events(day_table, events, moments[0].normalize())
+    out = predictor.predict_day(day_table, events, moments[0].normalize())
     where = day_table.set_index("_order_id")[["lat", "lng"]]
     out = out.join(where, on="order_id")
     out["courier_id"] = out["courier"].str.split(":", n=1).str[1]
     return out
 
 
+def _split(kinds: list[str], whys: list[str]) -> tuple[str | None, str | None, list[tuple[str, str]]]:
+    """A parcel's first device-feed issue and its reason, and the parcel's own issues with their reasons."""
+    pairs = list(zip(kinds, whys, strict=True))
+    feed_kind, feed_why = next(((kind, why) for kind, why in pairs if kind in COURIER_ISSUES), (None, None))
+    return feed_kind, feed_why, [(kind, why) for kind, why in pairs if kind not in COURIER_ISSUES]
+
+
+def _review(row, i: int, checks: dict) -> tuple[str | None, list[str]]:
+    """The first review issue whose checks hit row `i`, with what they found."""
+    for name, rules in checks.items():
+        hits = [describe(row) for mask, describe in rules if mask[i]]
+        if hits:
+            return name, hits
+    return None, []
+
+
 def classify(now: pd.DataFrame, before: pd.DataFrame, rules: IssueRules = RULES) -> pd.DataFrame:
-    """Adds baseline_eta, slip_min (minutes the ETA moved since the baseline), issue and reasons to `now`."""
+    """Adds baseline_eta, slip_min (minutes the ETA moved since the baseline), issue, reasons, feed_issue and feed_reason."""
     out = now.merge(
         before[["order_id", "predicted_delivery_at"]].rename(columns={"predicted_delivery_at": "baseline_eta"}),
         on="order_id",
@@ -69,22 +85,15 @@ def classify(now: pd.DataFrame, before: pd.DataFrame, rules: IssueRules = RULES)
         ],
         "late": [(slip >= rules.late_slip_min, lambda r: f"ETA slipped {r.slip_min:.0f} min in the last hour")],
     }
-    issues, reasons = [], []
+    issues, reasons, feed_issues, feed_reasons = [], [], [], []
     for i, row in enumerate(out.itertuples(index=False)):
-        own = [(kind, why) for kind, why in zip(row.data_issues, row.review_reasons, strict=True) if kind not in COURIER_ISSUES]
-        if own:
-            issues.append(own[0][0])
-            reasons.append([why for _, why in own])
-            continue
-        kind, why = None, []
-        for name in ("suspect", "late"):
-            hits = [describe(row) for mask, describe in checks[name] if mask[i]]
-            if hits:
-                kind, why = name, hits
-                break
+        feed_kind, feed_why, own = _split(row.data_issues, row.review_reasons)
+        feed_issues.append(feed_kind)
+        feed_reasons.append(feed_why)
+        kind, why = (own[0][0], [w for _, w in own]) if own else _review(row, i, checks)
         issues.append(kind)
         reasons.append(why)
-    out["issue"], out["reasons"] = issues, reasons
+    out["issue"], out["reasons"], out["feed_issue"], out["feed_reason"] = issues, reasons, feed_issues, feed_reasons
     return out
 
 
@@ -99,20 +108,12 @@ def build_overview(city: Callable[[pd.Timestamp], pd.DataFrame], records: pd.Dat
     parcels = classify(now, city(baseline_at), rules)
 
     positions = courier_positions(records, at)
-    feed = [
-        next(((kind, why) for kind, why in zip(kinds, whys, strict=True) if kind in COURIER_ISSUES), (None, None))
-        for kinds, whys in zip(parcels["data_issues"], parcels["review_reasons"], strict=True)
-    ]
-    per_courier = (
-        parcels.assign(feed_issue=[k for k, _ in feed], feed_reason=[w for _, w in feed])
-        .groupby("courier_id")
-        .agg(
-            packages_held=("order_id", "size"),
-            feed_age_min=("feed_age_min", "first"),
-            model_used=("model_used", "first"),
-            issue=("feed_issue", "first"),
-            reason=("feed_reason", "first"),
-        )
+    per_courier = parcels.groupby("courier_id").agg(
+        packages_held=("order_id", "size"),
+        feed_age_min=("feed_age_min", "first"),
+        model_used=("model_used", "first"),
+        issue=("feed_issue", "first"),
+        reason=("feed_reason", "first"),
     )
     couriers = per_courier.join(positions.set_axis(positions.index.astype(str)), how="inner").reset_index()
     return {"baseline_at": baseline_at, "couriers": _on_map(couriers), "parcels": _on_map(parcels)}

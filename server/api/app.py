@@ -22,9 +22,8 @@ from server.api.schemas import (
     Route,
     RouteRequest,
     format_moment,
-    parse_moment,
 )
-from server.config import CITIES
+from server.config import CITIES, ts
 from server.serving.city import Cities, CityService, bounds
 
 MomentQuery = Annotated[Moment, Query(examples=["09-20 10:30:00"])]
@@ -59,7 +58,7 @@ def create_app(services: dict[str, CityService] | None = None, frontend: Path | 
 
     @api.post("/predict", response_model=PredictResponse)
     def predict(request: PredictRequest) -> PredictResponse:
-        service, at = city(request.city), parse_moment(request.at)
+        service, at = city(request.city), ts(request.at)
         result = service.predictor.predict_couriers(service.prepared(at), [request.courier_id], at)
         packages = [
             PackageETA(
@@ -83,7 +82,7 @@ def create_app(services: dict[str, CityService] | None = None, frontend: Path | 
 
     @api.get("/overview", response_model=Overview)
     def overview(city_id: CityQuery, at: MomentQuery) -> Overview:
-        moment = parse_moment(at)
+        moment = ts(at)
         view = city(city_id).overview(moment)
         parcels = [
             ParcelStatus(
@@ -121,7 +120,7 @@ def create_app(services: dict[str, CityService] | None = None, frontend: Path | 
 
     @api.get("/data-health", response_model=DataHealth)
     def data_health(city_id: CityQuery, at: MomentQuery) -> DataHealth:
-        service, moment = city(city_id), parse_moment(at)
+        service, moment = city(city_id), ts(at)
         report = service.health(moment)
         drift = report["drift"]
         return DataHealth(

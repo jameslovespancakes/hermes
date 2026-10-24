@@ -2,7 +2,7 @@
 // as you go. Leaving the hero, its copy lifts and fades while the dark statement widens to full bleed;
 // the statement's bar chart rises once it is in view.
 import { go } from './scroll';
-import { $, $$, clamp, onPause } from './util';
+import { $, $$, clamp } from './util';
 
 export function init() {
   const hero = $('.b-hero');
@@ -80,10 +80,6 @@ export function init() {
   addEventListener('scroll', request, { passive: true });
   addEventListener('resize', layout);
   addEventListener('hashchange', openHash);
-  onPause((paused) => {
-    document.body.classList.toggle('motion-paused', paused);
-    request();
-  });
   layout();
   return openHash;
 }

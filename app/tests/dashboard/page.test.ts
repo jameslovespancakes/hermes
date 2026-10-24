@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { alerts, route, stops } from '../../src/pages/dashboard/alerts';
+import { alerts, routes, stops } from '../../src/pages/dashboard/alerts';
 import { clock, moment, type Overview, type Parcel } from '../../src/pages/dashboard/api';
 import { iconSvg } from '../../src/pages/dashboard/icons';
 import { PackageIcon } from '@hugeicons/core-free-icons';
@@ -71,7 +71,7 @@ test('every flagged parcel is an alert: record problems first, then the biggest 
   expect(list[0]?.route.map((p) => p.order_id)).toEqual([3, 1, 2]);
   expect(list[0]?.courier?.issue).toBe('silent');
   expect(alerts(view, new Set(['yt:2'])).map((a) => a.parcel.order_id)).toEqual([5, 1, 4]);
-  expect(route(view, 'yt:b')).toHaveLength(2);
+  expect(routes(view.parcels).get('yt:b')).toHaveLength(2);
 });
 
 test('stops start at the courier and stop at the flagged parcel', () => {
@@ -80,8 +80,9 @@ test('stops start at the courier and stop at the flagged parcel', () => {
     parcel({ order_id: 2, position: 2, lng: 121.5 }),
   ]);
   const courier = view.couriers[0];
-  expect(stops(courier, route(view, 'yt:a'))).toHaveLength(3);
-  expect(stops(courier, route(view, 'yt:a'), 1)).toEqual([
+  const route = routes(view.parcels).get('yt:a') ?? [];
+  expect(stops(courier, route)).toHaveLength(3);
+  expect(stops(courier, route, 1)).toEqual([
     [121.4, 37.5],
     [121.4, 37.5],
   ]);

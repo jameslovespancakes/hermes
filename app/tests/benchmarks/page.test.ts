@@ -11,7 +11,7 @@ test('published and matched scores stay separate', () => {
   expect(values('.paper-row')).toEqual(['21.59', '21.25', '20.16', '14.47']);
   expect(values('.matched-observation')).toEqual(['61.73', '46.83']);
   expect(values('.spread-fill')).toEqual(['71', '27']);
-  expect($('#customer-window').text()).toContain('80.1%');
+  expect($('#customer-window').text()).toContain('80.0%');
   expect($('#comparison-story').text()).not.toContain('46.83');
 });
 

@@ -3,7 +3,6 @@
 html {
   scroll-behavior: smooth;
 }
-html.hermes-scroll-active,
-html[data-scroll-paused] {
+html.hermes-scroll-active {
   scroll-behavior: auto !important;
 }

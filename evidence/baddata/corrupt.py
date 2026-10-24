@@ -69,7 +69,7 @@ def low_quality_feed(
     out = _with_truth(records)
     affected = _courier_draw(out["courier_id"], seed) < rollout.share(out["accepted_at"])
     rng = np.random.default_rng(seed + 1)
-    if TimestampFault(fault) is TimestampFault.BULK_SYNC:
+    if fault is TimestampFault.BULK_SYNC:
         out.loc[affected, "delivered_at"] = out.loc[affected, "delivered_at"].dt.ceil(f"{batch_minutes}min")
     else:
         shift = pd.to_timedelta(rng.uniform(-30, 30, affected.sum()), unit="m")

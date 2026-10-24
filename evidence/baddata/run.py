@@ -248,12 +248,12 @@ def four_conditions(systems, views, truth, clean, baseline) -> tuple[dict, dict,
 def new_faults(systems, views, truth, clean) -> dict:
     """The faults added after the first study: each against the same test checkpoints, without and with the fix."""
     events = checkpoints(clean, CITY, *TEST)
-    plain, retrained, guarded = systems[key("clean", LAST)], systems[key("clean", LAST)], systems[key("clean_guarded", LAST)]
+    plain, guarded = systems[key("clean", LAST)], systems[key("clean_guarded", LAST)]
     lost = {"no_fix": evaluate(plain, views["lost"], truth, events), "with_fix": evaluate(guarded, views["lost"], truth, events)}
     out = {
         "never_retrained": {
             "no_fix": summary(evaluate(systems[key("clean", CUTOFFS[0])], views["clean"], truth, events)),
-            "with_fix": summary(evaluate(retrained, views["clean"], truth, events)),
+            "with_fix": summary(evaluate(plain, views["clean"], truth, events)),
             "description": "model trained to Jul 1 and never retrained, vs retrained monthly (Sep 1)",
         },
         "frozen_habits": {
@@ -347,7 +347,7 @@ def main():
     else:
         systems = train_systems(views, clean, truth)
         store.write_bytes(pickle.dumps(systems, protocol=pickle.HIGHEST_PROTOCOL))
-    baseline = systems[key("clean", CUTOFFS[0])].monitor  # clean June inputs; thresholds from clean May -> June
+    baseline = systems[key("clean", CUTOFFS[0])].monitor
 
     results = {
         "created_utc": datetime.now(timezone.utc).isoformat(),

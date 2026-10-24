@@ -52,7 +52,6 @@ export type Fleet = Pick<Overview, 'couriers' | 'parcels'>;
 export const courierKey = (x: { city: string; courier_id: string }) => `${x.city}:${x.courier_id}`;
 export const parcelKey = (p: { city: string; order_id: number }) => `${p.city}:${String(p.order_id)}`;
 
-/** City-wide input check: 'watch' or 'act' means today's data passed the contract but looks unlike training. */
 /** A city with a trained model; bounds are the south-west and north-east (lng, lat) corners. */
 export interface City {
   id: string;

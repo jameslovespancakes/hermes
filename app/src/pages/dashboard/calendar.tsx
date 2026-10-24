@@ -3,7 +3,7 @@ import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useEffect, useRef, useState } from 'react';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEK = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const pad = (n: number) => String(n).padStart(2, '0');
 const iso = (year: number, month: number, day: number) => `${String(year)}-${pad(month + 1)}-${pad(day)}`;

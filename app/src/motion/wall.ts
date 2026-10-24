@@ -1,7 +1,7 @@
 // Perspective wall: fictional quotes drift past on the shared home scroll clock.
 import * as cinema from './cinema';
 import * as quality from './quality';
-import { $, $$, clamp, ease, frames, isPaused, onLink, onPause, range } from './util';
+import { $, $$, clamp, ease, frames, onLink, range } from './util';
 
 interface Metrics {
   core: number;
@@ -24,7 +24,6 @@ let previous: HTMLElement;
 let next: HTMLElement;
 let output: HTMLOutputElement;
 let cards: HTMLElement[];
-let paused = false;
 let value = 0;
 let current = 0;
 let positions: number[] = [];
@@ -67,7 +66,7 @@ function draw() {
   output.textContent = `${pad(current + 1)} / ${pad(cards.length)}`;
 }
 
-export function render(entrance: number, progress: number, still: boolean) {
+export function render(entrance: number, progress: number) {
   if (!positions.length) return;
   const field = ease(range(entrance, 0.1, 0.44));
   const rise = ease(range(entrance, 0.28, 0.5));
@@ -90,7 +89,7 @@ export function render(entrance: number, progress: number, still: boolean) {
   stage.tabIndex = arriving >= 0.99 ? 0 : -1;
   section.classList.toggle('wall-active', arriving > 0);
   const before = value;
-  value = arriving === 0 ? 0 : still ? positions[current] / last() : clamp(progress);
+  value = arriving === 0 ? 0 : clamp(progress);
   if (arriving > 0 || value !== before) draw();
 }
 
@@ -98,17 +97,16 @@ function seek(index: number, announce = true, smooth = false) {
   if (!measured) return;
   index = clamp(index, 0, cards.length - 1);
   const p = positions[index] / last();
-  const moving = smooth && !paused;
-  if (!moving) {
+  if (!smooth) {
     current = index;
     value = p;
   }
   cinema.seekTimeline(
     (measured.perspectivesStart + measured.entrance + p * measured.travel) / measured.total,
-    moving,
+    smooth,
   );
   stage.scrollLeft = stage.scrollTop = 0;
-  if (!moving) draw();
+  if (!smooth) draw();
   if (announce)
     $('#wall-announcement').textContent =
       `${cards[index].getAttribute('aria-label') ?? ''}. ${String(index + 1)} of ${String(cards.length)}.`;
@@ -116,14 +114,11 @@ function seek(index: number, announce = true, smooth = false) {
 
 function seekIntro(smooth = false) {
   if (!measured) return;
-  if (!smooth || paused) {
+  if (!smooth) {
     current = value = 0;
     draw();
   }
-  cinema.seekTimeline(
-    (measured.perspectivesStart + measured.entrance * 0.58) / measured.total,
-    smooth && !paused,
-  );
+  cinema.seekTimeline((measured.perspectivesStart + measured.entrance * 0.58) / measured.total, smooth);
 }
 
 export function layout() {
@@ -188,7 +183,6 @@ export function init() {
   previous = $('[data-wall-prev]', section);
   next = $('[data-wall-next]', section);
   output = $<HTMLOutputElement>('output', section);
-  paused = isPaused();
 
   const scene = $('.time-comparison');
   scene.append(section);
@@ -222,7 +216,4 @@ export function init() {
   onLink('a[href="#perspectives"]', () => seekIntro(true));
   addEventListener('resize', layout);
   addEventListener('hashchange', () => void frames(2).then(openHash));
-  onPause((value) => {
-    paused = value;
-  });
 }

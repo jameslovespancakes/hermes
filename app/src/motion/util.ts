@@ -11,15 +11,6 @@ export const $$ = <T extends Element = HTMLElement>(selector: string, root: Pare
   ...root.querySelectorAll<T>(selector),
 ];
 
-export const isPaused = () => document.body.classList.contains('motion-paused');
-
-// Programmatic pause: dispatch `arrival:motion` with `{ paused }`.
-export function onPause(handler: (paused: boolean) => void) {
-  window.addEventListener('arrival:motion', (event) => {
-    handler(event.detail.paused);
-  });
-}
-
 // Plain left clicks on in-page links, ignoring modified clicks.
 export function onLink(selector: string, handler: (hash: string) => void) {
   document.addEventListener('click', (event) => {

@@ -1,0 +1,13 @@
+{
+  "city": "yt",
+  "window": "events Sep 16-30 (both models trained before; October untouched)",
+  "their_predictions_in_window": 115983,
+  "matched_predictions": 115983,
+  "matched_parcels": 13701,
+  "their_label_agrees_with_truth_pct": 99.96896096841779,
+  "m2g4rtp_mae": 61.73042017814334,
+  "hermes_mae": 46.82751904854629,
+  "m2g4rtp_mae_per_parcel": 57.70883157026406,
+  "hermes_mae_per_parcel": 47.16254769043709,
+  "hermes_model": "C:\\Users\\jlenh\\Desktop\\Case-athon\\server\\model_store\\yt"
+}

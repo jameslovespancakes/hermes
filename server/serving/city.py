@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
-from server.config import CITIES, MODEL_STORE
+from server.config import CITIES, MODEL_STORE, ts
 from server.data.loading import load_city
 from server.features.geometry import gcj02_to_wgs84
 from server.serving.overview import build_overview, city_predictions
@@ -16,7 +16,7 @@ from server.serving.predictor import LiveETAPredictor, at_moment
 from server.serving.roads import RoadGraph
 
 GRID = {pd.Timedelta(minutes=m) for m in range(6 * 60, 21 * 60 + 1, 15)}
-OPENING = pd.Timestamp("2000-09-20 10:30")  # the dashboard's first view, prepared at startup
+OPENING = ts("09-20 10:30")
 
 
 class LruCache:

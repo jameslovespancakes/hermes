@@ -6,6 +6,7 @@ import pandas as pd
 from server.config import ts
 from server.features.live import build_live_queries
 from server.models.bundle import ModelBundle
+from server.pipeline.evaluate import error_summary
 from server.pipeline.features import package_table
 from server.pipeline.train import score_events
 from server.quality.detectors import duplicate_records, record_weights, suspicious
@@ -39,11 +40,8 @@ def _rate(mask: np.ndarray, of: np.ndarray) -> float | None:
 def summary(rows: pd.DataFrame) -> dict:
     err = _errors(rows)
     flagged = rows["needs_review"].to_numpy(dtype=bool)
-    out = {
-        "n": int(len(rows)),
-        "mae": float(err.mean()),
-        "median_ae": float(np.median(err)),
-        "within_30_pct": float((err <= 30).mean() * 100),
+    out = error_summary(rows["actual"].to_numpy(), rows["minutes_remaining"].to_numpy())
+    out |= {
         "staleness_model_pct": float((rows["model_used"] == "staleness").mean() * 100),
         "flagged_for_review_pct": float(flagged.mean() * 100),
         "mae_flagged": float(err[flagged].mean()) if flagged.any() else None,

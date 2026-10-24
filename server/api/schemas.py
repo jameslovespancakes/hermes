@@ -5,13 +5,11 @@ from typing import Annotated, Literal
 import pandas as pd
 from pydantic import AfterValidator, BaseModel, BeforeValidator, Field, StringConstraints
 
-from server.config import PARSE_YEAR
+from server.config import ts
+from server.quality.guard import CourierIssue, ParcelDataIssue
 
+ParcelIssue = Literal[ParcelDataIssue, "suspect", "late"]
 TIME_PATTERN = r"^\d{2}-\d{2} \d{2}:\d{2}:\d{2}$"
-
-
-def parse_moment(text: str) -> pd.Timestamp:
-    return pd.Timestamp(f"{PARSE_YEAR}-{text}")
 
 
 def format_moment(moment: pd.Timestamp) -> str:
@@ -19,7 +17,7 @@ def format_moment(moment: pd.Timestamp) -> str:
 
 
 def _valid(text: str) -> str:
-    parse_moment(text)
+    ts(text)
     return text
 
 
@@ -80,7 +78,7 @@ class CourierPosition(BaseModel):
     packages_held: int
     feed_age_min: float
     model_used: str
-    issue: Literal["lagging", "silent", "bulk", "clock"] | None = Field(description="A problem with the courier's device feed")
+    issue: CourierIssue | None = Field(description="A problem with the courier's device feed")
     reason: str | None
 
 
@@ -96,7 +94,7 @@ class ParcelStatus(BaseModel):
     minutes_remaining: float
     baseline_eta: str | None = Field(description="The ETA the model gave at `baseline_at` (none if not yet held then)")
     slip_min: float | None = Field(description="Minutes the ETA moved since `baseline_at` (positive = later)")
-    issue: Literal["moved", "resent", "missed", "suspect", "late"] | None
+    issue: ParcelIssue | None
     reasons: list[str]
 
 

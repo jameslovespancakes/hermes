@@ -2,24 +2,23 @@
 // A step may carry data-heading ("Keep|watch.") and data-caption to retitle its section.
 import { $, $$, clamp, ease, range } from './util';
 
-export function state(progress: number, count: number, paused = false) {
+export function state(progress: number, count: number) {
   const position = clamp(progress * count, 0, count - 1);
   const base = Math.floor(position);
-  const turn = paused ? 0 : ease(range(position - base, 0.65, 1));
+  const turn = ease(range(position - base, 0.65, 1));
   return { base, turn, active: turn >= 0.5 ? Math.min(count - 1, base + 1) : base };
 }
 
 // How much of step `index` is showing: the current step fades out as the next fades in.
-export function shown(index: number, progress: number, count: number, paused = false) {
-  const { base, turn } = state(progress, count, paused);
+export function shown(index: number, progress: number, count: number) {
+  const { base, turn } = state(progress, count);
   if (index === base) return 1 - turn;
   if (index === base + 1) return turn;
   return 0;
 }
 
 // A stepped section's sticky heading leaves before the next heading arrives, so they never overlap.
-export function headingOpacity(scene: number, t: number, own: number, paused = false) {
-  if (paused) return scene + (t >= 0.5 ? 1 : 0) === own ? 1 : 0;
+export function headingOpacity(scene: number, t: number, own: number) {
   if (scene === own) return 1 - ease(range(t, 0, 0.46));
   if (scene === own - 1) return ease(range(t, 0.54, 1));
   return 0;
@@ -41,15 +40,15 @@ export function create(section: HTMLElement) {
 
   return {
     count: steps.length,
-    render(progress: number, enhanced: boolean, paused: boolean) {
+    render(progress: number, enhanced: boolean) {
       deck.classList.toggle('deck-enhanced', enhanced);
       steps.forEach((step, i) => {
-        const v = enhanced ? shown(i, progress, steps.length, paused) : 1;
+        const v = enhanced ? shown(i, progress, steps.length) : 1;
         step.style.opacity = String(v);
         step.style.setProperty('--draw', String(v));
         step.inert = enhanced && v < 0.5;
       });
-      retitle(enhanced ? steps[state(progress, steps.length, paused).active].dataset : first);
+      retitle(enhanced ? steps[state(progress, steps.length).active].dataset : first);
     },
   };
 }

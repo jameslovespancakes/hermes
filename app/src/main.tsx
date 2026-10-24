@@ -8,7 +8,7 @@ const loaders: Record<Page, () => Promise<ComponentType>> = {
   home: () => import('./pages/home').then((m) => m.Page),
   benchmarks: () => import('./pages/benchmarks').then((m) => m.Page),
   methodology: () => import('./pages/methodology').then((m) => m.Page),
-  dashboard: () => import('./pages/dashboard').then((m) => m.Dashboard),
+  dashboard: () => import('./pages/dashboard').then((m) => m.Page),
 };
 const styles = {
   home: () => import('./styles/home.css'),

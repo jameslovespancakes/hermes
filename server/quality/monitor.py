@@ -23,7 +23,7 @@ class MonitorBaseline:
 
 
 def fit_baseline(live: pd.DataFrame, records: pd.DataFrame, cutoff: pd.Timestamp, config: QualityConfig = QUALITY) -> MonitorBaseline:
-    """Reference = live inputs in the 30 days before the cutoff; thresholds calibrated against the 30 days before that."""
+    """Reference = live inputs in the BASELINE_DAYS before the cutoff; thresholds calibrated against the BASELINE_DAYS before that."""
 
     def window(days_back: int) -> pd.DataFrame:
         start, end = cutoff - pd.Timedelta(days=days_back + BASELINE_DAYS), cutoff - pd.Timedelta(days=days_back)

@@ -125,9 +125,6 @@
 .bars.on span {
   transform: none;
 }
-.motion-paused .bars span {
-  transition: none;
-}
 
 /* Tour: a cream sheet that rises over the statement; index left, card middle, copy right. */
 .b-tour {
@@ -326,9 +323,6 @@
 }
 .tour-enhanced .tour-card {
   max-width: 520px;
-}
-.motion-paused .tour-step {
-  transition: none;
 }
 
 /* Closing card: a speaker on video, with the quote laid over a dark fade. */

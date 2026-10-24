@@ -4,57 +4,57 @@
 // faults over 3 seeds; over time and the unseen fault from the first run).
 
 const scale = 100;
-const clean = 50.95;
+const clean = 50.38;
 const height = (minutes: number) => `${((minutes / scale) * 100).toFixed(2)}%`;
 
 const conditions = [
   {
     id: 'reference',
     name: 'Clean data',
-    before: 50.95,
-    after: 51.03,
+    before: 50.38,
+    after: 50.21,
     label: 'min error on clean data, with or without controls',
   },
   {
     id: 'stale',
     name: 'Late uploads',
-    before: 62.83,
-    after: 54.0,
-    label: 'min error with late uploads, 62.8 without',
+    before: 62.24,
+    after: 53.41,
+    label: 'min error with late uploads, 62.2 without',
   },
   {
     id: 'quality',
     name: 'Bad records',
-    before: 72.46,
-    after: 61.1,
-    label: 'min error with bad records, 72.5 without',
+    before: 71.57,
+    after: 60.66,
+    label: 'min error with bad records, 71.6 without',
   },
   {
     id: 'combined',
     name: 'Both at once',
-    before: 81.95,
-    after: 61.27,
-    label: 'min error with both, 82.0 without',
+    before: 81.09,
+    after: 60.95,
+    label: 'min error with both, 81.1 without',
   },
   {
     id: 'time',
     name: 'Three months on',
-    before: 73.98,
-    after: 66.19,
-    label: 'min error after three monthly retrains on bad records, 74.0 without',
+    before: 73.15,
+    after: 65.39,
+    label: 'min error after three monthly retrains on bad records, 73.2 without',
   },
   {
     id: 'unseen',
     name: 'An unseen fault',
-    before: 62.8,
-    after: 56.52,
-    label: 'min error with timestamps randomly off by up to 30 min, 62.8 without',
+    before: 61.94,
+    after: 55.84,
+    label: 'min error with timestamps randomly off by up to 30 min, 61.9 without',
   },
   {
     id: 'lost',
     name: 'Lost scans',
-    before: 65.02,
-    after: 64.38,
+    before: 64.34,
+    after: 63.56,
     label: 'min error when 30% of scans never arrive: flagged, not repaired',
   },
 ];

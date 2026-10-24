@@ -46,9 +46,9 @@ function Action({
   );
 }
 
-// A later day beside a time: the date, and on hover how many days after the ETA's day.
+// A later day beside a time: the date, and on hover how many days ahead.
 function DayMark({ date, days }: { date: string; days: number }) {
-  const later = days === 1 ? 'Tomorrow' : days > 1 ? `In ${String(days)} days` : 'Earlier day';
+  const later = days === 1 ? 'Tomorrow' : `In ${String(days)} days`;
   return (
     <sup className="day-mark" data-tip={later} aria-label={`${date}, ${later.toLowerCase()}`}>
       {date}

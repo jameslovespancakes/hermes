@@ -9,10 +9,9 @@ test('each settled step is fully shown alone', () => {
   }
 });
 
-test('crossfade sums to one and pause settles', () => {
+test('crossfade sums to one', () => {
   const p = 0.84 / 4;
   expect(shown(0, p, 4) + shown(1, p, 4)).toBeCloseTo(1);
-  expect(shown(0, p, 4, true)).toBe(1);
 });
 
 test('a stepped heading leaves before the next heading arrives', () => {

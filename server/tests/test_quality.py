@@ -106,10 +106,10 @@ class QualityTests(unittest.TestCase):
         )
         guard = DataGuard(pd.DataFrame(columns=["lat", "lng"]), missed_after_min=60.0)
         out = data_issues(live, packages, guard)
-        self.assertEqual(out["issues"].tolist(), [[], ["silent", "bulk", "clock", "moved", "resent"], ["lagging"], ["clock", "moved", "resent"]])
-        self.assertEqual(out["reasons"][1][0], "No scans from the courier for 90 min")
-        self.assertEqual(out["reasons"][3][1], "Address was 2.4 km off its area and was moved")
-        self.assertEqual(data_issues(live, packages, None)["issues"].tolist()[1], ["silent"])
+        self.assertEqual(out["data_issues"].tolist(), [[], ["silent", "bulk", "clock", "moved", "resent"], ["lagging"], ["clock", "moved", "resent"]])
+        self.assertEqual(out["review_reasons"][1][0], "No scans from the courier for 90 min")
+        self.assertEqual(out["review_reasons"][3][1], "Address was 2.4 km off its area and was moved")
+        self.assertEqual(data_issues(live, packages, None)["data_issues"].tolist()[1], ["silent"])
 
     def test_parcel_left_behind_in_a_visited_area_is_missed(self):
         packages = pd.DataFrame(

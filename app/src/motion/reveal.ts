@@ -1,17 +1,15 @@
 // Home page decorations: city strip and word-by-word heading reveals.
-import { $, $$, isPaused, onPause } from './util';
+import { $, $$ } from './util';
 
 const curve = 'cubic-bezier(.22,1,.36,1)';
 
 export function init() {
   const body = document.body;
-  let paused = isPaused();
-  const allowed = () => !paused && !document.hidden;
   const running = new Map<Element, Animation>();
   body.classList.add('motion-ready');
 
   function run(element: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-    if (!allowed()) return;
+    if (document.hidden) return;
     running.get(element)?.cancel();
     const animation = element.animate(keyframes, { duration: 700, easing: curve, ...options });
     running.set(element, animation);
@@ -79,7 +77,7 @@ export function init() {
     },
     { threshold: 0.12, rootMargin: '0px 0px -30px 0px' },
   );
-  if (allowed()) {
+  if (!document.hidden) {
     for (const heading of $$('h1, main h2').filter((h) => !h.closest('#data-split, #perspectives'))) {
       splitWords(heading);
       heading.style.opacity = '0';
@@ -97,10 +95,6 @@ export function init() {
     }
     pending.clear();
   }
-  onPause((value) => {
-    paused = value;
-    if (paused) stopAll();
-  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stopAll();
   });

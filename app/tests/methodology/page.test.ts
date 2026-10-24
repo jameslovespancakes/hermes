@@ -9,7 +9,7 @@ test('hygiene steps: a number over a faint chart', () => {
     $('#data-safeguards .step-number')
       .map((_, n) => $(n).text())
       .get(),
-  ).toEqual(['175/184', '100%', '0.11', '20 → 2.6', '54.0', '50%', '94/94', '51.0']);
+  ).toEqual(['175/184', '100%', '0.11', '20 → 2.6', '53.4', '13%', '94/94', '50.4']);
   expect($('#hygiene-monitor-art')).toHaveLength(1);
   expect($('#guard-heading').text()).toBe('Cleaninputs.');
 });
@@ -25,5 +25,5 @@ test('results compare the bad-data test before and after the controls', () => {
     $('#results .step-number')
       .map((_, n) => $(n).text())
       .get(),
-  ).toEqual(['51.0', '54.0', '61.1', '61.3', '66.2', '56.5', '64.4']);
+  ).toEqual(['50.2', '53.4', '60.7', '61.0', '65.4', '55.8', '63.6']);
 });

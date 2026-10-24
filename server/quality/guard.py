@@ -2,10 +2,12 @@
 machine-made records, and flag parcels a courier seems to have passed without scanning."""
 
 from dataclasses import dataclass, field
+from typing import Literal, get_args
 
 import numpy as np
 import pandas as pd
 
+from server.features.context import visible_at
 from server.quality.config import QUALITY, CleanMode, QualityConfig
 from server.quality.detectors import (
     area_reference,
@@ -17,6 +19,11 @@ from server.quality.detectors import (
     revisit_gap_min,
     running_bulk_share,
 )
+
+CourierIssue = Literal["lagging", "silent", "bulk", "clock"]
+ParcelDataIssue = Literal["moved", "resent", "missed"]
+COURIER_ISSUES = get_args(CourierIssue)
+DATA_ISSUES = COURIER_ISSUES + get_args(ParcelDataIssue)
 
 
 @dataclass
@@ -36,7 +43,7 @@ class DataGuard:
         return offset, np.isfinite(offset) & (offset > self.config.max_area_offset_km)
 
     def clean(self, records: pd.DataFrame, mode: CleanMode) -> tuple[pd.DataFrame, dict]:
-        mode = CleanMode(mode)
+        """De-duplicate, correct fast clocks and repair coordinates, then weight (TRAIN) or flag (SERVE) the records."""
         out = records.copy()
         duplicate = duplicate_records(out)
         had_copy = record_keys(out).duplicated(keep=False) & out["delivered_at"].notna() & ~duplicate
@@ -59,23 +66,32 @@ class DataGuard:
             out["weight"] = record_weights(out).to_numpy()
             report["mean_weight"] = float(out["weight"].mean())
         else:
-            out["guard_bulk_scan"] = (running_bulk_share(out) >= self.config.bulk_scan_share).to_numpy()
-            out["guard_moved_km"] = np.where(repair, offset, np.nan)
-            out["guard_resent"] = had_copy.loc[out.index].to_numpy()
-            out["guard_clock_min"] = np.where(accept_shift != 0, -accept_shift, np.nan)
+            self._serve_flags(out, had_copy, repair, offset, accept_shift)
         report["output_rows"] = len(out)
         return out.reset_index(drop=True), report
+
+    def _serve_flags(self, out: pd.DataFrame, had_copy: pd.Series, repair: np.ndarray, offset: np.ndarray, accept_shift: np.ndarray) -> None:
+        """Mark each record's bulk-synced scan, moved address, removed copy and corrected clock (in place)."""
+        out["guard_bulk_scan"] = (running_bulk_share(out) >= self.config.bulk_scan_share).to_numpy()
+        out["guard_moved_km"] = np.where(repair, offset, np.nan)
+        out["guard_resent"] = had_copy.loc[out.index].to_numpy()
+        out["guard_clock_min"] = np.where(accept_shift != 0, -accept_shift, np.nan)
+
+
+def _feed_age(live: pd.DataFrame) -> np.ndarray:
+    """Minutes since the courier's last event, counted only once they have delivered today."""
+    return live["feed_age_min"].where(live["n_done_today"] > 0).to_numpy()
 
 
 def feed_is_stale(live: pd.DataFrame, max_feed_age_min: float, max_upload_lag_min: float) -> np.ndarray:
     """Uploads running late, or no new delivery for a while since the first one today."""
-    age = live["feed_age_min"].where(live["n_done_today"] > 0).to_numpy()
+    age = _feed_age(live)
     return (age > max_feed_age_min) | (live["upload_lag_min"].to_numpy() > max_upload_lag_min)
 
 
 def minutes_since_area_visit(live: pd.DataFrame, packages: pd.DataFrame) -> np.ndarray:
     """Per live row: minutes since its courier last delivered in its area, if that was today and after it was accepted."""
-    seen = packages["_received_at"] if "_received_at" in packages else packages["_delivered_at"]
+    seen = visible_at(packages)
     key = packages["courier_id"].astype(str) + "|" + packages["aoi_id"].astype(str)
     rows = live["row"].to_numpy()
     wanted = key.isin(set(key.to_numpy()[rows])) & seen.notna()
@@ -88,16 +104,11 @@ def minutes_since_area_visit(live: pd.DataFrame, packages: pd.DataFrame) -> np.n
     return np.where((last >= accepted) & today, (s - last) / np.timedelta64(1, "m"), np.nan)
 
 
-DATA_ISSUES = ("lagging", "silent", "bulk", "clock", "moved", "resent", "missed")
-COURIER_ISSUES = ("lagging", "silent", "bulk", "clock")  # about the courier's device: shown once, on the courier
-
-
 def data_issues(live: pd.DataFrame, packages: pd.DataFrame, guard: DataGuard | None, config: QualityConfig = QUALITY) -> pd.DataFrame:
-    """Per prediction, one column per data problem (in priority order) and its one-line reason."""
-    age = live["feed_age_min"].where(live["n_done_today"] > 0).to_numpy()
+    """Per prediction, its data problems (in priority order) and their one-line reasons."""
+    age = _feed_age(live)
     lag = live["upload_lag_min"].to_numpy()
     rows, cur = live["row"].to_numpy(), live["cur_row"].to_numpy()
-    none = np.zeros(len(live), bool)
     flags = {
         "lagging": (lag > config.stale_feed_minutes, lambda i: f"Scans reach us {lag[i]:.0f} min late"),
         "silent": (age > config.stale_feed_minutes, lambda i: f"No scans from the courier for {age[i]:.0f} min"),
@@ -119,7 +130,6 @@ def data_issues(live: pd.DataFrame, packages: pd.DataFrame, guard: DataGuard | N
                 lambda i: f"Not scanned; courier left {away[i]:.0f} min ago",
             ),
         }
-    out = pd.DataFrame({kind: flags[kind][0] if kind in flags else none for kind in DATA_ISSUES}, index=live.index)
-    out["issues"] = [[k for k in DATA_ISSUES if out[k].iat[i]] for i in range(len(out))]
-    out["reasons"] = [[flags[k][1](i) for k in kinds] for i, kinds in enumerate(out["issues"])]
-    return out
+    issues = [[kind for kind in DATA_ISSUES if kind in flags and flags[kind][0][i]] for i in range(len(live))]
+    reasons = [[flags[kind][1](i) for kind in kinds] for i, kinds in enumerate(issues)]
+    return pd.DataFrame({"data_issues": issues, "review_reasons": reasons}, index=live.index)

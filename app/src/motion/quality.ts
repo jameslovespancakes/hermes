@@ -1,7 +1,7 @@
 // Data-quality cards: a reversible paper deck inside the home scroll story.
 import * as cinema from './cinema';
 import * as wall from './wall';
-import { $, clamp, ease, frames, onLink, onPause, range } from './util';
+import { $, clamp, ease, frames, onLink, range } from './util';
 
 let section: HTMLElement;
 let deck: HTMLElement;
@@ -15,12 +15,11 @@ let width = 0;
 let height = 0;
 let index = 0;
 let travel = 0;
-let paused = false;
 let measured: { entrance: number; travel: number; total: number } | undefined;
 
 export const metrics = () => measured;
 
-function draw(position: number, still: boolean) {
+function draw(position: number) {
   index = Math.round(position);
   const mobile = innerWidth < 760;
   const left = (stage.clientWidth - width) / 2;
@@ -41,7 +40,7 @@ function draw(position: number, still: boolean) {
     step.style.transform = `translate(${x.toFixed(2)}px,${y.toFixed(2)}px) rotate(${turn.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
     step.style.zIndex = String(40 - i);
     step.style.setProperty('--copy-reveal', String(1 - ease(range(depth, 0.25, 0.8))));
-    step.style.setProperty('--photo-x', `${String(still ? 0 : clamp(delta, -1, 1) * (mobile ? -7 : -14))}px`);
+    step.style.setProperty('--photo-x', `${String(clamp(delta, -1, 1) * (mobile ? -7 : -14))}px`);
     step.setAttribute('aria-hidden', String(i !== index));
     step.inert = i !== index;
   });
@@ -50,7 +49,7 @@ function draw(position: number, still: boolean) {
   next.setAttribute('aria-disabled', String(index === steps.length - 1));
 }
 
-export function render(entrance: number, progress: number, departure: number, still: boolean) {
+export function render(entrance: number, progress: number, departure: number) {
   const arrival = ease(range(entrance, 0.1, 0.82));
   const leaving = ease(range(departure, 0.06, 0.44));
   const shown = arrival * (1 - leaving);
@@ -64,7 +63,7 @@ export function render(entrance: number, progress: number, departure: number, st
   stage.style.translate = `0 ${String((1 - arrival) * innerHeight * 0.84 - leaving * 48)}px`;
   stage.style.scale = String(0.94 + arrival * 0.06 - leaving * 0.04);
   const position = clamp(progress * (steps.length - 0.4) - 0.3, 0, steps.length - 1);
-  draw(still ? Math.round(position) : position, still);
+  draw(position);
 }
 
 function seek(target: number, announce = true, smooth = false) {
@@ -72,12 +71,11 @@ function seek(target: number, announce = true, smooth = false) {
   if (!totals) return;
   target = clamp(target, 0, steps.length - 1);
   const p = (target + 0.3) / (steps.length - 0.4);
-  const moving = smooth && !paused;
   cinema.seekTimeline(
     (totals.core + totals.qualityEntrance + p * totals.qualityTravel) / totals.total,
-    moving,
+    smooth,
   );
-  if (!moving) draw(target, paused);
+  if (!smooth) draw(target);
   if (announce) announcement.textContent = steps[target].dataset.name ?? '';
 }
 
@@ -153,9 +151,5 @@ export function init() {
   onLink('a[href="#data-quality"]', () => seek(0, false, true));
   addEventListener('hashchange', () => void frames(2).then(openHash));
   addEventListener('resize', layout);
-  onPause((value) => {
-    paused = value;
-    layout();
-  });
   layout();
 }
