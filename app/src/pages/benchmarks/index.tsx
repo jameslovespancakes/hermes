@@ -38,7 +38,7 @@ const tour = [
     id: 'matched-rerun',
     nav: 'A fair rerun',
     title: ['A fair', 'rerun.'],
-    text: 'Same 149,263 Yantai predictions, scored by parcel. Hermes has 24% lower error than M2G4RTP.',
+    text: 'Their model retrained without the leaks, on the same 115,983 Yantai predictions, Sep 16–30. Hermes has 24% lower error.',
     number: '24% lower',
     figure: <Rods />,
   },

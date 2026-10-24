@@ -157,7 +157,7 @@ export function Dashboard() {
             alert={selected}
             onClose={() => setSelectedParcel(null)}
             onDismiss={() => {
-              setDismissed((prev) => new Set(prev).add(courierKey(selected.parcel)));
+              setDismissed((prev) => new Set(prev).add(parcelKey(selected.parcel)));
               setSelectedParcel(null);
             }}
           />

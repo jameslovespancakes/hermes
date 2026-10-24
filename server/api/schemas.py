@@ -80,6 +80,8 @@ class CourierPosition(BaseModel):
     packages_held: int
     feed_age_min: float
     model_used: str
+    issue: Literal["lagging", "silent", "bulk", "clock"] | None = Field(description="A problem with the courier's device feed")
+    reason: str | None
 
 
 class ParcelStatus(BaseModel):
@@ -94,7 +96,7 @@ class ParcelStatus(BaseModel):
     minutes_remaining: float
     baseline_eta: str | None = Field(description="The ETA the model gave at `baseline_at` (none if not yet held then)")
     slip_min: float | None = Field(description="Minutes the ETA moved since `baseline_at` (positive = later)")
-    issue: Literal["lagging", "silent", "bulk", "clock", "moved", "resent", "missed", "suspect", "late"] | None
+    issue: Literal["moved", "resent", "missed", "suspect", "late"] | None
     reasons: list[str]
 
 

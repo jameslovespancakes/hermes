@@ -102,8 +102,8 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
   // Alert icons on screen.
   const selectedKey = selected ? parcelKey(selected.parcel) : null;
   useEffect(() => {
-    if (map) drawAlerts(map.map, alerts, selectedKey);
-  }, [map, alerts, selectedKey, view]);
+    if (map) drawAlerts(map.map, alerts, fleet.couriers, selectedKey);
+  }, [map, alerts, fleet.couriers, selectedKey, view]);
 
   // Clicks: a courier opens their card, an alert its card.
   useEffect(() => {
@@ -119,6 +119,10 @@ export function CityMap({ cities, fleet, alerts, selected, focus, road, onSelect
       },
       alerts: (event: MapLayerMouseEvent) => {
         const key = property(event, 'key');
+        if (property(event, 'kind') === 'courier' && key) {
+          onCourier(key);
+          return;
+        }
         const alert = alerts.find((a) => parcelKey(a.parcel) === key);
         if (alert) onSelect(alert);
       },

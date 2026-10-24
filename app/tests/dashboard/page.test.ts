@@ -51,24 +51,26 @@ const overview = (parcels: Parcel[]): Overview => ({
       packages_held: 3,
       feed_age_min: 2,
       model_used: 'standard',
+      issue: 'silent',
+      reason: 'No scans from the courier for 70 min',
     },
   ],
   parcels,
 });
 
-test('one alert per courier: guard flags first, then the biggest slip', () => {
+test('every flagged parcel is an alert: record problems first, then the biggest slip', () => {
   const view = overview([
     parcel({ order_id: 1, issue: 'late', slip_min: 120, position: 2 }),
-    parcel({ order_id: 2, issue: 'silent', slip_min: 10, position: 3 }),
+    parcel({ order_id: 2, issue: 'moved', slip_min: 10, position: 3 }),
     parcel({ order_id: 3, position: 1 }),
     parcel({ order_id: 4, courier_id: 'b', issue: 'late', slip_min: 95 }),
     parcel({ order_id: 5, courier_id: 'b', issue: 'late', slip_min: 140 }),
   ]);
   const list = alerts(view);
-  expect(list.map((a) => a.parcel.order_id)).toEqual([2, 5]);
+  expect(list.map((a) => a.parcel.order_id)).toEqual([2, 5, 1, 4]);
   expect(list[0]?.route.map((p) => p.order_id)).toEqual([3, 1, 2]);
-  expect(list[0]?.courier?.packages_held).toBe(3);
-  expect(alerts(view, new Set(['yt:a'])).map((a) => a.parcel.order_id)).toEqual([5]);
+  expect(list[0]?.courier?.issue).toBe('silent');
+  expect(alerts(view, new Set(['yt:2'])).map((a) => a.parcel.order_id)).toEqual([5, 1, 4]);
   expect(route(view, 'yt:b')).toHaveLength(2);
 });
 

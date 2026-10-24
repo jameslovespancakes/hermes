@@ -113,13 +113,13 @@ export function Rods() {
     <svg
       viewBox="0 0 400 300"
       role="img"
-      aria-label="On 149,263 matched Yantai predictions, M2G4RTP has a mean absolute error of 77.11 minutes and Hermes 58.64, 24% lower, drawn as two bars from zero."
+      aria-label="On the same 115,983 Yantai predictions, September 16 to 30, M2G4RTP has a mean absolute error of 61.73 minutes and Hermes 46.83, 24% lower, drawn as two bars from zero."
     >
       <path className="faint" d="M60 250H340" />
       {(
         [
-          ['M2G4RTP', 77.11, 140],
-          ['Hermes', 58.64, 260],
+          ['M2G4RTP', 61.73, 140],
+          ['Hermes', 46.83, 260],
         ] as const
       ).map(([name, value, x]) => (
         <g

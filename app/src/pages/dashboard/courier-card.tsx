@@ -5,9 +5,6 @@ import { ISSUES } from './alerts';
 import { clock, type Courier, type Parcel } from './api';
 import { arrivalWindow } from './window';
 
-/** Problems with the courier's feed, the same for every parcel they hold: shown once, under their name. */
-const COURIER_ISSUES = new Set(['lagging', 'silent', 'bulk', 'clock']);
-
 const ago = (minutes: number) => {
   const m = Math.round(minutes);
   if (m < 1) return 'just now';
@@ -26,9 +23,7 @@ interface Props {
 }
 
 export function CourierCard({ courier, parcels, onClose, onParcel, now }: Props) {
-  const feed = parcels.map((p) => p.issue).find((i) => i !== null && COURIER_ISSUES.has(i));
-  const feedIssue = feed ? ISSUES[feed] : null;
-  const feedReason = parcels.find((p) => p.issue === feed)?.reasons[0];
+  const feedIssue = courier.issue ? ISSUES[courier.issue] : null;
   return (
     <aside className="courier-card" aria-label={`Courier ${courier.courier_id}`}>
       <header>
@@ -37,7 +32,11 @@ export function CourierCard({ courier, parcels, onClose, onParcel, now }: Props)
           <strong>Courier #{courier.courier_id}</strong>
           <span>Last scan: {ago(courier.feed_age_min)}</span>
           {feedIssue && (
-            <span className="feed-issue" style={{ color: feedIssue.color }} title={feedReason}>
+            <span
+              className="feed-issue"
+              style={{ color: feedIssue.color }}
+              title={courier.reason ?? undefined}
+            >
               <HugeiconsIcon icon={feedIssue.icon} size={14} color={feedIssue.color} strokeWidth={2} />
               {feedIssue.label}
             </span>
@@ -49,7 +48,7 @@ export function CourierCard({ courier, parcels, onClose, onParcel, now }: Props)
       </header>
       <ol>
         {parcels.map((p) => {
-          const issue = p.issue && !COURIER_ISSUES.has(p.issue) ? ISSUES[p.issue] : null;
+          const issue = p.issue ? ISSUES[p.issue] : null;
           const { from, to } = arrivalWindow(p, now);
           return (
             <li key={p.order_id}>

@@ -89,6 +89,7 @@ def minutes_since_area_visit(live: pd.DataFrame, packages: pd.DataFrame) -> np.n
 
 
 DATA_ISSUES = ("lagging", "silent", "bulk", "clock", "moved", "resent", "missed")
+COURIER_ISSUES = ("lagging", "silent", "bulk", "clock")  # about the courier's device: shown once, on the courier
 
 
 def data_issues(live: pd.DataFrame, packages: pd.DataFrame, guard: DataGuard | None, config: QualityConfig = QUALITY) -> pd.DataFrame:

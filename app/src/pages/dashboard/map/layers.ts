@@ -8,7 +8,7 @@ import type {
 } from 'maplibre-gl';
 import { ISSUES, type Alert } from '../alerts';
 import { signed } from '../alert-card';
-import { courierKey, parcelKey, type Fleet, type Parcel } from '../api';
+import { courierKey, parcelKey, type Courier, type Fleet, type Parcel } from '../api';
 import { iconSvg, MAP_IMAGES } from '../icons';
 
 const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
@@ -130,27 +130,42 @@ const tip = ({ parcel }: Alert) =>
     ? signed(parcel.slip_min)
     : ISSUES[parcel.issue].label;
 
-/** Alert icons on screen (the selected one larger). */
-export function drawAlerts(map: MapLibre, alerts: Alert[], selected: string | null) {
-  map.getSource<GeoJSONSource>('alerts')?.setData({
-    type: 'FeatureCollection',
-    features: alerts
-      .filter(({ parcel }) => visible(map, parcel))
-      .map((alert, rank) => {
-        const key = parcelKey(alert.parcel);
-        return {
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [alert.parcel.lng, alert.parcel.lat] },
-          properties: {
-            key,
-            tip: tip(alert),
-            issue: alert.parcel.issue,
-            on: key === selected,
-            rank: key === selected ? -1 : rank,
-          },
-        };
-      }),
+/** Alert icons on screen: one per flagged parcel (the selected one larger), and one on each courier with a feed problem. */
+export function drawAlerts(map: MapLibre, alerts: Alert[], couriers: Courier[], selected: string | null) {
+  const point = (lng: number, lat: number, properties: GeoJSON.GeoJsonProperties): GeoJSON.Feature => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [lng, lat] },
+    properties,
   });
+  const parcels = alerts
+    .filter(({ parcel }) => visible(map, parcel))
+    .map((alert, rank) => {
+      const key = parcelKey(alert.parcel);
+      const on = key === selected;
+      return point(alert.parcel.lng, alert.parcel.lat, {
+        key,
+        kind: 'parcel',
+        tip: tip(alert),
+        issue: alert.parcel.issue,
+        on,
+        rank: on ? -1 : rank,
+      });
+    });
+  const flaggedCouriers = couriers
+    .filter((c) => c.issue !== null && visible(map, c))
+    .map((c) =>
+      point(c.lng, c.lat, {
+        key: courierKey(c),
+        kind: 'courier',
+        tip: c.reason ?? '',
+        issue: c.issue,
+        on: false,
+        rank: -2,
+      }),
+    );
+  map
+    .getSource<GeoJSONSource>('alerts')
+    ?.setData({ type: 'FeatureCollection', features: [...parcels, ...flaggedCouriers] });
 }
 
 const points = (

@@ -1,4 +1,5 @@
-// Turns the city overview into the few things a dispatcher should look at: one alert per courier at most.
+// Turns the city overview into what a dispatcher should look at: every flagged parcel, worst first. Couriers carry
+// their own feed problems (see api.ts), so the map and the courier card show the same icons.
 import {
   AlarmClockIcon,
   Clock04Icon,
@@ -11,7 +12,15 @@ import {
   WifiDisconnected01Icon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
-import { courierKey, type Courier, type Fleet, type Issue, type Parcel } from './api';
+import {
+  courierKey,
+  parcelKey,
+  type Courier,
+  type Fleet,
+  type Issue,
+  type ParcelIssue,
+  type Parcel,
+} from './api';
 
 const DATA = '#e58f0b';
 
@@ -41,28 +50,27 @@ const RANK: Record<Issue, number> = {
 };
 
 export interface Alert {
-  parcel: Parcel & { issue: Issue };
+  parcel: Parcel & { issue: ParcelIssue };
   courier: Courier | undefined;
   /** The courier's pending parcels in predicted stop order. */
   route: Parcel[];
 }
 
-const flagged = (p: Parcel): p is Parcel & { issue: Issue } => p.issue !== null;
+const flagged = (p: Parcel): p is Parcel & { issue: ParcelIssue } => p.issue !== null;
 
-/** The worst flagged parcel of each courier, worst couriers first; dismissed couriers (by key) are skipped. */
+/** Every flagged parcel, worst first; dismissed parcels (by key 'city:order') are skipped. */
 export function alerts(fleet: Fleet, dismissed: ReadonlySet<string> = new Set()): Alert[] {
-  const worst = new Map<string, Parcel & { issue: Issue }>();
-  for (const parcel of fleet.parcels.filter(flagged)) {
-    const key = courierKey(parcel);
-    if (dismissed.has(key)) continue;
-    const current = worst.get(key);
-    if (!current || severity(parcel) < severity(current)) worst.set(key, parcel);
-  }
   const couriers = new Map(fleet.couriers.map((c) => [courierKey(c), c]));
   const routes = byCourier(fleet.parcels);
-  return [...worst.entries()]
-    .sort(([, a], [, b]) => severity(a) - severity(b))
-    .map(([key, parcel]) => ({ parcel, courier: couriers.get(key), route: routes.get(key) ?? [] }));
+  return fleet.parcels
+    .filter(flagged)
+    .filter((p) => !dismissed.has(parcelKey(p)))
+    .sort((a, b) => severity(a) - severity(b))
+    .map((parcel) => ({
+      parcel,
+      courier: couriers.get(courierKey(parcel)),
+      route: routes.get(courierKey(parcel)) ?? [],
+    }));
 }
 
 /** Parcels grouped by courier key, each in predicted stop order. */
@@ -91,4 +99,4 @@ export function route(fleet: Fleet, key: string): Parcel[] {
 }
 
 // Lower is worse: issue kind first, then how far the estimate moved.
-const severity = (p: Parcel & { issue: Issue }) => RANK[p.issue] * 1e4 - Math.abs(p.slip_min ?? 0);
+const severity = (p: Parcel & { issue: ParcelIssue }) => RANK[p.issue] * 1e4 - Math.abs(p.slip_min ?? 0);

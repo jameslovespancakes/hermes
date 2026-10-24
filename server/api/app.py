@@ -112,6 +112,8 @@ def create_app(services: dict[str, CityService] | None = None, frontend: Path | 
                 packages_held=int(r.packages_held),
                 feed_age_min=float(r.feed_age_min),
                 model_used=str(r.model_used),
+                issue=None if pd.isna(r.issue) else str(r.issue),
+                reason=None if pd.isna(r.reason) else str(r.reason),
             )
             for r in view["couriers"].itertuples(index=False)
         ]

@@ -52,7 +52,7 @@ class ClassifyTests(unittest.TestCase):
         self.assertEqual(out["reasons"][0], ["Parcel is 20 km from the courier"])
         self.assertEqual(out["reasons"][1], ["ETA jumped 70 min earlier in the last hour"])
 
-    def test_guard_flags_win_and_keep_their_reasons(self):
+    def test_parcel_guard_flags_win_and_courier_feed_flags_stay_off_the_parcel(self):
         out = classify(
             frame(
                 order_id=[0],
@@ -63,8 +63,8 @@ class ClassifyTests(unittest.TestCase):
             before([AT - pd.Timedelta(minutes=90)]),
             self.rules,
         )
-        self.assertEqual(out["issue"][0], "silent")
-        self.assertEqual(out["reasons"][0][0], "No scans from the courier for 70 min")
+        self.assertEqual(out["issue"][0], "moved")
+        self.assertEqual(out["reasons"][0], ["Address was 2.0 km off its area and was moved"])
 
     def test_parcels_new_since_the_baseline_have_no_slip(self):
         out = classify(frame(order_id=[0]), before([]), self.rules)

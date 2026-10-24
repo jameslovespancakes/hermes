@@ -1,7 +1,8 @@
 """The whole city at one moment, for the dispatcher map.
 
 Every pending parcel gets its current ETA and the ETA the model gave an hour earlier ("before" and "after"), plus
-at most one issue for a dispatcher:
+at most one issue for a dispatcher; problems with a courier's device feed (lagging, silent, bulk, clock) go on the
+courier instead, once:
 
 - data:    the data guards flagged the inputs (stale courier feed, bulk-synced scans)
 - suspect: the inputs passed every guard but the picture is implausible
@@ -18,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from server.features.geometry import gcj02_to_wgs84
+from server.quality.guard import COURIER_ISSUES
 from server.serving.predictor import OUTPUT_COLUMNS, LiveETAPredictor, courier_positions
 
 
@@ -69,9 +71,10 @@ def classify(now: pd.DataFrame, before: pd.DataFrame, rules: IssueRules = RULES)
     }
     issues, reasons = [], []
     for i, row in enumerate(out.itertuples(index=False)):
-        if row.data_issues:
-            issues.append(row.data_issues[0])
-            reasons.append(list(row.review_reasons))
+        own = [(kind, why) for kind, why in zip(row.data_issues, row.review_reasons, strict=True) if kind not in COURIER_ISSUES]
+        if own:
+            issues.append(own[0][0])
+            reasons.append([why for _, why in own])
             continue
         kind, why = None, []
         for name in ("suspect", "late"):
@@ -96,8 +99,20 @@ def build_overview(city: Callable[[pd.Timestamp], pd.DataFrame], records: pd.Dat
     parcels = classify(now, city(baseline_at), rules)
 
     positions = courier_positions(records, at)
-    per_courier = parcels.groupby("courier_id").agg(
-        packages_held=("order_id", "size"), feed_age_min=("feed_age_min", "first"), model_used=("model_used", "first")
+    feed = [
+        next(((kind, why) for kind, why in zip(kinds, whys, strict=True) if kind in COURIER_ISSUES), (None, None))
+        for kinds, whys in zip(parcels["data_issues"], parcels["review_reasons"], strict=True)
+    ]
+    per_courier = (
+        parcels.assign(feed_issue=[k for k, _ in feed], feed_reason=[w for _, w in feed])
+        .groupby("courier_id")
+        .agg(
+            packages_held=("order_id", "size"),
+            feed_age_min=("feed_age_min", "first"),
+            model_used=("model_used", "first"),
+            issue=("feed_issue", "first"),
+            reason=("feed_reason", "first"),
+        )
     )
     couriers = per_courier.join(positions.set_axis(positions.index.astype(str)), how="inner").reset_index()
     return {"baseline_at": baseline_at, "couriers": _on_map(couriers), "parcels": _on_map(parcels)}

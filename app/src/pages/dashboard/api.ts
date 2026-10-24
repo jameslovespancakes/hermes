@@ -1,9 +1,10 @@
 // Typed client for the ETA API (server/api/app.py, under /api). Times use the source format 'MM-DD HH:MM:SS'.
 
-/** Data problems the safeguards caught (most urgent first). */
-type DataIssue = 'lagging' | 'silent' | 'bulk' | 'clock' | 'moved' | 'resent' | 'missed';
-/** Why a parcel needs a person: a data problem, inputs that look wrong, or an ETA that slipped. */
-export type Issue = DataIssue | 'suspect' | 'late';
+/** A problem with a courier's device feed: shown once, on the courier. */
+export type CourierIssue = 'lagging' | 'silent' | 'bulk' | 'clock';
+/** Why a parcel needs a person: a problem with its record, inputs that look wrong, or an ETA that slipped. */
+export type ParcelIssue = 'moved' | 'resent' | 'missed' | 'suspect' | 'late';
+export type Issue = CourierIssue | ParcelIssue;
 
 export interface Parcel {
   city: string;
@@ -20,7 +21,7 @@ export interface Parcel {
   baseline_eta: string | null;
   /** Minutes the ETA moved since then (positive = later). */
   slip_min: number | null;
-  issue: Issue | null;
+  issue: ParcelIssue | null;
   reasons: string[];
 }
 
@@ -32,6 +33,8 @@ export interface Courier {
   packages_held: number;
   feed_age_min: number;
   model_used: string;
+  issue: CourierIssue | null;
+  reason: string | null;
 }
 
 export interface Overview {
