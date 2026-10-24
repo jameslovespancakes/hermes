@@ -1,143 +1,130 @@
 <p align="center">
-  <img src=".github/readme/logo.svg" alt="Hermes" width="84" />
+  <img src=".github/readme/logo.svg" alt="Hermes" width="64" />
 </p>
 
 <h1 align="center">Hermes</h1>
 
 <p align="center">
-  Live delivery ETAs that predict the courier's route first, then the time, and stay reliable when the data goes bad.
+  Route-first delivery ETA prediction on LaDe-D courier logs.
   <br />
-  <a href="https://tryhermes.org"><strong>tryhermes.org</strong></a>
+  <a href="https://tryhermes.org">Website</a> ·
+  <a href="https://tryhermes.org/benchmarks">Benchmarks</a> ·
+  <a href="https://tryhermes.org/methodology">Methodology</a>
 </p>
 
 <p align="center">
-  <img src=".github/readme/hero.jpg" alt="Hermes home page" width="100%" />
+  <img src=".github/readme/hero.jpg" alt="Hermes homepage" width="100%" />
 </p>
 
-## Overview
+## ETA accuracy
 
-Hermes predicts how many minutes remain until each pending package is delivered, and updates every prediction after
-each courier delivery. It is built on **LaDe-D**, a public dataset of real courier logs from Cainiao, and answers the
-W&M AI Case-a-thon question: *how do stale and low-quality data change an AI system's predictions, and can a fix
-restore them?*
+Predict minutes remaining for each pending package after every courier delivery. A stop-order model feeds a LightGBM ETA ensemble; a today-or-later classifier and a next-day model handle parcels likely to be held.
 
-| Benchmarks | Methodology | Data quality |
-|:---:|:---:|:---:|
-| <img src=".github/readme/benchmarks.jpg" alt="Benchmarks page" /> | <img src=".github/readme/methodology.jpg" alt="Methodology page" /> | <img src=".github/readme/data-quality.jpg" alt="Data quality" /> |
-| What the published state of the art really scores | Stop order first, then time | Bad records caught before they reach the model |
+**Evaluation:** one model per city; fit on everything before September 1, early stopping on September 1 to 15, test once on September 16 to 30. October is never used. Metrics are per prediction, not per unique package; MAE means mean absolute error.
 
-## Results
+| City | Test predictions | Packages | MAE (min) | Median error (min) | Within 30 min | Next 3 stops in top 3 |
+|---|---:|---:|---:|---:|---:|---:|
+| Yantai | 155,296 | 14,234 | **55.9** | 26.9 | 53.6% | 70.9% |
+| Jilin | 37,291 | 3,372 | **44.5** | 24.8 | 57.2% | 72.5% |
+| Shanghai | 912,572 | 135,903 | **157.7** | 19.8 | 59.8% | 71.5% |
+| Chongqing | 518,288 | 64,238 | **409.9** | 57.0 | 33.5% | 64.6% |
+| Hangzhou | 1,640,476 | 155,776 | **605.2** | 26.2 | 54.3% | 66.6% |
 
-All results are for Yantai, trained on May to August and tested on September 16 to 30. No prediction uses information
-recorded after its own moment.
+The large city MAEs come from parcels held for days: LaDe-D has no order time, planned route or traffic, so multi-day holds stay hard to predict. Median errors stay between 20 and 57 minutes. Customers see an arrival window set on September 1 to 15; on September 16 to 30, **80.0%** of arrivals fall inside it (78.0% to 81.9% by city).
 
-### 1. Live ETA model
+Source: [`server/model_store/<city>/metrics.json`](server/model_store); Yantai copy in [`evidence/model/results/metrics.json`](evidence/model/results/metrics.json).
 
-| Measure | Result |
-|---|---:|
-| Average error | **55.9 min** |
-| Typical (median) error | **27.0 min** |
-| Packages due within 30 min / 30 to 60 min / 1 to 3 h | 28.9 / 30.5 / 34.1 min |
-| Packages due in 3 to 24 h | 105.2 min |
-| Predictions within 30 min of the truth | 53.5% |
-| Next stop predicted first / true next 3 stops in the top 3 | 49.1% / 70.8% |
+## Data degradation and recovery
 
-155,296 live predictions on 14,234 packages. Source: [`evidence/model`](evidence/model/results/metrics.json).
+Simulated defects on real Yantai and Jilin records, averaged over 3 seeds per city. **Low quality:** a cheap scanner app spreads to 60% of couriers from July to September, bulk-syncing timestamps to the hour, adding ~1 km GPS jitter and re-sending half its records. **Stale:** 60-minute upload delays spread to 60% of couriers over September 16 to 30. Every condition is scored on the same predictions against the original delivery times.
 
-### 2. The published benchmark relies on leaks
-
-We ran the LaDe authors' own code (it needed 7 fixes to run at all) and found six ways its setup uses information from
-the future or scores generously, for example showing the model only packages that *will* be delivered within 2 hours.
-`check.py` points to each leak by file and line.
-
-| Their best model (M2G4RTP), Yantai | Average error |
-|---|---:|
-| Reported in the paper | 17.2 min |
-| Our rerun of their code, their scoring | 12.5 min |
-| Same model, scored per package | 22.2 min |
-| Three leaks removed, scored per package | 23.3 min |
-
-Source: [`evidence/leaks`](evidence/leaks).
-
-### 3. Bad data, with and without the safeguards
-
-A simulated low-quality scanner app (bulk-synced timestamps, GPS jitter, re-sent records) spreads to 60% of couriers,
-and delayed uploads hit 60% of couriers during the test window. Measured with the previous model version (58.5 min on
-clean data).
-
-| Condition | No fix | With safeguards | Damage recovered |
+| Condition | No safeguards: MAE (min) | With safeguards: MAE (min) | Damage recovered |
 |---|---:|---:|---:|
-| Clean data | 58.5 | 58.5 | no cost |
-| Stale feeds | 63.3 | 60.0 | 68% |
-| Low-quality feeds | 80.1 | 66.7 | 62% |
-| Both | 84.0 | 66.9 | 67% |
+| Clean | 50.4 | 50.2 | no cost |
+| Delayed uploads | 62.2 | 53.4 | **74%** |
+| Low-quality records | 71.6 | 60.7 | **51%** |
+| Both | 81.1 | 61.0 | **66%** |
+| Three monthly retrains on bad records | 73.2 | 65.4 | |
+| Unseen fault (timestamps off by up to 30 min) | 61.9 | 55.8 | |
+| Lost scans (30% never arrive) | 64.3 | 63.6 | flagged, not repaired |
+| Never retrained vs monthly | 56.7 | 50.4 | |
 
-- **Data contract:** 88 of 92 bad-feed days flagged, 0 of 92 clean days.
-- **Cleaning:** 100% of re-sent records removed with no real package lost; 97% of bulk-synced records quarantined
-  versus 0.03% of good ones.
-- **Limit:** a fault the detectors were not designed for (random timestamp errors) is only partly handled
-  (69.7 to 62.7 min).
+Recovery = `(degraded MAE - repaired MAE) / (degraded MAE - clean MAE)`, calculated before rounding.
 
-Source: [`evidence/baddata`](evidence/baddata/results/REPORT.md).
+- **Validate:** the daily data contract flagged 175 of 184 bad days and 4 of 184 clean days.
+- **Clean:** 100% of injected duplicates removed; zero real packages removed.
+- **Weigh:** bad-feed records train with a mean weight of 0.11, good records 1.0; nothing is deleted.
+- **Correct:** a 20-minute fast device clock is corrected to 2.6 minutes of error.
+- **Flag:** 13% of lost-scan predictions are flagged on the day of the miss; 1.7% of genuinely pending parcels are flagged.
+- **Monitor:** the drift alarm fired on 94 of 94 bad days; it also fires on clean Jilin days as the city grows.
+- **Mechanism:** about 90% of the remaining low-quality damage comes through live inputs, not training. Random training weights do worse than the learned ones.
 
-## How it works
+Source: [`evidence/baddata/results/`](evidence/baddata/results), `results*.json` per city and seed; graphs at [tryhermes.org/results](https://tryhermes.org/results).
 
-1. **Route order, in two levels.** A model picks the courier's next zone (a group of nearby buildings), then a
-   second model orders every pending package, using the courier's real GPS position, depot, habits, and movement
-   patterns.
-2. **Time.** Three averaged LightGBM models turn that order, live area conditions and the courier's recent pace into
-   minutes remaining; a specialist takes over for packages likely to slip to a later day.
-3. **Safeguards.** Records are de-duplicated and repaired before use, late uploads switch to a staleness-aware model,
-   a risk model marks the 10% least certain ETAs, and a daily data contract and drift check watch the inputs.
+## Benchmark audit
 
-## Repository
+M2G4RTP on Yantai, using the LaDe authors' code:
 
-| Path | Contents |
-|---|---|
-| [`server/`](server) | Data, features, models, training, safeguards, FastAPI service, tests |
-| [`evidence/`](evidence) | One folder per claim: `model`, `leaks`, `baddata`, each with code to reproduce it |
-| [`research.md`](research.md) | Plain-language findings and limits |
-| [`app/`](app) | React + TypeScript frontend (Bun), served by the API at tryhermes.org |
+| Evaluation | MAE (min) |
+|---|---:|
+| Paper-reported | 17.21 |
+| Our rerun, authors' scoring | 12.47 |
+| Same predictions, matched to each package | 22.19 |
 
-## Quick start
+The authors' scoring only covers parcels due within two hours (a filter that needs the future) and matches times by queue position, not by package.
 
-Requires Python 3.10+, [uv](https://docs.astral.sh/uv/) and [Bun](https://bun.sh) 1.4.2.
+**Fair rerun:** M2G4RTP retrained with the leaks removed, then both models scored on the same 115,983 Yantai predictions (13,701 packages), September 16 to 30.
 
-```sh
-uv sync
-uv run python -m server.cli download                # every city's pinned, checksum-verified data and roads
-uv run python -m server.cli train                   # every city; Yantai about 7 min, Hangzhou and Shanghai longer
-(cd app && bun install --frozen-lockfile && bun run build)
-uv run uvicorn server.api.app:create_app --factory # site and API on http://localhost:8000 (API under /api, docs at /docs)
-```
+| Model | MAE per prediction (min) | MAE per package (min) |
+|---|---:|---:|
+| M2G4RTP, leak-free | 61.7 | 57.7 |
+| Hermes | **46.8** | **47.2** |
 
-Develop the frontend with live reload (`/api` is proxied to the server on port 8000):
+Hermes has 24% lower error per prediction. Source: [`fair_yt.json`](evidence/leaks/results/fair_yt.json), [`rescore.json`](evidence/leaks/results/rescore.json); checks: [`check.py`](evidence/leaks/check.py).
 
-```sh
-cd app && bun run dev                              # http://localhost:5173
-```
+## Interface
 
-Checks (the same as CI):
+| Benchmarks | Methodology | Data cleaning |
+|:---:|:---:|:---:|
+| ![Benchmark page](.github/readme/benchmarks.jpg) | ![Methodology page](.github/readme/methodology.jpg) | ![Data cleaning page](.github/readme/data-quality.jpg) |
 
-```sh
-uv run ruff check server evidence && uv run python -m unittest discover -s server/tests -t .
-cd app && bun run lint && bun run typecheck && bun test tests
-```
-
-Reproduce the evidence:
-
-```sh
-uv run python -m evidence.leaks.setup && uv run python -m evidence.leaks.check
-uv run python -m evidence.baddata.run && uv run python -m evidence.baddata.report    # about 2.5 h
-```
+Screenshots from the deployed website; linked JSON artifacts are the sources for the results above.
 
 ## Limits
 
-- One city and one test window. September was examined during development; October is untouched.
-- "Delivered" is when the courier recorded it, not a customer confirmation, and timestamps appear processed.
-- The largest remaining gap is stop order: with the true order known, error would fall by about 40%.
+- Bad-data tests cover Yantai and Jilin only; the fair benchmark rerun covers Yantai only.
+- October delivery data is held back and has not been evaluated.
+- Repeated predictions for the same package are not independent observations.
+- Corruption is simulated; recovery is not a measured production outcome.
+- Lost scans are flagged, not repaired.
+- Delivery timestamps are courier records, not customer-confirmed arrival times.
 
-## Data
+## Run locally
 
-[LaDe](https://huggingface.co/datasets/Cainiao-AI/LaDe) by Cainiao (Wu et al., arXiv:2306.10675), used with the
-case owners' confirmation. Attribution and non-commercial use apply. The data is not stored in this repository.
+Requires Python 3.10+, [uv](https://docs.astral.sh/uv/) and Bun 1.4.2.
+
+```sh
+uv sync
+uv run python -m server.cli download
+uv run python -m server.cli train
+(cd app && bun install --frozen-lockfile && bun run build)
+uv run uvicorn server.api.app:create_app --factory
+# http://localhost:8000 · API docs: /docs
+```
+
+```sh
+# Checks
+uv run ruff check server evidence
+uv run python -m unittest discover -s server/tests -t .
+(cd app && bun run lint && bun run typecheck && bun test tests)
+
+# Reproduce audit and degradation experiments
+uv run python -m evidence.leaks.setup
+uv run python -m evidence.leaks.check
+uv run python -m evidence.baddata.run
+uv run python -m evidence.baddata.report
+```
+
+[`server/`](server): models/API · [`app/`](app): React frontend · [`evidence/`](evidence): experiments · [`research.md`](research.md): findings and limits.
+
+**Data:** [LaDe](https://huggingface.co/datasets/Cainiao-AI/LaDe), Cainiao (Wu et al., arXiv:2306.10675). Attribution and non-commercial use apply; raw data is not included.
